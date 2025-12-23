@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="fr">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>SITFINDER</title>
+    
+    <!-- LA LIGNE MAGIQUE CI-DESSOUS (Tailwind CDN) -->
+    <!-- Elle force le design à fonctionner même si l'installation locale a échoué -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <script>
+      // Configuration pour que Tailwind reconnaisse nos couleurs personnalisées
+      tailwind.config = {
+        theme: {
+          extend: {
+            colors: {
+              sitgreen: '#16a34a',
+            }
+          }
+        }
+      }
+    </script>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.jsx"></script>
+  </body>
+</html>
