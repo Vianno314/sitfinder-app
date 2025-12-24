@@ -7,7 +7,7 @@ import {
   signInWithEmailAndPassword,
   onAuthStateChanged,
   signOut,
-  deleteUser // AJOUTÉ POUR LA SUPPRESSION
+  deleteUser // Importé correctement ici
 } from "firebase/auth";
 import {
   getFirestore,
@@ -18,7 +18,7 @@ import {
   onSnapshot,
   addDoc,
   updateDoc,
-  deleteDoc, // AJOUTÉ POUR LA SUPPRESSION
+  deleteDoc, // Importé correctement ici
   Timestamp,
   arrayUnion,
   arrayRemove,
@@ -101,7 +101,7 @@ const SplashScreen = ({ message = "La recherche en toute confiance" }) => (
 );
 
 // ==========================================
-// 3. COMPOSANT PARAMÈTRES (AVEC SUPPRESSION)
+// 3. COMPOSANT PARAMÈTRES (SÉCURISÉ)
 // ==========================================
 
 const SettingsView = ({ user, profile, onBack, isDark, toggleDark }) => {
@@ -114,24 +114,21 @@ const SettingsView = ({ user, profile, onBack, isDark, toggleDark }) => {
   const [status, setStatus] = useState({ type: "", msg: "" });
   const [loading, setLoading] = useState(false);
 
-  // FONCTION DE SUPPRESSION DE COMPTE
+  // LOGIQUE DE SUPPRESSION
   const handleDeleteAccount = async () => {
-    if (window.confirm("⚠️ ACTION IRRÉVERSIBLE : Veux-tu vraiment supprimer ton compte et toutes tes données SITFINDER ?")) {
+    if (window.confirm("⚠️ ATTENTION : Voulez-vous supprimer définitivement votre compte et vos données ?")) {
       setLoading(true);
       try {
-        // 1. Supprimer les données dans Firestore
+        // Suppression Firestore
         await deleteDoc(doc(db, 'artifacts', appId, 'users', user.uid, 'settings', 'profile'));
         if (profile.role === 'sitter') {
           await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'sitters', user.uid));
         }
-        
-        // 2. Supprimer l'utilisateur de l'Auth
-        await deleteUser(user);
-        
-        alert("Compte supprimé avec succès.");
+        // Suppression Auth
+        await deleteUser(auth.currentUser);
+        alert("Compte supprimé.");
       } catch (err) {
-        console.error(err);
-        alert("Sécurité : reconnecte-toi et réessaie immédiatement pour valider la suppression.");
+        alert("Action sécurisée : merci de vous reconnecter avant de supprimer votre compte.");
       } finally {
         setLoading(false);
       }
@@ -211,15 +208,14 @@ const SettingsView = ({ user, profile, onBack, isDark, toggleDark }) => {
             <button disabled={loading} className="w-full bg-slate-900 text-white py-6 rounded-[2.5rem] font-black text-[10px] uppercase shadow-xl">Sauvegarder les réglages</button>
         </form>
 
-        <div className="space-y-4">
-          <button onClick={() => signOut(auth)} className="w-full p-6 border-2 border-dashed border-slate-200 text-slate-400 rounded-[2.5rem] font-black text-[10px] uppercase flex items-center justify-center gap-3 hover:bg-slate-50 transition-all"><LogOut size={18}/> Déconnexion</button>
-          
-          {/* BOUTON DE SUPPRESSION ROUGE */}
-          <button onClick={handleDeleteAccount} className="w-full p-6 bg-red-50 text-red-500 rounded-[2.5rem] font-black text-[10px] uppercase flex items-center justify-center gap-3 hover:bg-red-500 hover:text-white transition-all border border-red-100"><Trash2 size={18}/> Supprimer mon compte</button>
+        <div className="space-y-4 pt-4">
+           <button onClick={() => signOut(auth)} className="w-full p-6 border-2 border-dashed border-slate-200 text-slate-400 rounded-[2.5rem] font-black text-[10px] uppercase flex items-center justify-center gap-3"><LogOut size={18}/> Déconnexion</button>
+           <button onClick={handleDeleteAccount} className="w-full p-6 bg-red-50 text-red-500 rounded-[2.5rem] font-black text-[10px] uppercase flex items-center justify-center gap-3 hover:bg-red-500 hover:text-white transition-all border border-red-100"><Trash2 size={18}/> Supprimer mon compte</button>
         </div>
       </div>
     </div>
   );
 };
 
-// ... LE RESTE DU CODE (ChatRoom, Auth, Dashboards) RESTE IDENTIQUE ...
+// ... Les autres composants (ChatRoom, AuthScreen, Dashboards, App) restent identiques à ton code original ...
+// Ils doivent être collés ici pour que le fichier soit complet.
