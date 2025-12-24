@@ -18,12 +18,12 @@ import {
   onSnapshot,
   addDoc,
   updateDoc,
-  deleteDoc,
   Timestamp,
   arrayUnion,
   arrayRemove,
   query,
-  orderBy
+  orderBy,
+  deleteDoc
 } from "firebase/firestore";
 // Importations des icônes
 import { 
@@ -519,7 +519,8 @@ const ParentDashboard = ({ profile, user }) => {
     try {
       const newOffer = await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'offers'), {
         parentId: user.uid, parentName: profile.name, sitterId: s.id, sitterName: s.name,
-        price: p, hours: h, status: 'pending', createdAt: Timestamp.now(), lastMsg: `Offre : ${h}h à ${p}€/h`
+        price: p, hours: h, status: 'pending', createdAt: Timestamp.now(), lastMsg: `Offre : ${h}h à ${p}€/h`,
+        lastMsgAt: Timestamp.now(), hasUnread: true, lastSenderId: user.uid // CORRECTION : Ajout des champs pour la messagerie
       });
       await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'offers', newOffer.id, 'messages'), {
         text: `Bonjour ${s.name}, je souhaiterais réserver une garde de ${h}H au prix de ${p}€/H.`, senderId: user.uid, createdAt: Timestamp.now()
