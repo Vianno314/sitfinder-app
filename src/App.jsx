@@ -250,7 +250,7 @@ const ChatRoom = ({ offer, currentUser, onBack, isDark }) => {
   }, [offer.id]);
 
   const handleReport = async () => {
-    const reason = window.prompt("Merci de nous aider à protéger la communauté. Quel est le problème avec ce message ou cet utilisateur ?");
+    const reason = window.prompt("Quel est le problème ?");
     if (reason) {
       try {
         await addDoc(collection(db, 'reports'), {
@@ -260,10 +260,8 @@ const ChatRoom = ({ offer, currentUser, onBack, isDark }) => {
           reason: reason,
           createdAt: Timestamp.now()
         });
-        alert("Signalement enregistré. Notre équipe va examiner la situation.");
-      } catch (e) {
-        console.error(e);
-      }
+        alert("Signalement enregistré.");
+      } catch (e) { console.error(e); }
     }
   };
 
@@ -593,7 +591,7 @@ const ParentDashboard = ({ profile, user }) => {
                   <p className={`italic mb-8 leading-relaxed text-sm flex-1 line-clamp-3 text-left ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>"{s.bio || "..."}"</p>
                   <div className={`flex justify-between items-center pt-8 border-t mt-auto ${isDark ? 'border-slate-800' : 'border-slate-50'}`}>
                     <span className="text-3xl font-black text-emerald-600 font-sans">{s.price || 0}€<span className="text-[10px] text-slate-400 ml-1">/H</span></span>
-                    <button onClick={() => setSelectedSitter(s)} className={`px-10 py-5 rounded-[2.5rem] font-black text-[10px] uppercase shadow-lg active:scale-95 transition-all hover:bg-emerald-600 tracking-widest ${isDark ? 'bg-indigo-600 text-white' : 'bg-slate-900 text-white'}`}>VOIR PROFIL</button>
+                    <button onClick={() => setSelectedSitter(s)} className={`px-10 py-5 rounded-[2.5rem] font-black text-[10px] uppercase shadow-lg active:scale-95 transition-all bg-slate-900 text-white tracking-widest`}>VOIR PROFIL</button>
                   </div>
                 </div>
               ))}
@@ -666,7 +664,7 @@ const ParentDashboard = ({ profile, user }) => {
                   const p = document.getElementById('neg-p').value;
                   const h = document.getElementById('neg-h').value;
                   handleBooking(selectedSitter, p, h);
-              }} className={`w-full py-8 rounded-[2.5rem] font-black text-sm shadow-xl shadow-emerald-500/20 uppercase tracking-[0.2em] active:scale-95 transition-all ${isDark ? 'bg-indigo-600 text-white' : 'bg-emerald-50 text-white'}`}>ENVOYER LA DEMANDE</button>
+              }} className={`w-full py-8 rounded-[2.5rem] font-black text-sm shadow-xl shadow-emerald-500/20 uppercase tracking-[0.2em] active:scale-95 transition-all bg-emerald-500 text-white`}>ENVOYER LA DEMANDE</button>
             </div>
           </div>
         </div>
@@ -767,7 +765,7 @@ const SitterDashboard = ({ user, profile }) => {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className={`p-8 rounded-[3rem] shadow-xl border flex flex-col items-center text-center space-y-4 ${isDark ? 'bg-slate-900 border-slate-800 shadow-slate-950' : 'bg-white'}`}>
                     <div className="relative">
-                        <div className={`w-28 h-28 rounded-[2.5rem] border-4 shadow-2xl overflow-hidden ring-4 ${isDark ? 'bg-slate-900 border-slate-700 ring-slate-950' : 'bg-white'}`}><img src={myP} alt="profile" className="w-full h-full object-cover" /></div>
+                        <div className={`w-28 h-28 rounded-[2.5rem] border-4 shadow-2xl overflow-hidden ring-4 ${isDark ? 'bg-slate-800 border-slate-700 ring-slate-950' : 'bg-white'}`}><img src={myP} alt="profile" className="w-full h-full object-cover" /></div>
                         <button onClick={() => setActiveTab("settings")} className="absolute -bottom-1 -right-1 p-3 bg-slate-900 text-white rounded-xl shadow-xl active:scale-95 transition-all"><Camera size={16}/></button>
                     </div>
                     <div><h2 className={`text-2xl font-black italic ${isDark ? 'text-white' : 'text-slate-800'}`}>{profile.name}</h2><p className="text-[9px] font-black text-emerald-500 uppercase tracking-widest mt-1 bg-emerald-50 px-3 py-1 rounded-full border border-emerald-100 inline-block">Sitter Pro ✨</p></div>
