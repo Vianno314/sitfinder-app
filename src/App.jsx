@@ -250,7 +250,7 @@ const ChatRoom = ({ offer, currentUser, onBack, isDark }) => {
   }, [offer.id]);
 
   const handleReport = async () => {
-    const reason = window.prompt("Quel est le problème ?");
+    const reason = window.prompt("Merci de nous aider à protéger la communauté. Quel est le problème ?");
     if (reason) {
       try {
         await addDoc(collection(db, 'reports'), {
@@ -518,7 +518,6 @@ const ParentDashboard = ({ profile, user }) => {
   const handleBooking = async (s, p, h) => {
     try {
       const offerText = `Offre : ${h}h à ${p}€/h`;
-      // CORRECTION : Ajout explicite des champs de messagerie pour garantir l'affichage
       const newOffer = await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'offers'), {
         parentId: user.uid, 
         parentName: profile.name, 
@@ -529,7 +528,7 @@ const ParentDashboard = ({ profile, user }) => {
         status: 'pending', 
         createdAt: Timestamp.now(), 
         lastMsg: offerText,
-        lastMsgAt: Timestamp.now(), // Champ critique pour le tri
+        lastMsgAt: Timestamp.now(), // Tri messagerie
         hasUnread: true,
         lastSenderId: user.uid
       });
@@ -540,8 +539,7 @@ const ParentDashboard = ({ profile, user }) => {
         createdAt: Timestamp.now()
       });
 
-      setSelectedSitter(null); 
-      setActiveTab("messages");
+      setSelectedSitter(null); setActiveTab("messages");
     } catch (e) { console.error(e); }
   };
 
