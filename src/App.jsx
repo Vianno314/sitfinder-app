@@ -126,7 +126,7 @@ const SettingsView = ({ user, profile, onBack, isDark, toggleDark }) => {
         await deleteUser(auth.currentUser);
         alert("Compte supprimé avec succès.");
       } catch (err) {
-        alert("Sécurité : merci de vous reconnecter avant de supprimer votre compte.");
+        alert("Sécurité : merci de vous reconnecter avant de supprimer.");
       } finally {
         setLoading(false);
       }
@@ -270,12 +270,12 @@ const ChatRoom = ({ offer, currentUser, onBack, isDark }) => {
     e.preventDefault();
     if (!newMessage.trim()) return;
     try {
-      // CORRECTION: AJOUT DES IDS PARENT/SITTER POUR LA SECURITE
+      // CORRECTION: AJOUT DES IDS PARENT/SITTER POUR QUE LA LECTURE SOIT AUTORISÉE
       await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'offers', offer.id, 'messages'), {
         text: newMessage, 
         senderId: currentUser.uid, 
-        parentId: offer.parentId, // INDISPENSABLE POUR LA LECTURE
-        sitterId: offer.sitterId, // INDISPENSABLE POUR LA LECTURE
+        parentId: offer.parentId, 
+        sitterId: offer.sitterId,
         createdAt: Timestamp.now()
       });
       await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'offers', offer.id), {
@@ -486,7 +486,7 @@ const ParentDashboard = ({ profile, user }) => {
       setSitters(snap.docs.map(d => ({ id: d.id, ...d.data() })));
       setLoading(false);
     });
-    // CORRECTION : Filtre 'where' ajouté pour respecter les règles de sécurité
+    // FILTRE INDISPENSABLE POUR LA SECURITE
     const qOffers = query(
       collection(db, 'artifacts', appId, 'public', 'data', 'offers'), 
       where("parentId", "==", user.uid)
@@ -529,7 +529,7 @@ const ParentDashboard = ({ profile, user }) => {
   const handleBooking = async (s, p, h) => {
     try {
       const offerText = `Offre : ${h}h à ${p}€/h`;
-      // CORRECTION : J'ajoute parentId et sitterId DANS le message pour que les règles de sécurité l'acceptent
+      // ICI : ON AJOUTE LES CHAMPS POUR LA SECURITE ET LE TRI
       const newOffer = await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'offers'), {
         parentId: user.uid, 
         parentName: profile.name, 
@@ -545,11 +545,12 @@ const ParentDashboard = ({ profile, user }) => {
         lastSenderId: user.uid
       });
 
+      // ICI : ON AJOUTE LES ID DE PARENT ET SITTER DANS LE MESSAGE POUR LA SÉCURITÉ
       await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'offers', newOffer.id, 'messages'), {
         text: `Bonjour ${s.name}, je souhaiterais réserver une garde de ${h}H au prix de ${p}€/H.`, 
         senderId: user.uid, 
-        parentId: user.uid, // AJOUTÉ POUR SÉCURITÉ
-        sitterId: s.id,     // AJOUTÉ POUR SÉCURITÉ
+        parentId: user.uid, // Indispensable pour la règle de sécurité
+        sitterId: s.id,     // Indispensable pour la règle de sécurité
         createdAt: Timestamp.now()
       });
 
@@ -621,7 +622,7 @@ const ParentDashboard = ({ profile, user }) => {
                   <p className={`italic mb-8 leading-relaxed text-sm flex-1 line-clamp-3 text-left ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>"{s.bio || "..."}"</p>
                   <div className={`flex justify-between items-center pt-8 border-t mt-auto ${isDark ? 'border-slate-800' : 'border-slate-50'}`}>
                     <span className="text-3xl font-black text-emerald-600 font-sans">{s.price || 0}€<span className="text-[10px] text-slate-400 ml-1">/H</span></span>
-                    <button onClick={() => setSelectedSitter(s)} className={`px-10 py-5 rounded-[2.5rem] font-black text-[10px] uppercase shadow-lg active:scale-95 transition-all hover:bg-emerald-600 tracking-widest ${isDark ? 'bg-indigo-600 text-white' : 'bg-slate-900 text-white'}`}>VOIR PROFIL</button>
+                    <button onClick={() => setSelectedSitter(s)} className={`px-10 py-5 rounded-[2.5rem] font-black text-[10px] uppercase shadow-lg active:scale-95 transition-all bg-slate-900 text-white tracking-widest`}>VOIR PROFIL</button>
                   </div>
                 </div>
               ))}
@@ -730,7 +731,7 @@ const SitterDashboard = ({ user, profile }) => {
         if (d.availability) setAvailability(d.availability);
       }
     });
-    // CORRECTION : Filtre 'where' ajouté pour respecter les règles de sécurité
+    // FILTRE SÉCURITÉ POUR LE SITTER
     const qOffers = query(
       collection(db, 'artifacts', appId, 'public', 'data', 'offers'), 
       where("sitterId", "==", user.uid)
@@ -841,59 +842,7 @@ const SitterDashboard = ({ user, profile }) => {
           </div>
         )}
       </main>
-
-      <div className={`fixed bottom-10 left-1/2 -translate-x-1/2 w-[90%] max-w-md backdrop-blur-xl p-2.5 rounded-[3rem] shadow-2xl flex items-center justify-between z-50 border transition-all ${isDark ? 'bg-slate-900/95 border-slate-800 text-white' : 'bg-slate-900/95 border-white/10 text-slate-100'}`}>
-        <button onClick={() => setActiveTab("search")} className={`flex-1 flex flex-col items-center py-4 rounded-[2.5rem] transition-all duration-300 ${activeTab === "search" ? (isDark ? "bg-indigo-500 text-white" : "bg-emerald-500 text-white") : "text-slate-400 hover:text-white"}`}><Search size={22}/><span className="text-[9px] font-black uppercase mt-1.5 tracking-widest">Trouver</span></button>
-        <button onClick={() => setActiveTab("messages")} className={`flex-1 flex flex-col items-center py-4 rounded-[2.5rem] transition-all duration-300 relative ${activeTab === "messages" ? (isDark ? "bg-indigo-500 text-white" : "bg-emerald-500 text-white") : "text-slate-400 hover:text-white"}`}><MessageSquare size={22}/><span className="text-[9px] font-black uppercase mt-1.5 font-sans tracking-widest">Offres</span>{unreadCount > 0 && <div className="absolute top-3 right-1/3 w-2.5 h-2.5 bg-red-500 rounded-full border-2 border-slate-900 animate-pulse"></div>}</button>
-      </div>
-
-      {selectedSitter && (
-        <div className="fixed inset-0 bg-slate-900/90 backdrop-blur-md z-[100] flex items-end md:items-center justify-center p-4">
-          <div className={`w-full max-w-xl rounded-[4rem] overflow-hidden shadow-2xl animate-in slide-in-from-bottom-10 duration-500 p-10 space-y-10 ${isDark ? 'bg-slate-900 text-white' : 'bg-white text-slate-900'}`}>
-            <div className="flex justify-between items-start">
-              <div className="flex gap-8 items-center text-left">
-                 <div className={`w-28 h-28 rounded-[2.5rem] overflow-hidden border-4 shadow-2xl ${isDark ? 'bg-slate-800 border-slate-700 shadow-slate-950' : 'bg-white border-white shadow-slate-200'}`}><img src={getSPhoto(selectedSitter)} alt="profile" className="w-full h-full object-cover" /></div>
-                 <div className="space-y-1"><h3 className="text-4xl font-black tracking-tighter font-sans leading-none">{selectedSitter.name}</h3><RatingStars rating={selectedSitter.rating || 5} size={20}/></div>
-              </div>
-              <button onClick={() => setSelectedSitter(null)} className={`p-4 rounded-full transition-all ${isDark ? 'bg-slate-800 text-white hover:bg-red-500/20' : 'bg-slate-50 text-slate-800 hover:bg-red-50'}`}><X size={24}/></button>
-            </div>
-            <div className="max-h-[300px] overflow-y-auto space-y-6 pr-2 text-left custom-scrollbar">
-                <div className={`p-10 rounded-[3.5rem] space-y-6 shadow-inner border ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-slate-50 border-slate-100/50 shadow-slate-100'}`}>
-                    <div className="flex justify-between items-center"><span className="font-black text-slate-500 text-[11px] uppercase tracking-widest italic">Lieu</span><span className="font-black uppercase">{selectedSitter.city || "France"}</span></div>
-                    <div className="flex justify-between items-center"><span className="font-black text-slate-500 text-[11px] uppercase tracking-widest italic">Visites</span><span className="font-black uppercase">{selectedSitter.views || 0} 👀</span></div>
-                </div>
-                {sitterReviews.length > 0 && (
-                    <div className="space-y-4">
-                        <h4 className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-500 ml-5 italic">Avis de parents</h4>
-                        {sitterReviews.map((r, idx) => (
-                            <div key={idx} className={`p-6 rounded-[2rem] shadow-sm space-y-3 border ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-100'}`}>
-                                <div className="flex justify-between items-center"><span className="font-black text-xs">{r.parentName}</span><RatingStars rating={r.rating} size={12} /></div>
-                                <p className={`text-xs italic leading-relaxed ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>"{r.text}"</p>
-                            </div>
-                        ))}
-                    </div>
-                )}
-            </div>
-            <div className="space-y-5">
-              <div className="grid grid-cols-2 gap-4 text-left">
-                  <div className="space-y-2">
-                      <label className="text-[10px] font-black uppercase italic ml-4 text-slate-400 font-sans">Prix (€/H)</label>
-                      <input id="neg-p" type="number" defaultValue={selectedSitter.price} className={`w-full p-6 rounded-[2.5rem] outline-none font-black text-2xl shadow-inner ${isDark ? 'bg-slate-800 text-white' : 'bg-slate-50 text-slate-800'}`} />
-                  </div>
-                  <div className="space-y-2">
-                      <label className="text-[10px] font-black uppercase italic ml-4 text-slate-400 font-sans">Temps (H)</label>
-                      <input id="neg-h" type="number" defaultValue="2" className={`w-full p-6 rounded-[2.5rem] outline-none font-black text-2xl shadow-inner ${isDark ? 'bg-slate-800 text-white' : 'bg-slate-50 text-slate-800'}`} />
-                  </div>
-              </div>
-              <button onClick={() => {
-                  const p = document.getElementById('neg-p').value;
-                  const h = document.getElementById('neg-h').value;
-                  handleBooking(selectedSitter, p, h);
-              }} className={`w-full py-8 rounded-[2.5rem] font-black text-sm shadow-xl shadow-emerald-500/20 uppercase tracking-[0.2em] active:scale-95 transition-all ${isDark ? 'bg-indigo-600 text-white' : 'bg-emerald-500 text-white'}`}>ENVOYER LA DEMANDE</button>
-            </div>
-          </div>
-        </div>
-      )}
+      <div className={`fixed bottom-10 left-1/2 -translate-x-1/2 w-[90%] max-w-md backdrop-blur-xl p-2.5 rounded-[3.5rem] shadow-2xl flex items-center justify-between z-50 border ${isDark ? 'bg-slate-900/95 border-slate-800' : 'bg-slate-900/95 border-white/10'}`}><button onClick={() => setActiveTab("profile")} className={`flex-1 flex flex-col items-center py-4 rounded-[2.5rem] transition-all duration-300 ${activeTab === "profile" ? (isDark ? "bg-indigo-500 text-white" : "bg-emerald-500 text-white") : "text-slate-400 hover:text-white"}`}><User size={22}/><span className="text-[9px] font-black uppercase mt-1.5 tracking-widest font-sans">Profil</span></button><button onClick={() => setActiveTab("messages")} className={`flex-1 flex flex-col items-center py-4 rounded-[2.5rem] transition-all duration-300 relative ${activeTab === "messages" ? (isDark ? "bg-indigo-500 text-white" : "bg-emerald-500 text-white") : "text-slate-400 hover:text-white"}`}><MessageSquare size={22}/><span className="text-[9px] font-black uppercase mt-1.5 font-sans tracking-widest">Offres</span>{unreadCount > 0 && <div className="absolute top-3 right-1/3 w-2.5 h-2.5 bg-red-500 rounded-full border-2 border-slate-900 animate-pulse"></div>}</button></div>
     </div>
   );
 };
