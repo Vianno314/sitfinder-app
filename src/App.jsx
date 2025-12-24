@@ -24,7 +24,7 @@ import {
   arrayRemove,
   query,
   orderBy,
-  where // Import nécessaire pour filtrer les offres
+  where
 } from "firebase/firestore";
 // Importations des icônes
 import { 
@@ -126,7 +126,7 @@ const SettingsView = ({ user, profile, onBack, isDark, toggleDark }) => {
         await deleteUser(auth.currentUser);
         alert("Compte supprimé avec succès.");
       } catch (err) {
-        alert("Sécurité : merci de vous reconnecter avant de supprimer.");
+        alert("Sécurité : merci de vous reconnecter avant de supprimer votre compte.");
       } finally {
         setLoading(false);
       }
@@ -270,12 +270,12 @@ const ChatRoom = ({ offer, currentUser, onBack, isDark }) => {
     e.preventDefault();
     if (!newMessage.trim()) return;
     try {
-      // AJOUT DES IDS PARENT/SITTER DANS CHAQUE MESSAGE POUR PASSER LA SÉCURITÉ
+      // CORRECTION: AJOUT DES IDS PARENT/SITTER POUR LA SECURITE
       await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'offers', offer.id, 'messages'), {
         text: newMessage, 
         senderId: currentUser.uid, 
-        parentId: offer.parentId,
-        sitterId: offer.sitterId,
+        parentId: offer.parentId, // INDISPENSABLE POUR LA LECTURE
+        sitterId: offer.sitterId, // INDISPENSABLE POUR LA LECTURE
         createdAt: Timestamp.now()
       });
       await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'offers', offer.id), {
@@ -331,10 +331,7 @@ const ChatRoom = ({ offer, currentUser, onBack, isDark }) => {
           <div key={m.id} className={`flex ${m.senderId === 'system' ? 'justify-center' : m.senderId === currentUser.uid ? 'justify-end' : 'justify-start'}`}>
             <div className={`max-w-[80%] p-4 rounded-[2rem] text-sm shadow-sm relative group ${
               m.senderId === 'system' ? (isDark ? 'bg-slate-800 text-emerald-400 border-slate-700' : 'bg-emerald-50 text-emerald-700 border-emerald-100') + ' text-[10px] font-black uppercase border px-6 py-2 text-center' :
-              // FIX: FORCE COULEUR BLANCHE POUR MES MESSAGES (FOND BLEU)
-              m.senderId === currentUser.uid ? 'bg-blue-600 text-white rounded-br-none' : 
-              // FIX: FORCE COULEUR SOMBRE POUR LES AUTRES MESSAGES (FOND CLAIR)
-              (isDark ? 'bg-slate-800 text-slate-200 border-slate-700' : 'bg-white text-slate-800 border-slate-100') + ' rounded-bl-none border'
+              m.senderId === currentUser.uid ? 'bg-blue-600 text-white rounded-br-none' : (isDark ? 'bg-slate-800 text-slate-200 border-slate-700' : 'bg-white text-slate-700 border-slate-100') + ' rounded-bl-none border'
             }`}> 
                 {m.text} 
                 {translations[m.id] && <p className="text-[10px] mt-2 opacity-70 italic border-t border-white/20 pt-1">{translations[m.id]}</p>}
@@ -489,7 +486,7 @@ const ParentDashboard = ({ profile, user }) => {
       setSitters(snap.docs.map(d => ({ id: d.id, ...d.data() })));
       setLoading(false);
     });
-    // On télécharge uniquement les offres qui me concernent pour passer la sécurité
+    // CORRECTION : Filtre 'where' ajouté pour respecter les règles de sécurité
     const qOffers = query(
       collection(db, 'artifacts', appId, 'public', 'data', 'offers'), 
       where("parentId", "==", user.uid)
@@ -532,7 +529,7 @@ const ParentDashboard = ({ profile, user }) => {
   const handleBooking = async (s, p, h) => {
     try {
       const offerText = `Offre : ${h}h à ${p}€/h`;
-      // CRUCIAL : J'ajoute parentId et sitterId DANS le message pour que les règles de sécurité l'acceptent
+      // CORRECTION : J'ajoute parentId et sitterId DANS le message pour que les règles de sécurité l'acceptent
       const newOffer = await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'offers'), {
         parentId: user.uid, 
         parentName: profile.name, 
@@ -624,7 +621,7 @@ const ParentDashboard = ({ profile, user }) => {
                   <p className={`italic mb-8 leading-relaxed text-sm flex-1 line-clamp-3 text-left ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>"{s.bio || "..."}"</p>
                   <div className={`flex justify-between items-center pt-8 border-t mt-auto ${isDark ? 'border-slate-800' : 'border-slate-50'}`}>
                     <span className="text-3xl font-black text-emerald-600 font-sans">{s.price || 0}€<span className="text-[10px] text-slate-400 ml-1">/H</span></span>
-                    <button onClick={() => setSelectedSitter(s)} className={`px-10 py-5 rounded-[2.5rem] font-black text-[10px] uppercase shadow-lg active:scale-95 transition-all bg-slate-900 text-white tracking-widest`}>VOIR PROFIL</button>
+                    <button onClick={() => setSelectedSitter(s)} className={`px-10 py-5 rounded-[2.5rem] font-black text-[10px] uppercase shadow-lg active:scale-95 transition-all hover:bg-emerald-600 tracking-widest ${isDark ? 'bg-indigo-600 text-white' : 'bg-slate-900 text-white'}`}>VOIR PROFIL</button>
                   </div>
                 </div>
               ))}
@@ -733,7 +730,7 @@ const SitterDashboard = ({ user, profile }) => {
         if (d.availability) setAvailability(d.availability);
       }
     });
-    // FILTRE SÉCURITÉ AJOUTÉ ICI POUR LES SITTERS
+    // CORRECTION : Filtre 'where' ajouté pour respecter les règles de sécurité
     const qOffers = query(
       collection(db, 'artifacts', appId, 'public', 'data', 'offers'), 
       where("sitterId", "==", user.uid)
@@ -845,7 +842,7 @@ const SitterDashboard = ({ user, profile }) => {
         )}
       </main>
 
-      <div className={`fixed bottom-10 left-1/2 -translate-x-1/2 w-[90%] max-w-md backdrop-blur-xl p-2.5 rounded-[3rem] shadow-2xl flex items-center justify-between z-50 border ${isDark ? 'bg-slate-900/95 border-slate-800' : 'bg-slate-900/95 border-white/10'}`}>
+      <div className={`fixed bottom-10 left-1/2 -translate-x-1/2 w-[90%] max-w-md backdrop-blur-xl p-2.5 rounded-[3rem] shadow-2xl flex items-center justify-between z-50 border transition-all ${isDark ? 'bg-slate-900/95 border-slate-800 text-white' : 'bg-slate-900/95 border-white/10 text-slate-100'}`}>
         <button onClick={() => setActiveTab("search")} className={`flex-1 flex flex-col items-center py-4 rounded-[2.5rem] transition-all duration-300 ${activeTab === "search" ? (isDark ? "bg-indigo-500 text-white" : "bg-emerald-500 text-white") : "text-slate-400 hover:text-white"}`}><Search size={22}/><span className="text-[9px] font-black uppercase mt-1.5 tracking-widest">Trouver</span></button>
         <button onClick={() => setActiveTab("messages")} className={`flex-1 flex flex-col items-center py-4 rounded-[2.5rem] transition-all duration-300 relative ${activeTab === "messages" ? (isDark ? "bg-indigo-500 text-white" : "bg-emerald-500 text-white") : "text-slate-400 hover:text-white"}`}><MessageSquare size={22}/><span className="text-[9px] font-black uppercase mt-1.5 font-sans tracking-widest">Offres</span>{unreadCount > 0 && <div className="absolute top-3 right-1/3 w-2.5 h-2.5 bg-red-500 rounded-full border-2 border-slate-900 animate-pulse"></div>}</button>
       </div>
