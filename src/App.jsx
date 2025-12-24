@@ -77,6 +77,16 @@ const RatingStars = ({ rating = 5, size = 14, interactive = false, onRate = null
   </div>
 );
 
+const calculateAge = (birth) => {
+  if (!birth) return null;
+  const today = new Date();
+  const birthDate = new Date(birth);
+  let age = today.getFullYear() - birthDate.getFullYear();
+  const m = today.getMonth() - birthDate.getMonth();
+  if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) age--;
+  return age;
+};
+
 const SplashScreen = ({ message = "La recherche en toute confiance" }) => (
   <div className="flex flex-col items-center justify-center h-screen bg-white font-sans overflow-hidden">
     <div className="relative mb-10 animate-in zoom-in duration-1000">
@@ -508,7 +518,7 @@ const ParentDashboard = ({ profile, user }) => {
   const handleBooking = async (s, p, h) => {
     try {
       const offerText = `Offre : ${h}h à ${p}€/h`;
-      // CRUCIAL : On ajoute tous les marqueurs de messagerie dès la création de l'offre
+      // CORRECTION : Ajout explicite des champs de messagerie pour garantir l'affichage
       const newOffer = await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'offers'), {
         parentId: user.uid, 
         parentName: profile.name, 
@@ -519,12 +529,11 @@ const ParentDashboard = ({ profile, user }) => {
         status: 'pending', 
         createdAt: Timestamp.now(), 
         lastMsg: offerText,
-        lastMsgAt: Timestamp.now(), // Marqueur de tri
-        hasUnread: true, // Marqueur de notification
-        lastSenderId: user.uid // Marqueur d'expéditeur
+        lastMsgAt: Timestamp.now(), // Champ critique pour le tri
+        hasUnread: true,
+        lastSenderId: user.uid
       });
 
-      // On ajoute le premier message dans la sous-collection
       await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'offers', newOffer.id, 'messages'), {
         text: `Bonjour ${s.name}, je souhaiterais réserver une garde de ${h}H au prix de ${p}€/H.`, 
         senderId: user.uid, 
