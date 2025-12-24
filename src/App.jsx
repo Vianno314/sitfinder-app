@@ -24,7 +24,7 @@ import {
   arrayRemove,
   query,
   orderBy,
-  where // IMPORT INDISPENSABLE AJOUTÉ ICI
+  where
 } from "firebase/firestore";
 // Importations des icônes
 import { 
@@ -326,7 +326,10 @@ const ChatRoom = ({ offer, currentUser, onBack, isDark }) => {
           <div key={m.id} className={`flex ${m.senderId === 'system' ? 'justify-center' : m.senderId === currentUser.uid ? 'justify-end' : 'justify-start'}`}>
             <div className={`max-w-[80%] p-4 rounded-[2rem] text-sm shadow-sm relative group ${
               m.senderId === 'system' ? (isDark ? 'bg-slate-800 text-emerald-400 border-slate-700' : 'bg-emerald-50 text-emerald-700 border-emerald-100') + ' text-[10px] font-black uppercase border px-6 py-2 text-center' :
-              m.senderId === currentUser.uid ? 'bg-blue-600 text-white rounded-br-none' : (isDark ? 'bg-slate-800 text-slate-200 border-slate-700' : 'bg-white text-slate-700 border-slate-100') + ' rounded-bl-none border'
+              // CORRECTION ICI : Ajout de 'text-white' pour forcer la couleur blanche sur fond bleu
+              m.senderId === currentUser.uid ? 'bg-blue-600 text-white rounded-br-none' : 
+              // CORRECTION ICI : Ajout de 'text-slate-800' pour forcer la couleur sombre sur fond clair
+              (isDark ? 'bg-slate-800 text-slate-200 border-slate-700' : 'bg-white text-slate-800 border-slate-100') + ' rounded-bl-none border'
             }`}> 
                 {m.text} 
                 {translations[m.id] && <p className="text-[10px] mt-2 opacity-70 italic border-t border-white/20 pt-1">{translations[m.id]}</p>}
@@ -475,14 +478,12 @@ const ParentDashboard = ({ profile, user }) => {
   const [sitterReviews, setSitterReviews] = useState([]);
   const [isDark, setIsDark] = useState(localStorage.getItem('dark') === 'true');
 
-  // CORRECTION MAJEURE ICI : on utilise 'where' pour filtrer côté serveur
   useEffect(() => {
     localStorage.setItem('dark', isDark);
     const unsubSitters = onSnapshot(collection(db, 'artifacts', appId, 'public', 'data', 'sitters'), (snap) => {
       setSitters(snap.docs.map(d => ({ id: d.id, ...d.data() })));
       setLoading(false);
     });
-    // On ne télécharge que les offres du parent connecté
     const qOffers = query(
       collection(db, 'artifacts', appId, 'public', 'data', 'offers'), 
       where("parentId", "==", user.uid)
@@ -525,7 +526,6 @@ const ParentDashboard = ({ profile, user }) => {
   const handleBooking = async (s, p, h) => {
     try {
       const offerText = `Offre : ${h}h à ${p}€/h`;
-      // AJOUT DES CHAMPS DE MESSAGERIE ICI
       const newOffer = await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'offers'), {
         parentId: user.uid, 
         parentName: profile.name, 
@@ -615,7 +615,7 @@ const ParentDashboard = ({ profile, user }) => {
                   <p className={`italic mb-8 leading-relaxed text-sm flex-1 line-clamp-3 text-left ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>"{s.bio || "..."}"</p>
                   <div className={`flex justify-between items-center pt-8 border-t mt-auto ${isDark ? 'border-slate-800' : 'border-slate-50'}`}>
                     <span className="text-3xl font-black text-emerald-600 font-sans">{s.price || 0}€<span className="text-[10px] text-slate-400 ml-1">/H</span></span>
-                    <button onClick={() => setSelectedSitter(s)} className={`px-10 py-5 rounded-[2.5rem] font-black text-[10px] uppercase shadow-lg active:scale-95 transition-all bg-slate-900 text-white tracking-widest`}>VOIR PROFIL</button>
+                    <button onClick={() => setSelectedSitter(s)} className={`px-10 py-5 rounded-[2.5rem] font-black text-[10px] uppercase shadow-lg active:scale-95 transition-all hover:bg-emerald-600 tracking-widest ${isDark ? 'bg-indigo-600 text-white' : 'bg-slate-900 text-white'}`}>VOIR PROFIL</button>
                   </div>
                 </div>
               ))}
@@ -724,7 +724,7 @@ const SitterDashboard = ({ user, profile }) => {
         if (d.availability) setAvailability(d.availability);
       }
     });
-    // CORRECTION ICI AUSSI : FILTRAGE COTÉ SERVEUR
+    // CORRECTION : Filtre 'where' ajouté pour respecter les règles de sécurité
     const qOffers = query(
       collection(db, 'artifacts', appId, 'public', 'data', 'offers'), 
       where("sitterId", "==", user.uid)
