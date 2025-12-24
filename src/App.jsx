@@ -77,16 +77,6 @@ const RatingStars = ({ rating = 5, size = 14, interactive = false, onRate = null
   </div>
 );
 
-const calculateAge = (birth) => {
-  if (!birth) return null;
-  const today = new Date();
-  const birthDate = new Date(birth);
-  let age = today.getFullYear() - birthDate.getFullYear();
-  const m = today.getMonth() - birthDate.getMonth();
-  if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) age--;
-  return age;
-};
-
 const SplashScreen = ({ message = "La recherche en toute confiance" }) => (
   <div className="flex flex-col items-center justify-center h-screen bg-white font-sans overflow-hidden">
     <div className="relative mb-10 animate-in zoom-in duration-1000">
@@ -517,15 +507,32 @@ const ParentDashboard = ({ profile, user }) => {
 
   const handleBooking = async (s, p, h) => {
     try {
+      const offerText = `Offre : ${h}h à ${p}€/h`;
+      // CRUCIAL : On ajoute tous les marqueurs de messagerie dès la création de l'offre
       const newOffer = await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'offers'), {
-        parentId: user.uid, parentName: profile.name, sitterId: s.id, sitterName: s.name,
-        price: p, hours: h, status: 'pending', createdAt: Timestamp.now(), lastMsg: `Offre : ${h}h à ${p}€/h`,
-        lastMsgAt: Timestamp.now(), hasUnread: true, lastSenderId: user.uid // CORRECTION : Ajout des champs pour la messagerie
+        parentId: user.uid, 
+        parentName: profile.name, 
+        sitterId: s.id, 
+        sitterName: s.name,
+        price: p, 
+        hours: h, 
+        status: 'pending', 
+        createdAt: Timestamp.now(), 
+        lastMsg: offerText,
+        lastMsgAt: Timestamp.now(), // Marqueur de tri
+        hasUnread: true, // Marqueur de notification
+        lastSenderId: user.uid // Marqueur d'expéditeur
       });
+
+      // On ajoute le premier message dans la sous-collection
       await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'offers', newOffer.id, 'messages'), {
-        text: `Bonjour ${s.name}, je souhaiterais réserver une garde de ${h}H au prix de ${p}€/H.`, senderId: user.uid, createdAt: Timestamp.now()
+        text: `Bonjour ${s.name}, je souhaiterais réserver une garde de ${h}H au prix de ${p}€/H.`, 
+        senderId: user.uid, 
+        createdAt: Timestamp.now()
       });
-      setSelectedSitter(null); setActiveTab("messages");
+
+      setSelectedSitter(null); 
+      setActiveTab("messages");
     } catch (e) { console.error(e); }
   };
 
@@ -698,7 +705,6 @@ const SitterDashboard = ({ user, profile }) => {
     const unsubPublic = onSnapshot(doc(db, 'artifacts', appId, 'public', 'data', 'sitters', user.uid), (snap) => {
       if (snap.exists()) {
         const d = snap.data(); setBio(d.bio || ""); setPrice(d.price || ""); setBirthDate(d.birthDate || ""); setCity(d.city || ""); setCvName(d.cvName || ""); setViews(d.views || 0);
-        if (d.availability) setAvailability(d.availability);
       }
     });
     const unsubOffers = onSnapshot(collection(db, 'artifacts', appId, 'public', 'data', 'offers'), (snap) => {
@@ -714,13 +720,6 @@ const SitterDashboard = ({ user, profile }) => {
       return offers.filter(o => o.status === 'accepted' || o.status === 'reviewed').reduce((acc, o) => acc + ( (parseFloat(o.price) || 0) * (parseFloat(o.hours) || 1) ), 0);
   }, [offers]);
 
-  const [availability, setAvailability] = useState({
-    Lundi: { active: false, start: "08:00", end: "18:00" }, Mardi: { active: false, start: "08:00", end: "18:00" },
-    Mercredi: { active: false, start: "08:00", end: "18:00" }, Jeudi: { active: false, start: "08:00", end: "18:00" },
-    Vendredi: { active: false, start: "08:00", end: "18:00" }, Samedi: { active: false, start: "08:00", end: "18:00" },
-    Dimanche: { active: false, start: "08:00", end: "18:00" },
-  });
-
   const unreadCount = offers.filter(o => o.hasUnread && o.lastSenderId !== user.uid).length;
 
   const handleSave = async () => {
@@ -729,7 +728,7 @@ const SitterDashboard = ({ user, profile }) => {
     try {
       await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'sitters', user.uid), {
         name: profile.name, avatarStyle: profile.avatarStyle || 'avataaars', photoURL: profile.photoURL || "", useCustomPhoto: !!profile.useCustomPhoto, views,
-        phone: profile.phone || "", bio: bio.trim(), price, birthDate, availability, cvName, hasCV: !!cvName, city, rating: 5, uid: user.uid, updatedAt: new Date().toISOString()
+        phone: profile.phone || "", bio: bio.trim(), price, birthDate, cvName, hasCV: !!cvName, city, rating: 5, uid: user.uid, updatedAt: new Date().toISOString()
       });
       setSaveStatus("PUBLIÉ ! ✨"); setTimeout(() => setSaveStatus(""), 4000);
     } catch(e) { console.error(e); } finally { setLoading(false); }
@@ -787,25 +786,6 @@ const SitterDashboard = ({ user, profile }) => {
                 <div className="space-y-3 text-left"><label className="text-[11px] font-black text-blue-300 uppercase tracking-widest ml-4 font-sans italic">Naissance</label><input type="date" className={`w-full p-8 rounded-[2.5rem] font-bold outline-none shadow-inner border border-transparent ${isDark ? 'bg-slate-800 text-white' : 'bg-slate-50 text-slate-800'}`} value={birthDate} onChange={(e) => setBirthDate(e.target.value)} /></div>
                 <div className="space-y-3 text-left"><label className="text-[11px] font-black text-blue-300 uppercase tracking-widest ml-4 font-sans italic">Ma Bio Professionnelle</label><textarea placeholder="Expériences..." className={`w-full p-10 rounded-[3.5rem] h-64 font-bold outline-none shadow-inner resize-none leading-relaxed ${isDark ? 'bg-slate-800 text-white' : 'bg-slate-50 text-slate-800'}`} value={bio} onChange={(e) => setBio(e.target.value)} /></div>
                 <div className="space-y-3 text-left"><label className="text-[11px] font-black text-blue-300 uppercase tracking-widest ml-4 font-sans italic">Mon CV</label><input type="file" id="cv-f" className="hidden" onChange={(e) => setCvName(e.target.files[0]?.name || "")} accept=".pdf,image/*" /><label htmlFor="cv-f" className={`w-full flex items-center justify-between p-8 border-2 border-dashed rounded-[2.5rem] cursor-pointer hover:bg-emerald-500/5 transition-all shadow-inner ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-slate-50 border-slate-200'}`}><div className="flex items-center gap-6"><div className="p-5 bg-white rounded-3xl text-blue-400 shadow-md transition-transform group-hover:scale-110"><FileUp size={32}/></div><p className={`text-sm font-black ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>{cvName || "Joindre CV"}</p></div>{cvName && <CheckCircle2 className="text-emerald-500" size={32}/>}</label></div>
-                
-                <div className="space-y-8 pt-4">
-                   <div className="flex items-center gap-4 px-2"><div className="p-3 bg-blue-50 rounded-2xl text-blue-500 shadow-sm"><Calendar size={26}/></div><h3 className={`text-sm font-black uppercase tracking-widest italic font-sans leading-none ${isDark ? 'text-white' : 'text-slate-800'}`}>Mes Disponibilités Bento</h3></div>
-                   <div className="grid gap-5">
-                       {Object.entries(availability).map(([day, data]) => (
-                           <div key={day} className={`flex flex-col md:flex-row items-center gap-6 p-8 rounded-[3rem] border transition-all duration-300 ${data.active ? (isDark ? 'bg-slate-800 border-indigo-500/30 shadow-2xl' : 'bg-white border-blue-100 shadow-xl') : 'bg-transparent border-transparent opacity-40'}`}>
-                               <button onClick={() => setAvailability(p => ({...p, [day]: {...p[day], active: !p[day].active}}))} className={`w-full md:w-40 py-5 rounded-2xl font-black text-[10px] uppercase tracking-widest ${data.active ? 'bg-emerald-500 text-white shadow-lg' : 'bg-slate-200 text-slate-400 hover:bg-slate-300'}`}>{day}</button>
-                               {data.active && (
-                                   <div className="flex items-center gap-5 animate-in slide-in-from-left-4 duration-300 flex-1">
-                                       <div className={`flex items-center gap-4 px-8 py-4 rounded-3xl text-[11px] font-black border shadow-inner ${isDark ? 'bg-slate-900 border-slate-700 text-slate-300' : 'bg-blue-50/50 border-blue-50 text-slate-600'}`}>
-                                           <Clock size={18} className="text-blue-400" /><input type="time" className="bg-transparent border-none outline-none" value={data.start} onChange={(e) => setAvailability(p => ({...p, [day]: {...p[day], start: e.target.value}}))} /><span className="text-slate-300 mx-3 text-sm">à</span><input type="time" className="bg-transparent border-none outline-none" value={data.end} onChange={(e) => setAvailability(p => ({...p, [day]: {...p[day], end: e.target.value}}))} />
-                                       </div>
-                                   </div>
-                               )}
-                           </div>
-                       ))}
-                   </div>
-                </div>
-
                 <button onClick={handleSave} disabled={loading} className={`w-full py-10 rounded-[3.5rem] font-black shadow-2xl flex justify-center items-center gap-4 active:scale-95 transition-all uppercase tracking-[0.4em] text-sm hover:brightness-110 shadow-slate-300 ${isDark ? 'bg-indigo-600 text-white' : 'bg-slate-900 text-white'}`}>{loading ? <Loader2 className="animate-spin" size={32}/> : (saveStatus || "PUBLIER MON PROFIL")}</button>
             </div>
           </div>
