@@ -126,7 +126,7 @@ const SettingsView = ({ user, profile, onBack, isDark, toggleDark }) => {
         await deleteUser(auth.currentUser);
         alert("Compte supprimé avec succès.");
       } catch (err) {
-        alert("Sécurité : merci de vous reconnecter avant de supprimer.");
+        alert("Sécurité : merci de vous reconnecter avant de supprimer votre compte.");
       } finally {
         setLoading(false);
       }
@@ -270,12 +270,11 @@ const ChatRoom = ({ offer, currentUser, onBack, isDark }) => {
     e.preventDefault();
     if (!newMessage.trim()) return;
     try {
-      // CORRECTION: AJOUT DES IDS PARENT/SITTER POUR QUE LA LECTURE SOIT AUTORISÉE
       await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'offers', offer.id, 'messages'), {
         text: newMessage, 
         senderId: currentUser.uid, 
-        parentId: offer.parentId, 
-        sitterId: offer.sitterId,
+        parentId: offer.parentId, // ESSENTIEL
+        sitterId: offer.sitterId, // ESSENTIEL
         createdAt: Timestamp.now()
       });
       await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'offers', offer.id), {
@@ -293,7 +292,13 @@ const ChatRoom = ({ offer, currentUser, onBack, isDark }) => {
     try {
       await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'offers', offer.id), { status });
       const text = status === 'accepted' ? "✨ Offre acceptée ! Appelez-vous pour caler les détails." : "L'offre a été refusée.";
-      await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'offers', offer.id, 'messages'), { text, senderId: 'system', createdAt: Timestamp.now() });
+      await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'offers', offer.id, 'messages'), { 
+        text, 
+        senderId: 'system', 
+        parentId: offer.parentId, // ESSENTIEL
+        sitterId: offer.sitterId, // ESSENTIEL
+        createdAt: Timestamp.now() 
+      });
     } catch (e) { console.error(e); }
   };
 
@@ -486,7 +491,7 @@ const ParentDashboard = ({ profile, user }) => {
       setSitters(snap.docs.map(d => ({ id: d.id, ...d.data() })));
       setLoading(false);
     });
-    // FILTRE INDISPENSABLE POUR LA SECURITE
+    // FILTRE SÉCURISÉ POUR PARENT
     const qOffers = query(
       collection(db, 'artifacts', appId, 'public', 'data', 'offers'), 
       where("parentId", "==", user.uid)
@@ -529,7 +534,7 @@ const ParentDashboard = ({ profile, user }) => {
   const handleBooking = async (s, p, h) => {
     try {
       const offerText = `Offre : ${h}h à ${p}€/h`;
-      // ICI : ON AJOUTE LES CHAMPS POUR LA SECURITE ET LE TRI
+      // CRUCIAL : On ajoute tous les marqueurs de messagerie dès la création de l'offre
       const newOffer = await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'offers'), {
         parentId: user.uid, 
         parentName: profile.name, 
@@ -545,12 +550,12 @@ const ParentDashboard = ({ profile, user }) => {
         lastSenderId: user.uid
       });
 
-      // ICI : ON AJOUTE LES ID DE PARENT ET SITTER DANS LE MESSAGE POUR LA SÉCURITÉ
+      // CRUCIAL : On ajoute les ID de sécurité dans le premier message
       await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'offers', newOffer.id, 'messages'), {
         text: `Bonjour ${s.name}, je souhaiterais réserver une garde de ${h}H au prix de ${p}€/H.`, 
         senderId: user.uid, 
-        parentId: user.uid, // Indispensable pour la règle de sécurité
-        sitterId: s.id,     // Indispensable pour la règle de sécurité
+        parentId: user.uid, // Indispensable pour la sécurité
+        sitterId: s.id,     // Indispensable pour la sécurité
         createdAt: Timestamp.now()
       });
 
@@ -622,7 +627,7 @@ const ParentDashboard = ({ profile, user }) => {
                   <p className={`italic mb-8 leading-relaxed text-sm flex-1 line-clamp-3 text-left ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>"{s.bio || "..."}"</p>
                   <div className={`flex justify-between items-center pt-8 border-t mt-auto ${isDark ? 'border-slate-800' : 'border-slate-50'}`}>
                     <span className="text-3xl font-black text-emerald-600 font-sans">{s.price || 0}€<span className="text-[10px] text-slate-400 ml-1">/H</span></span>
-                    <button onClick={() => setSelectedSitter(s)} className={`px-10 py-5 rounded-[2.5rem] font-black text-[10px] uppercase shadow-lg active:scale-95 transition-all bg-slate-900 text-white tracking-widest`}>VOIR PROFIL</button>
+                    <button onClick={() => setSelectedSitter(s)} className={`px-10 py-5 rounded-[2.5rem] font-black text-[10px] uppercase shadow-lg active:scale-95 transition-all hover:bg-emerald-600 tracking-widest ${isDark ? 'bg-indigo-600 text-white' : 'bg-slate-900 text-white'}`}>VOIR PROFIL</button>
                   </div>
                 </div>
               ))}
