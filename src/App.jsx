@@ -409,7 +409,6 @@ const AuthScreen = () => {
   const [remember, setRemember] = useState(false);
   const [loading, setLoading] = useState(false);
 
-  // CHARGEMENT AUTO DES IDENTIFIANTS
   useEffect(() => {
     const savedEmail = localStorage.getItem('sitfinder_email');
     const savedPass = localStorage.getItem('sitfinder_pass');
@@ -424,7 +423,6 @@ const AuthScreen = () => {
     e.preventDefault(); 
     setLoading(true);
 
-    // GESTION LOCALSTORAGE
     if (remember) {
         localStorage.setItem('sitfinder_email', email);
         localStorage.setItem('sitfinder_pass', password);
@@ -703,7 +701,7 @@ const ParentDashboard = ({ profile, user }) => {
             </div>
           </>
         ) : (
-          <div className="space-y-8"> {/* ANIMATION REMOVED TO FIX MODAL */}
+          <div className="space-y-8 animate-in fade-in duration-500">
             <h2 className={`text-4xl font-black italic uppercase font-sans tracking-tight leading-none text-left ${isDark ? 'text-white' : 'text-slate-800'}`}>Discussions</h2>
             <div className="grid gap-6">
               {offers.length === 0 ? <div className={`py-24 text-center rounded-[4rem] border-2 border-dashed italic text-xl shadow-inner ${isDark ? 'bg-slate-900 border-slate-800 text-slate-500' : 'bg-white border-slate-100 text-slate-400'}`}>Aucune offre active...</div>
@@ -722,11 +720,10 @@ const ParentDashboard = ({ profile, user }) => {
         )}
       </main>
 
-      <div className={`fixed bottom-10 left-1/2 -translate-x-1/2 w-[90%] max-w-md backdrop-blur-xl p-2.5 rounded-[3rem] shadow-2xl flex items-center justify-between z-50 border transition-all ${isDark ? 'bg-slate-900/95 border-slate-800 text-white' : 'bg-slate-900/95 border-white/10 text-slate-100'}`}>
+      <div className={`fixed bottom-10 left-1/2 -translate-x-1/2 w-[90%] max-w-md backdrop-blur-xl p-2.5 rounded-[3rem] shadow-2xl flex items-center justify-between z-50 border ${isDark ? 'bg-slate-900/95 border-slate-800' : 'bg-slate-900/95 border-white/10'}`}>
         <button onClick={() => setActiveTab("search")} className={`flex-1 flex flex-col items-center py-4 rounded-[2.5rem] transition-all duration-300 ${activeTab === "search" ? (isDark ? "bg-indigo-500 text-white" : "bg-emerald-500 text-white") : "text-slate-400 hover:text-white"}`}><Search size={22}/><span className="text-[9px] font-black uppercase mt-1.5 tracking-widest">Trouver</span></button>
         <button onClick={() => setActiveTab("messages")} className={`flex-1 flex flex-col items-center py-4 rounded-[2.5rem] transition-all duration-300 relative ${activeTab === "messages" ? (isDark ? "bg-indigo-500 text-white" : "bg-emerald-500 text-white") : "text-slate-400 hover:text-white"}`}><MessageSquare size={22}/><span className="text-[9px] font-black uppercase mt-1.5 font-sans tracking-widest">Offres</span>{unreadCount > 0 && <div className="absolute top-3 right-1/3 w-2.5 h-2.5 bg-red-500 rounded-full border-2 border-slate-900 animate-pulse"></div>}</button></div>
     
-      {/* MODALE DU PROFIL SELECTIONNÉ */}
       {selectedSitter && (
         <div className="fixed inset-0 bg-slate-900/90 backdrop-blur-md z-[100] flex items-center justify-center p-6 text-slate-900">
           <div className="bg-white w-full max-w-xl rounded-[4rem] overflow-hidden shadow-2xl animate-in slide-in-from-bottom-10 duration-500 p-10 space-y-10">
@@ -741,7 +738,6 @@ const ParentDashboard = ({ profile, user }) => {
                 <div className="p-10 rounded-[3.5rem] space-y-6 shadow-inner border bg-slate-50 border-slate-100/50 shadow-slate-100">
                     <div className="flex justify-between items-center"><span className="font-black text-slate-500 text-[11px] uppercase tracking-widest italic">Lieu</span><span className="font-black uppercase">{selectedSitter.city || "France"}</span></div>
                     <div className="flex justify-between items-center"><span className="font-black text-slate-500 text-[11px] uppercase tracking-widest italic">Visites</span><span className="font-black uppercase">{selectedSitter.views || 0} 👀</span></div>
-                    {/* AJOUT AFFICHAGE LEVEL DANS MODALE */}
                     {selectedSitter.level && <div className="flex justify-between items-center"><span className="font-black text-slate-500 text-[11px] uppercase tracking-widest italic">Niveau</span><span className="font-black uppercase text-indigo-500">NIV {selectedSitter.level} 👑</span></div>}
                 </div>
                 {sitterReviews.length > 0 && (
@@ -809,7 +805,6 @@ const SitterDashboard = ({ user, profile }) => {
         if (d.availability) setAvailability(d.availability);
       }
     });
-    // FILTRE SÉCURITÉ POUR LE SITTER
     const qOffers = query(
       collection(db, 'artifacts', appId, 'public', 'data', 'offers'), 
       where("sitterId", "==", user.uid)
@@ -957,7 +952,7 @@ const SitterDashboard = ({ user, profile }) => {
 };
 
 // ==========================================
-// 8. LOGIQUE RACINE
+// 8. LOGIQUE RACINE (CORRECTION BUG CONNEXION)
 // ==========================================
 
 export default function App() {
@@ -967,20 +962,40 @@ export default function App() {
 
   useEffect(() => {
     let unsubP = null;
-    const unsubA = onAuthStateChanged(auth, (u) => {
+    
+    // Timer minimum pour le splash screen (pour l'effet visuel)
+    const minSplashTimer = new Promise(resolve => setTimeout(resolve, 2000));
+    
+    const unsubA = onAuthStateChanged(auth, async (u) => {
       setUser(u);
+      
       if (u) {
-        unsubP = onSnapshot(doc(db, 'artifacts', appId, 'users', u.uid, 'settings', 'profile'), (snap) => {
-          if (snap.exists()) setProfile(snap.data()); else setProfile(null);
+        // Si utilisateur connecté, on attend son profil avant d'enlever le splash
+        unsubP = onSnapshot(doc(db, 'artifacts', appId, 'users', u.uid, 'settings', 'profile'), async (snap) => {
+          if (snap.exists()) {
+              setProfile(snap.data());
+          } else {
+              setProfile(null);
+          }
+          // On attend la fin du timer visuel avant d'afficher l'app
+          await minSplashTimer;
+          setInit(true);
         });
-      } else { setProfile(null); if (unsubP) unsubP(); }
+      } else {
+        // Si pas d'utilisateur, on attend juste le timer visuel
+        setProfile(null);
+        if (unsubP) unsubP();
+        await minSplashTimer;
+        setInit(true);
+      }
     });
-    const timer = setTimeout(() => setInit(true), 2500);
-    return () => { unsubA(); if (unsubP) unsubP(); clearTimeout(timer); };
+
+    return () => { unsubA(); if (unsubP) unsubP(); };
   }, []);
 
   if (!init) return <SplashScreen />;
   if (!user) return <AuthScreen />;
+  // On n'arrive ici que si init=true, donc le profil a été chargé (ou confirmé inexistant)
   if (user && !profile) return <CompleteProfileScreen uid={user.uid} />;
   return profile.role === "parent" ? <ParentDashboard profile={profile} user={user} /> : <SitterDashboard user={user} profile={profile} />;
 }
