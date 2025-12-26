@@ -405,16 +405,38 @@ const AuthScreen = () => {
   const [password, setPassword] = useState("");
   const [name, setName] = useState("");
   const [role, setRole] = useState("parent");
-  const [level, setLevel] = useState("1"); // AJOUT : State pour le niveau
+  const [level, setLevel] = useState("1");
+  const [remember, setRemember] = useState(false); // AJOUT STATE REMEMBER
   const [loading, setLoading] = useState(false);
 
+  // AJOUT : CHARGEMENT AUTO DES IDENTIFIANTS
+  useEffect(() => {
+    const savedEmail = localStorage.getItem('sitfinder_email');
+    const savedPass = localStorage.getItem('sitfinder_pass');
+    if (savedEmail && savedPass) {
+        setEmail(savedEmail);
+        setPassword(savedPass);
+        setRemember(true);
+    }
+  }, []);
+
   const handleAuth = async (e) => {
-    e.preventDefault(); setLoading(true);
+    e.preventDefault(); 
+    setLoading(true);
+
+    // AJOUT : SAUVEGARDE OU SUPPRESSION DU LOCALSTORAGE
+    if (remember) {
+        localStorage.setItem('sitfinder_email', email);
+        localStorage.setItem('sitfinder_pass', password);
+    } else {
+        localStorage.removeItem('sitfinder_email');
+        localStorage.removeItem('sitfinder_pass');
+    }
+
     try {
       if (isRegister) {
         if (password.length < 6) throw new Error("Mot de passe trop court.");
         const cred = await createUserWithEmailAndPassword(auth, email, password);
-        // AJOUT : Sauvegarde du niveau dans le profil initial
         await setDoc(doc(db, 'artifacts', appId, 'users', cred.user.uid, 'settings', 'profile'), {
           uid: cred.user.uid, name: name.trim() || "User", role, email, level: role === 'sitter' ? level : null, avatarStyle: "avataaars", favorites: [], createdAt: new Date().toISOString()
         });
@@ -435,13 +457,21 @@ const AuthScreen = () => {
           {isRegister && <input required placeholder="Ton Prénom" className="w-full p-5 bg-slate-50 rounded-2xl outline-none font-bold shadow-inner" value={name} onChange={(e) => setName(e.target.value)} />}
           <input required type="email" placeholder="Email" className="w-full p-5 bg-slate-50 rounded-2xl outline-none font-bold shadow-inner" value={email} onChange={(e) => setEmail(e.target.value)} />
           <input required type="password" placeholder="Mot de passe" className="w-full p-5 bg-slate-50 rounded-2xl outline-none font-bold shadow-inner" value={password} onChange={(e) => setPassword(e.target.value)} />
+          
+          {/* AJOUT CASE A COCHER SE SOUVENIR DE MOI */}
+          {!isRegister && (
+             <div className="flex items-center gap-2 pl-2">
+                 <input type="checkbox" id="rem" checked={remember} onChange={(e) => setRemember(e.target.checked)} className="w-5 h-5 accent-emerald-500 rounded-lg"/>
+                 <label htmlFor="rem" className="text-xs font-bold text-slate-500 uppercase tracking-wide cursor-pointer">Se souvenir de moi</label>
+             </div>
+          )}
+
           {isRegister && (
             <>
             <div className="grid grid-cols-2 gap-3 p-1 bg-slate-100 rounded-2xl mt-4">
               <button type="button" onClick={() => setRole("parent")} className={`py-3 rounded-xl font-black text-[10px] ${role === "parent" ? "bg-white shadow text-emerald-600" : "text-slate-400"}`}>PARENT</button>
               <button type="button" onClick={() => setRole("sitter")} className={`py-3 rounded-xl font-black text-[10px] ${role === "sitter" ? "bg-white shadow text-blue-600" : "text-slate-400"}`}>SITTER</button>
             </div>
-            {/* AJOUT : SÉLECTION DU NIVEAU POUR LES SITTERS */}
             {role === "sitter" && (
               <div className="grid grid-cols-3 gap-1 mt-2">
                 <button type="button" onClick={() => setLevel("1")} className={`py-2 rounded-lg text-[10px] font-black uppercase transition-all ${level === "1" ? "bg-slate-900 text-white" : "bg-slate-200 text-slate-500"}`}>NIV 1 🍼<br/><span className="text-[8px] opacity-70 font-normal">Garde+Repas</span></button>
@@ -468,7 +498,7 @@ const AuthScreen = () => {
 const CompleteProfileScreen = ({ uid }) => {
   const [name, setName] = useState("");
   const [role, setRole] = useState("parent");
-  const [level, setLevel] = useState("1"); // AJOUT State
+  const [level, setLevel] = useState("1");
   const [loading, setLoading] = useState(false);
   const finish = async () => {
     if (!name.trim()) return;
@@ -489,7 +519,6 @@ const CompleteProfileScreen = ({ uid }) => {
           <button onClick={() => setRole("parent")} className={`py-4 rounded-xl font-black text-[10px] ${role === "parent" ? "bg-white shadow text-emerald-600" : "text-slate-400"}`}>PARENT</button>
           <button onClick={() => setRole("sitter")} className={`py-4 rounded-xl font-black text-[10px] ${role === "sitter" ? "bg-white shadow text-blue-600" : "text-slate-400"}`}>SITTER</button>
         </div>
-        {/* AJOUT SÉLECTION LEVEL */}
         {role === "sitter" && (
               <div className="grid grid-cols-3 gap-1 mt-2">
                 <button type="button" onClick={() => setLevel("1")} className={`py-2 rounded-lg text-[10px] font-black uppercase transition-all ${level === "1" ? "bg-slate-900 text-white" : "bg-slate-200 text-slate-500"}`}>NIV 1 🍼</button>
@@ -572,7 +601,6 @@ const ParentDashboard = ({ profile, user }) => {
   const handleBooking = async (s, p, h) => {
     try {
       const offerText = `Offre : ${h}h à ${p}€/h`;
-      // CRUCIAL : On ajoute tous les marqueurs de messagerie dès la création de l'offre
       const newOffer = await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'offers'), {
         parentId: user.uid, 
         parentName: profile.name, 
@@ -588,12 +616,11 @@ const ParentDashboard = ({ profile, user }) => {
         lastSenderId: user.uid
       });
 
-      // CRUCIAL : On ajoute les ID de sécurité dans le premier message
       await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'offers', newOffer.id, 'messages'), {
         text: `Bonjour ${s.name}, je souhaiterais réserver une garde de ${h}H au prix de ${p}€/H.`, 
         senderId: user.uid, 
-        parentId: user.uid, // Indispensable pour la sécurité
-        sitterId: s.id,     // Indispensable pour la sécurité
+        parentId: user.uid,
+        sitterId: s.id,
         createdAt: Timestamp.now()
       });
 
@@ -615,7 +642,7 @@ const ParentDashboard = ({ profile, user }) => {
   const getSPhoto = (s) => (s.useCustomPhoto && s.photoURL) ? s.photoURL : `https://api.dicebear.com/7.x/${s.avatarStyle || 'avataaars'}/svg?seed=${s.name}`;
 
   return (
-    <div className={`min-h-screen font-sans pb-32 ${isDark ? 'bg-slate-950 text-white' : 'bg-slate-50 text-slate-800'}`}> {/* ANIMATION REMOVED */}
+    <div className={`min-h-screen font-sans pb-32 ${isDark ? 'bg-slate-950 text-white' : 'bg-slate-50 text-slate-800'}`}>
       <nav className={`p-6 flex justify-between items-center sticky top-0 z-40 border-b shadow-sm ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-100'}`}>
         <div className="flex items-center gap-3"><SitFinderLogo className="w-10 h-10" glow={false} /><span className="font-black italic text-2xl uppercase tracking-tight">SIT<span className="text-emerald-500">FINDER</span></span></div>
         <div className="flex items-center gap-2">
@@ -628,7 +655,7 @@ const ParentDashboard = ({ profile, user }) => {
         </div>
       </nav>
 
-      <main className="p-6 max-w-7xl mx-auto space-y-8 animate-in fade-in duration-500"> {/* ANIMATION MOVED HERE */}
+      <main className="p-6 max-w-7xl mx-auto space-y-8 animate-in fade-in duration-500">
         {activeTab === "search" ? (
           <>
             <div className={`p-10 md:p-14 rounded-[3.5rem] shadow-2xl relative overflow-hidden group transition-all duration-700 ${isDark ? 'bg-gradient-to-br from-indigo-600 to-slate-900' : 'bg-gradient-to-br from-emerald-500 to-blue-700'}`}>
@@ -660,7 +687,6 @@ const ParentDashboard = ({ profile, user }) => {
                   <button onClick={() => toggleFavorite(s.id)} className={`absolute top-8 right-8 p-3 rounded-2xl transition-all ${profile.favorites?.includes(s.id) ? 'bg-red-50 text-red-500' : (isDark ? 'bg-slate-800 text-slate-600' : 'bg-slate-50 text-slate-300')} shadow-md`}><Heart size={20} fill={profile.favorites?.includes(s.id) ? "currentColor" : "none"}/></button>
                   <div className="flex flex-col gap-2.5 mb-8">
                     {(s.hasCV) && <div className="flex items-center gap-2 bg-emerald-50 text-emerald-600 px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest w-fit border border-emerald-100"><ShieldCheck size={10}/> VÉRIFIÉ</div>}
-                    {/* AJOUT AFFICHAGE LEVEL */}
                     {s.level && <div className="flex items-center gap-2 bg-indigo-50 text-indigo-600 px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest w-fit border border-indigo-100 mt-1">NIV {s.level} 👑</div>}
                   </div>
                   <div className={`w-28 h-28 rounded-[2.5rem] mb-6 overflow-hidden border-4 shadow-xl ring-4 group-hover/card:scale-110 transition-transform duration-500 ${isDark ? 'bg-slate-800 border-slate-700 ring-slate-900' : 'bg-slate-50 border-white ring-slate-50/50'}`}><img src={getSPhoto(s)} alt="profile" className="w-full h-full object-cover" /></div>
@@ -697,8 +723,9 @@ const ParentDashboard = ({ profile, user }) => {
 
       <div className={`fixed bottom-10 left-1/2 -translate-x-1/2 w-[90%] max-w-md backdrop-blur-xl p-2.5 rounded-[3rem] shadow-2xl flex items-center justify-between z-50 border ${isDark ? 'bg-slate-900/95 border-slate-800' : 'bg-slate-900/95 border-white/10'}`}>
         <button onClick={() => setActiveTab("search")} className={`flex-1 flex flex-col items-center py-4 rounded-[2.5rem] transition-all duration-300 ${activeTab === "search" ? (isDark ? "bg-indigo-500 text-white" : "bg-emerald-500 text-white") : "text-slate-400 hover:text-white"}`}><Search size={22}/><span className="text-[9px] font-black uppercase mt-1.5 tracking-widest">Trouver</span></button>
-        <button onClick={() => setActiveTab("messages")} className={`flex-1 flex flex-col items-center py-4 rounded-[2.5rem] transition-all duration-300 relative ${activeTab === "messages" ? (isDark ? "bg-indigo-500 text-white" : "bg-emerald-500 text-white") : "text-slate-400 hover:text-white"}`}><MessageSquare size={22}/><span className="text-[9px] font-black uppercase mt-1.5 font-sans tracking-widest">Offres</span>{unreadCount > 0 && <div className="absolute top-3 right-1/3 w-2.5 h-2.5 bg-red-500 rounded-full border-2 border-slate-900 animate-pulse"></div>}</button></div>
-    
+        <button onClick={() => setActiveTab("messages")} className={`flex-1 flex flex-col items-center py-4 rounded-[2.5rem] transition-all duration-300 relative ${activeTab === "messages" ? (isDark ? "bg-indigo-500 text-white" : "bg-emerald-500 text-white") : "text-slate-400 hover:text-white"}`}><MessageSquare size={22}/><span className="text-[9px] font-black uppercase mt-1.5 font-sans tracking-widest">Offres</span>{unreadCount > 0 && <div className="absolute top-3 right-1/3 w-2.5 h-2.5 bg-red-500 rounded-full border-2 border-slate-900 animate-pulse"></div>}</button>
+      </div>
+
       {selectedSitter && (
         <div className="fixed inset-0 bg-slate-900/90 backdrop-blur-md z-[100] flex items-end md:items-center justify-center p-4">
           <div className={`w-full max-w-xl rounded-[4rem] overflow-hidden shadow-2xl animate-in slide-in-from-bottom-10 duration-500 p-10 space-y-10 ${isDark ? 'bg-slate-900 text-white' : 'bg-white text-slate-900'}`}>
@@ -713,7 +740,7 @@ const ParentDashboard = ({ profile, user }) => {
                 <div className={`p-10 rounded-[3.5rem] space-y-6 shadow-inner border ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-slate-50 border-slate-100/50 shadow-slate-100'}`}>
                     <div className="flex justify-between items-center"><span className="font-black text-slate-500 text-[11px] uppercase tracking-widest italic">Lieu</span><span className="font-black uppercase">{selectedSitter.city || "France"}</span></div>
                     <div className="flex justify-between items-center"><span className="font-black text-slate-500 text-[11px] uppercase tracking-widest italic">Visites</span><span className="font-black uppercase">{selectedSitter.views || 0} 👀</span></div>
-                    {/* AJOUT AFFICHAGE LEVEL DANS MODALE */}
+                    {/* AFFICHAGE LEVEL DANS MODALE */}
                     {selectedSitter.level && <div className="flex justify-between items-center"><span className="font-black text-slate-500 text-[11px] uppercase tracking-widest italic">Niveau</span><span className="font-black uppercase text-indigo-500">NIV {selectedSitter.level} 👑</span></div>}
                 </div>
                 {sitterReviews.length > 0 && (
@@ -762,7 +789,7 @@ const SitterDashboard = ({ user, profile }) => {
   const [birthDate, setBirthDate] = useState("");
   const [cvName, setCvName] = useState("");
   const [city, setCity] = useState("");
-  const [level, setLevel] = useState(profile?.level || "1"); // AJOUT STATE LEVEL
+  const [level, setLevel] = useState(profile?.level || "1");
   const [loading, setLoading] = useState(false);
   const [activeTab, setActiveTab] = useState("profile");
   const [offers, setOffers] = useState([]);
@@ -777,11 +804,10 @@ const SitterDashboard = ({ user, profile }) => {
     const unsubPublic = onSnapshot(doc(db, 'artifacts', appId, 'public', 'data', 'sitters', user.uid), (snap) => {
       if (snap.exists()) {
         const d = snap.data(); setBio(d.bio || ""); setPrice(d.price || ""); setBirthDate(d.birthDate || ""); setCity(d.city || ""); setCvName(d.cvName || ""); setViews(d.views || 0);
-        if (d.level) setLevel(d.level); // CHARGEMENT DU LEVEL
+        if (d.level) setLevel(d.level);
         if (d.availability) setAvailability(d.availability);
       }
     });
-    // FILTRE SÉCURITÉ POUR LE SITTER
     const qOffers = query(
       collection(db, 'artifacts', appId, 'public', 'data', 'offers'), 
       where("sitterId", "==", user.uid)
@@ -855,7 +881,6 @@ const SitterDashboard = ({ user, profile }) => {
                         <button onClick={() => setActiveTab("settings")} className="absolute -bottom-1 -right-1 p-3 bg-slate-900 text-white rounded-xl shadow-xl active:scale-95 transition-all"><Camera size={16}/></button>
                     </div>
                     <div><h2 className={`text-2xl font-black italic ${isDark ? 'text-white' : 'text-slate-800'}`}>{profile.name}</h2>
-                    {/* AFFICHAGE LEVEL SUR PROFIL */}
                     <div className="flex gap-2 justify-center mt-2">
                         <span className="text-[9px] font-black text-emerald-500 uppercase tracking-widest bg-emerald-50 px-3 py-1 rounded-full border border-emerald-100 inline-block">Sitter Pro ✨</span>
                         <span className="text-[9px] font-black text-indigo-500 uppercase tracking-widest bg-indigo-50 px-3 py-1 rounded-full border border-indigo-100 inline-block">NIV {level} 👑</span>
@@ -957,4 +982,3 @@ export default function App() {
   if (user && !profile) return <CompleteProfileScreen uid={user.uid} />;
   return profile.role === "parent" ? <ParentDashboard profile={profile} user={user} /> : <SitterDashboard user={user} profile={profile} />;
 }
-
