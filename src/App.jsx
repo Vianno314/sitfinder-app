@@ -242,24 +242,25 @@ const ChatRoom = ({ offer, currentUser, onBack, isDark }) => {
       setTimeout(scrollToBottom, 100);
     });
     
-    // CORRECTION : On cherche le téléphone dans le profil PUBLIC si c'est un Sitter
+    // CORRECTION : Récupération intelligente du numéro de téléphone
     const getContact = async () => {
         const isSitter = currentUser.uid === offer.sitterId;
         const otherId = isSitter ? offer.parentId : offer.sitterId;
         
-        // Si je suis Parent, je cherche le profil Public du Sitter
-        if (!isSitter) {
+        // 1. Essayer de lire le profil public (Sitter)
+        try {
             const publicDoc = await getDoc(doc(db, 'artifacts', appId, 'public', 'data', 'sitters', otherId));
             if (publicDoc.exists() && publicDoc.data().phone) {
                 setOtherUserPhone(publicDoc.data().phone);
                 return;
             }
-        }
+        } catch(e) {}
         
-        // Sinon (ou si pas trouvé), je cherche le profil privé (pour Sitter vers Parent)
-        // Note: Cela peut échouer si les règles de sécurité sont strictes, mais c'est le comportement attendu.
-        const d = await getDoc(doc(db, 'artifacts', appId, 'users', otherId, 'settings', 'profile'));
-        if (d.exists()) setOtherUserPhone(d.data().phone);
+        // 2. Essayer de lire le profil privé (Parent ou Sitter si autorisé)
+        try {
+             const d = await getDoc(doc(db, 'artifacts', appId, 'users', otherId, 'settings', 'profile'));
+             if (d.exists()) setOtherUserPhone(d.data().phone);
+        } catch(e) {}
     };
     getContact();
     return () => unsub();
@@ -319,17 +320,16 @@ const ChatRoom = ({ offer, currentUser, onBack, isDark }) => {
 
   const submitReview = async () => {
       try {
-          // CORRECTION: AJOUT D'UNE ALERTE POUR CONFIRMER L'ENVOI
           await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'sitters', offer.sitterId, 'reviews'), {
               parentId: currentUser.uid, parentName: currentUser.displayName || "Parent",
               rating: reviewRating, text: reviewText, createdAt: Timestamp.now()
           });
           await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'offers', offer.id), { status: 'reviewed' });
-          alert("Votre avis a été publié ! ✨");
+          alert("Votre avis a été publié avec succès ! ✨");
           setShowReview(false);
       } catch (e) { 
           console.error(e); 
-          alert("Erreur lors de l'envoi de l'avis.");
+          alert("Erreur lors de l'envoi de l'avis. Vérifiez votre connexion.");
       }
   };
 
@@ -356,10 +356,7 @@ const ChatRoom = ({ offer, currentUser, onBack, isDark }) => {
           <div key={m.id} className={`flex ${m.senderId === 'system' ? 'justify-center' : m.senderId === currentUser.uid ? 'justify-end' : 'justify-start'}`}>
             <div className={`max-w-[80%] p-4 rounded-[2rem] text-sm shadow-sm relative group ${
               m.senderId === 'system' ? (isDark ? 'bg-slate-800 text-emerald-400 border-slate-700' : 'bg-emerald-50 text-emerald-700 border-emerald-100') + ' text-[10px] font-black uppercase border px-6 py-2 text-center' :
-              // FIX: FORCE COULEUR BLANCHE POUR MES MESSAGES (FOND BLEU)
-              m.senderId === currentUser.uid ? 'bg-blue-600 text-white rounded-br-none' : 
-              // FIX: FORCE COULEUR SOMBRE POUR LES AUTRES MESSAGES (FOND CLAIR)
-              (isDark ? 'bg-slate-800 text-slate-200 border-slate-700' : 'bg-white text-slate-800 border-slate-100') + ' rounded-bl-none border'
+              m.senderId === currentUser.uid ? 'bg-blue-600 text-white rounded-br-none' : (isDark ? 'bg-slate-800 text-slate-200 border-slate-700' : 'bg-white text-slate-700 border-slate-100') + ' rounded-bl-none border'
             }`}> 
                 {m.text} 
                 {translations[m.id] && <p className="text-[10px] mt-2 opacity-70 italic border-t border-white/20 pt-1">{translations[m.id]}</p>}
@@ -678,199 +675,7 @@ const ParentDashboard = ({ profile, user }) => {
 
       <div className={`fixed bottom-10 left-1/2 -translate-x-1/2 w-[90%] max-w-md backdrop-blur-xl p-2.5 rounded-[3rem] shadow-2xl flex items-center justify-between z-50 border transition-all ${isDark ? 'bg-slate-900/95 border-slate-800 text-white' : 'bg-slate-900/95 border-white/10 text-slate-100'}`}>
         <button onClick={() => setActiveTab("search")} className={`flex-1 flex flex-col items-center py-4 rounded-[2.5rem] transition-all duration-300 ${activeTab === "search" ? (isDark ? "bg-indigo-500 text-white" : "bg-emerald-500 text-white") : "text-slate-400 hover:text-white"}`}><Search size={22}/><span className="text-[9px] font-black uppercase mt-1.5 tracking-widest">Trouver</span></button>
-        <button onClick={() => setActiveTab("messages")} className={`flex-1 flex flex-col items-center py-4 rounded-[2.5rem] transition-all duration-300 relative ${activeTab === "messages" ? (isDark ? "bg-indigo-500 text-white" : "bg-emerald-500 text-white") : "text-slate-400 hover:text-white"}`}><MessageSquare size={22}/><span className="text-[9px] font-black uppercase mt-1.5 font-sans tracking-widest">Offres</span>{unreadCount > 0 && <div className="absolute top-3 right-1/3 w-2.5 h-2.5 bg-red-500 rounded-full border-2 border-slate-900 animate-pulse"></div>}</button>
-      </div>
-
-      {selectedSitter && (
-        <div className="fixed inset-0 bg-slate-900/90 backdrop-blur-md z-[100] flex items-end md:items-center justify-center p-4">
-          <div className={`w-full max-w-xl rounded-[4rem] overflow-hidden shadow-2xl animate-in slide-in-from-bottom-10 duration-500 p-10 space-y-10 ${isDark ? 'bg-slate-900 text-white' : 'bg-white text-slate-900'}`}>
-            <div className="flex justify-between items-start">
-              <div className="flex gap-8 items-center text-left">
-                 <div className={`w-28 h-28 rounded-[2.5rem] overflow-hidden border-4 shadow-2xl ${isDark ? 'bg-slate-800 border-slate-700 shadow-slate-950' : 'bg-white border-white shadow-slate-200'}`}><img src={getSPhoto(selectedSitter)} alt="profile" className="w-full h-full object-cover" /></div>
-                 <div className="space-y-1"><h3 className="text-4xl font-black tracking-tighter font-sans leading-none">{selectedSitter.name}</h3><RatingStars rating={selectedSitter.rating || 5} size={20}/></div>
-              </div>
-              <button onClick={() => setSelectedSitter(null)} className={`p-4 rounded-full transition-all ${isDark ? 'bg-slate-800 text-white hover:bg-red-500/20' : 'bg-slate-50 text-slate-800 hover:bg-red-50'}`}><X size={24}/></button>
-            </div>
-            <div className="max-h-[300px] overflow-y-auto space-y-6 pr-2 text-left custom-scrollbar">
-                <div className={`p-10 rounded-[3.5rem] space-y-6 shadow-inner border ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-slate-50 border-slate-100/50 shadow-slate-100'}`}>
-                    <div className="flex justify-between items-center"><span className="font-black text-slate-500 text-[11px] uppercase tracking-widest italic">Lieu</span><span className="font-black uppercase">{selectedSitter.city || "France"}</span></div>
-                    <div className="flex justify-between items-center"><span className="font-black text-slate-500 text-[11px] uppercase tracking-widest italic">Visites</span><span className="font-black uppercase">{selectedSitter.views || 0} 👀</span></div>
-                </div>
-                {sitterReviews.length > 0 && (
-                    <div className="space-y-4">
-                        <h4 className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-500 ml-5 italic">Avis de parents</h4>
-                        {sitterReviews.map((r, idx) => (
-                            <div key={idx} className={`p-6 rounded-[2rem] shadow-sm space-y-3 border ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-100'}`}>
-                                <div className="flex justify-between items-center"><span className="font-black text-xs">{r.parentName}</span><RatingStars rating={r.rating} size={12} /></div>
-                                <p className={`text-xs italic leading-relaxed ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>"{r.text}"</p>
-                            </div>
-                        ))}
-                    </div>
-                )}
-            </div>
-            <div className="space-y-5">
-              <div className="grid grid-cols-2 gap-4 text-left">
-                  <div className="space-y-2">
-                      <label className="text-[10px] font-black uppercase italic ml-4 text-slate-400 font-sans">Prix (€/H)</label>
-                      <input id="neg-p" type="number" defaultValue={selectedSitter.price} className={`w-full p-6 rounded-[2.5rem] outline-none font-black text-2xl shadow-inner ${isDark ? 'bg-slate-800 text-white' : 'bg-slate-50 text-slate-800'}`} />
-                  </div>
-                  <div className="space-y-2">
-                      <label className="text-[10px] font-black uppercase italic ml-4 text-slate-400 font-sans">Temps (H)</label>
-                      <input id="neg-h" type="number" defaultValue="2" className={`w-full p-6 rounded-[2.5rem] outline-none font-black text-2xl shadow-inner ${isDark ? 'bg-slate-800 text-white' : 'bg-slate-50 text-slate-800'}`} />
-                  </div>
-              </div>
-              <button onClick={() => {
-                  const p = document.getElementById('neg-p').value;
-                  const h = document.getElementById('neg-h').value;
-                  handleBooking(selectedSitter, p, h);
-              }} className={`w-full py-8 rounded-[2.5rem] font-black text-sm shadow-xl shadow-emerald-500/20 uppercase tracking-[0.2em] active:scale-95 transition-all ${isDark ? 'bg-indigo-600 text-white' : 'bg-emerald-500 text-white'}`}>ENVOYER LA DEMANDE</button>
-            </div>
-          </div>
-        </div>
-      )}
-    </div>
-  );
-};
-
-// ==========================================
-// 7. DASHBOARD SITTER
-// ==========================================
-
-const SitterDashboard = ({ user, profile }) => {
-  const [bio, setBio] = useState("");
-  const [price, setPrice] = useState("");
-  const [birthDate, setBirthDate] = useState("");
-  const [cvName, setCvName] = useState("");
-  const [city, setCity] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [activeTab, setActiveTab] = useState("profile");
-  const [offers, setOffers] = useState([]);
-  const [activeChat, setActiveChat] = useState(null);
-  const [saveStatus, setSaveStatus] = useState("");
-  const [reviews, setReviews] = useState([]);
-  const [isDark, setIsDark] = useState(localStorage.getItem('dark') === 'true');
-  const [views, setViews] = useState(0);
-
-  useEffect(() => {
-    localStorage.setItem('dark', isDark);
-    const unsubPublic = onSnapshot(doc(db, 'artifacts', appId, 'public', 'data', 'sitters', user.uid), (snap) => {
-      if (snap.exists()) {
-        const d = snap.data(); setBio(d.bio || ""); setPrice(d.price || ""); setBirthDate(d.birthDate || ""); setCity(d.city || ""); setCvName(d.cvName || ""); setViews(d.views || 0);
-        if (d.availability) setAvailability(d.availability);
-      }
-    });
-    // FILTRE SÉCURITÉ POUR LE SITTER
-    const qOffers = query(
-      collection(db, 'artifacts', appId, 'public', 'data', 'offers'), 
-      where("sitterId", "==", user.uid)
-    );
-    const unsubOffers = onSnapshot(qOffers, (snap) => {
-      setOffers(snap.docs.map(d => ({ id: d.id, ...d.data() })));
-    });
-    const unsubReviews = onSnapshot(collection(db, 'artifacts', appId, 'public', 'data', 'sitters', user.uid, 'reviews'), (snap) => {
-        setReviews(snap.docs.map(d => d.data()));
-    });
-    return () => { unsubPublic(); unsubOffers(); unsubReviews(); };
-  }, [user.uid, isDark]);
-
-  const totalEarnings = useMemo(() => {
-      return offers.filter(o => o.status === 'accepted' || o.status === 'reviewed').reduce((acc, o) => acc + ( (parseFloat(o.price) || 0) * (parseFloat(o.hours) || 1) ), 0);
-  }, [offers]);
-
-  const [availability, setAvailability] = useState({
-    Lundi: { active: false, start: "08:00", end: "18:00" }, Mardi: { active: false, start: "08:00", end: "18:00" },
-    Mercredi: { active: false, start: "08:00", end: "18:00" }, Jeudi: { active: false, start: "08:00", end: "18:00" },
-    Vendredi: { active: false, start: "08:00", end: "18:00" }, Samedi: { active: false, start: "08:00", end: "18:00" },
-    Dimanche: { active: false, start: "08:00", end: "18:00" },
-  });
-
-  const unreadCount = offers.filter(o => o.hasUnread && o.lastSenderId !== user.uid).length;
-
-  const handleSave = async () => {
-    if (!bio || !price || !city || !birthDate) return alert("Champs requis : Bio, Tarif, Ville, Naissance.");
-    setLoading(true);
-    try {
-      await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'sitters', user.uid), {
-        name: profile.name, avatarStyle: profile.avatarStyle || 'avataaars', photoURL: profile.photoURL || "", useCustomPhoto: !!profile.useCustomPhoto, views,
-        phone: profile.phone || "", bio: bio.trim(), price, birthDate, availability, cvName, hasCV: !!cvName, city, rating: 5, uid: user.uid, updatedAt: new Date().toISOString()
-      });
-      setSaveStatus("PUBLIÉ ! ✨"); setTimeout(() => setSaveStatus(""), 4000);
-    } catch(e) { console.error(e); } finally { setLoading(false); }
-  };
-
-  const markAsRead = async (offer) => {
-    if (offer.hasUnread && offer.lastSenderId !== user.uid) {
-        await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'offers', offer.id), { hasUnread: false });
-    }
-    setActiveChat(offer);
-  };
-
-  if (activeChat) return <ChatRoom offer={activeChat} currentUser={user} onBack={() => setActiveChat(null)} isDark={isDark} />;
-  if (activeTab === "settings") return <SettingsView user={user} profile={profile} onBack={() => setActiveTab("profile")} isDark={isDark} toggleDark={() => setIsDark(!isDark)} />;
-
-  const myP = (profile.useCustomPhoto && profile.photoURL) ? profile.photoURL : `https://api.dicebear.com/7.x/${profile.avatarStyle || 'avataaars'}/svg?seed=${profile.name}`;
-
-  return (
-    <div className={`min-h-screen font-sans pb-32 animate-in fade-in duration-500 ${isDark ? 'bg-slate-950 text-white' : 'bg-slate-50 text-slate-800'}`}>
-      <nav className={`p-6 flex justify-between items-center sticky top-0 z-40 border-b shadow-sm ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-100'}`}>
-        <div className="flex items-center gap-3 text-slate-900"><SitFinderLogo className="w-10 h-10" glow={false} /><span className="font-black italic text-xl uppercase tracking-tighter leading-none">SIT<span className="text-emerald-500 italic">FINDER</span></span></div>
-        <div className="flex items-center gap-2">
-          <div className="relative p-2 text-slate-400">
-              <Bell size={22}/>
-              {unreadCount > 0 && <span className="absolute top-1 right-1 w-4 h-4 bg-red-500 text-white text-[8px] font-black rounded-full flex items-center justify-center border-2 border-white animate-bounce">{unreadCount}</span>}
-          </div>
-          <button onClick={() => setActiveTab("settings")} className={`p-3 rounded-2xl transition-all ${isDark ? 'bg-slate-800 text-indigo-400' : 'bg-slate-50 text-slate-300'}`}><Settings size={22} /></button>
-          <button onClick={() => signOut(auth)} className={`p-3 rounded-2xl transition-all ${isDark ? 'bg-slate-800 text-slate-400' : 'bg-slate-50 text-slate-300'}`}><LogOut size={22} /></button>
-        </div>
-      </nav>
-      <main className="p-6 max-w-4xl mx-auto space-y-12">
-        {activeTab === "profile" ? (
-          <div className="space-y-10 text-left animate-in fade-in slide-in-from-bottom-6 duration-700">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className={`p-8 rounded-[3rem] shadow-xl border flex flex-col items-center text-center space-y-4 ${isDark ? 'bg-slate-900 border-slate-800 shadow-slate-950' : 'bg-white'}`}>
-                    <div className="relative">
-                        <div className={`w-28 h-28 rounded-[2.5rem] border-4 shadow-2xl overflow-hidden ring-4 ${isDark ? 'bg-slate-800 border-slate-700 ring-slate-950' : 'bg-white'}`}><img src={myP} alt="profile" className="w-full h-full object-cover" /></div>
-                        <button onClick={() => setActiveTab("settings")} className="absolute -bottom-1 -right-1 p-3 bg-slate-900 text-white rounded-xl shadow-xl active:scale-95 transition-all"><Camera size={16}/></button>
-                    </div>
-                    <div><h2 className={`text-2xl font-black italic ${isDark ? 'text-white' : 'text-slate-800'}`}>{profile.name}</h2><p className="text-[9px] font-black text-emerald-500 uppercase tracking-widest mt-1 bg-emerald-50 px-3 py-1 rounded-full border border-emerald-100 inline-block">Sitter Pro ✨</p></div>
-                </div>
-                <div className={`p-8 rounded-[3rem] shadow-xl text-white flex flex-col justify-center space-y-2 transition-all ${isDark ? 'bg-indigo-600' : 'bg-gradient-to-br from-blue-500 to-indigo-600'}`}>
-                    <Wallet className="mb-1" size={24}/><p className="text-[10px] font-black uppercase tracking-widest opacity-70">Mon Revenu</p>
-                    <h3 className="text-4xl font-black italic tracking-tighter">{totalEarnings}€</h3>
-                    <p className="text-[8px] font-bold opacity-50 uppercase tracking-widest font-sans italic">Total cumulé</p>
-                </div>
-            </div>
-
-            <div className={`p-12 md:p-16 rounded-[4.5rem] shadow-2xl border space-y-12 relative overflow-hidden ${isDark ? 'bg-slate-900 border-slate-800 shadow-slate-950' : 'bg-white border-white shadow-slate-200'}`}>
-                <div className="absolute top-0 left-0 w-full h-3 bg-gradient-to-r from-emerald-400 to-blue-500 shadow-md shadow-emerald-400/20"></div>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-10 text-slate-800">
-                    <div className="space-y-3 text-left"><label className="text-[11px] font-black text-blue-300 uppercase tracking-widest ml-4 font-sans italic">Tarif (€/H)</label><input type="number" className={`w-full p-8 rounded-[2.5rem] font-black text-4xl outline-none shadow-inner border border-transparent ${isDark ? 'bg-slate-800 text-white' : 'bg-slate-50 text-slate-800'}`} value={price} onChange={(e) => setPrice(e.target.value)} /></div>
-                    <div className="space-y-3 text-left"><label className="text-[11px] font-black text-blue-300 uppercase tracking-widest ml-4 font-sans italic">Ma Ville</label><input type="text" placeholder="Ville" className={`w-full p-8 rounded-[2.5rem] font-bold outline-none shadow-inner border border-transparent ${isDark ? 'bg-slate-800 text-white' : 'bg-slate-50 text-slate-800'}`} value={city} onChange={(e) => setCity(e.target.value)} /></div>
-                </div>
-                <div className="space-y-3 text-left"><label className="text-[11px] font-black text-blue-300 uppercase tracking-widest ml-4 font-sans italic">Naissance</label><input type="date" className={`w-full p-8 rounded-[2.5rem] font-bold outline-none shadow-inner border border-transparent ${isDark ? 'bg-slate-800 text-white' : 'bg-slate-50 text-slate-800'}`} value={birthDate} onChange={(e) => setBirthDate(e.target.value)} /></div>
-                <div className="space-y-3 text-left"><label className="text-[11px] font-black text-blue-300 uppercase tracking-widest ml-4 font-sans italic">Ma Bio Professionnelle</label><textarea placeholder="Expériences..." className={`w-full p-10 rounded-[3.5rem] h-64 font-bold outline-none shadow-inner resize-none leading-relaxed ${isDark ? 'bg-slate-800 text-white' : 'bg-slate-50 text-slate-800'}`} value={bio} onChange={(e) => setBio(e.target.value)} /></div>
-                <div className="space-y-3 text-left"><label className="text-[11px] font-black text-blue-300 uppercase tracking-widest ml-4 font-sans italic">Mon CV</label><input type="file" id="cv-f" className="hidden" onChange={(e) => setCvName(e.target.files[0]?.name || "")} accept=".pdf,image/*" /><label htmlFor="cv-f" className={`w-full flex items-center justify-between p-8 border-2 border-dashed rounded-[2.5rem] cursor-pointer hover:bg-emerald-500/5 transition-all shadow-inner ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-slate-50 border-slate-200'}`}><div className="flex items-center gap-6"><div className="p-5 bg-white rounded-3xl text-blue-400 shadow-md transition-transform group-hover:scale-110"><FileUp size={32}/></div><p className={`text-sm font-black ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>{cvName || "Joindre CV"}</p></div>{cvName && <CheckCircle2 className="text-emerald-500" size={32}/>}</label></div>
-                <button onClick={handleSave} disabled={loading} className={`w-full py-10 rounded-[3.5rem] font-black shadow-2xl flex justify-center items-center gap-4 active:scale-95 transition-all uppercase tracking-[0.4em] text-sm hover:brightness-110 shadow-slate-300 ${isDark ? 'bg-indigo-600 text-white' : 'bg-slate-900 text-white'}`}>{loading ? <Loader2 className="animate-spin" size={32}/> : (saveStatus || "PUBLIER MON PROFIL")}</button>
-            </div>
-          </div>
-        ) : (
-          <div className="space-y-8 animate-in fade-in duration-500">
-              <h2 className="text-4xl font-black italic uppercase tracking-tighter leading-none text-left">Missions</h2>
-              <div className="grid gap-6">
-                  {offers.sort((a,b) => (b.lastMsgAt?.seconds || 0) - (a.lastMsgAt?.seconds || 0)).map(o => (
-                      <div key={o.id} onClick={() => markAsRead(o)} className={`p-10 rounded-[3.5rem] shadow-xl border flex items-center justify-between hover:border-emerald-200 cursor-pointer active:scale-[0.99] shadow-md ${isDark ? 'bg-slate-900 border-slate-800 shadow-slate-950' : 'bg-white border-slate-100 shadow-slate-50'}`}>
-                          <div className="flex items-center gap-8 text-slate-800">
-                              <div className={`w-24 h-24 rounded-[2.5rem] overflow-hidden shadow-sm border ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-emerald-50 border-emerald-100'}`}><img src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${o.parentName}`} alt="avatar" /></div>
-                              <div className="text-left"><h4 className={`font-black text-3xl italic leading-tight ${isDark ? 'text-white' : ''}`}>{o.parentName}</h4><p className={`text-[11px] font-black uppercase tracking-[0.3em] mt-1 ${isDark ? 'text-indigo-400' : 'text-emerald-500'}`}>{o.status === 'accepted' ? 'Validé ✨' : `Offre : ${o.price}€/H`}</p></div>
-                          </div>
-                          {o.hasUnread && o.lastSenderId !== user.uid && <div className="w-4 h-4 bg-red-500 rounded-full animate-pulse shadow-xl"></div>}
-                      </div>
-                  ))}
-              </div>
-          </div>
-        )}
-      </main>
-      <div className={`fixed bottom-10 left-1/2 -translate-x-1/2 w-[90%] max-w-md backdrop-blur-xl p-2.5 rounded-[3.5rem] shadow-2xl flex items-center justify-between z-50 border ${isDark ? 'bg-slate-900/95 border-slate-800' : 'bg-slate-900/95 border-white/10'}`}><button onClick={() => setActiveTab("profile")} className={`flex-1 flex flex-col items-center py-4 rounded-[2.5rem] transition-all duration-300 ${activeTab === "profile" ? (isDark ? "bg-indigo-500 text-white" : "bg-emerald-500 text-white") : "text-slate-400 hover:text-white"}`}><User size={22}/><span className="text-[9px] font-black uppercase mt-1.5 tracking-widest font-sans">Profil</span></button><button onClick={() => setActiveTab("messages")} className={`flex-1 flex flex-col items-center py-4 rounded-[2.5rem] transition-all duration-300 relative ${activeTab === "messages" ? (isDark ? "bg-indigo-500 text-white" : "bg-emerald-500 text-white") : "text-slate-400 hover:text-white"}`}><MessageSquare size={22}/><span className="text-[9px] font-black uppercase mt-1.5 font-sans tracking-widest">Offres</span>{unreadCount > 0 && <div className="absolute top-3 right-1/3 w-2.5 h-2.5 bg-red-500 rounded-full border-2 border-slate-900 animate-pulse"></div>}</button></div>
+        <button onClick={() => setActiveTab("messages")} className={`flex-1 flex flex-col items-center py-4 rounded-[2.5rem] transition-all duration-300 relative ${activeTab === "messages" ? (isDark ? "bg-indigo-500 text-white" : "bg-emerald-500 text-white") : "text-slate-400 hover:text-white"}`}><MessageSquare size={22}/><span className="text-[9px] font-black uppercase mt-1.5 font-sans tracking-widest">Offres</span>{unreadCount > 0 && <div className="absolute top-3 right-1/3 w-2.5 h-2.5 bg-red-500 rounded-full border-2 border-slate-900 animate-pulse"></div>}</button></div>
     </div>
   );
 };
