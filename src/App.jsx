@@ -406,10 +406,10 @@ const AuthScreen = () => {
   const [name, setName] = useState("");
   const [role, setRole] = useState("parent");
   const [level, setLevel] = useState("1");
-  const [remember, setRemember] = useState(false); // AJOUT STATE REMEMBER
+  const [remember, setRemember] = useState(false);
   const [loading, setLoading] = useState(false);
 
-  // AJOUT : CHARGEMENT AUTO DES IDENTIFIANTS
+  // CHARGEMENT AUTO DES IDENTIFIANTS
   useEffect(() => {
     const savedEmail = localStorage.getItem('sitfinder_email');
     const savedPass = localStorage.getItem('sitfinder_pass');
@@ -424,7 +424,7 @@ const AuthScreen = () => {
     e.preventDefault(); 
     setLoading(true);
 
-    // AJOUT : SAUVEGARDE OU SUPPRESSION DU LOCALSTORAGE
+    // GESTION LOCALSTORAGE
     if (remember) {
         localStorage.setItem('sitfinder_email', email);
         localStorage.setItem('sitfinder_pass', password);
@@ -458,7 +458,6 @@ const AuthScreen = () => {
           <input required type="email" placeholder="Email" className="w-full p-5 bg-slate-50 rounded-2xl outline-none font-bold shadow-inner" value={email} onChange={(e) => setEmail(e.target.value)} />
           <input required type="password" placeholder="Mot de passe" className="w-full p-5 bg-slate-50 rounded-2xl outline-none font-bold shadow-inner" value={password} onChange={(e) => setPassword(e.target.value)} />
           
-          {/* AJOUT CASE A COCHER SE SOUVENIR DE MOI */}
           {!isRegister && (
              <div className="flex items-center gap-2 pl-2">
                  <input type="checkbox" id="rem" checked={remember} onChange={(e) => setRemember(e.target.checked)} className="w-5 h-5 accent-emerald-500 rounded-lg"/>
@@ -601,6 +600,7 @@ const ParentDashboard = ({ profile, user }) => {
   const handleBooking = async (s, p, h) => {
     try {
       const offerText = `Offre : ${h}h à ${p}€/h`;
+      // CRUCIAL : On ajoute tous les marqueurs de messagerie dès la création de l'offre
       const newOffer = await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'offers'), {
         parentId: user.uid, 
         parentName: profile.name, 
@@ -616,11 +616,12 @@ const ParentDashboard = ({ profile, user }) => {
         lastSenderId: user.uid
       });
 
+      // CRUCIAL : On ajoute les ID de sécurité dans le premier message
       await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'offers', newOffer.id, 'messages'), {
         text: `Bonjour ${s.name}, je souhaiterais réserver une garde de ${h}H au prix de ${p}€/H.`, 
         senderId: user.uid, 
-        parentId: user.uid,
-        sitterId: s.id,
+        parentId: user.uid, // Indispensable pour la sécurité
+        sitterId: s.id,     // Indispensable pour la sécurité
         createdAt: Timestamp.now()
       });
 
@@ -642,7 +643,7 @@ const ParentDashboard = ({ profile, user }) => {
   const getSPhoto = (s) => (s.useCustomPhoto && s.photoURL) ? s.photoURL : `https://api.dicebear.com/7.x/${s.avatarStyle || 'avataaars'}/svg?seed=${s.name}`;
 
   return (
-    <div className={`min-h-screen font-sans pb-32 ${isDark ? 'bg-slate-950 text-white' : 'bg-slate-50 text-slate-800'}`}>
+    <div className={`min-h-screen font-sans pb-32 animate-in fade-in duration-500 ${isDark ? 'bg-slate-950 text-white' : 'bg-slate-50 text-slate-800'}`}>
       <nav className={`p-6 flex justify-between items-center sticky top-0 z-40 border-b shadow-sm ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-100'}`}>
         <div className="flex items-center gap-3"><SitFinderLogo className="w-10 h-10" glow={false} /><span className="font-black italic text-2xl uppercase tracking-tight">SIT<span className="text-emerald-500">FINDER</span></span></div>
         <div className="flex items-center gap-2">
@@ -655,7 +656,7 @@ const ParentDashboard = ({ profile, user }) => {
         </div>
       </nav>
 
-      <main className="p-6 max-w-7xl mx-auto space-y-8 animate-in fade-in duration-500">
+      <main className="p-6 max-w-7xl mx-auto space-y-8">
         {activeTab === "search" ? (
           <>
             <div className={`p-10 md:p-14 rounded-[3.5rem] shadow-2xl relative overflow-hidden group transition-all duration-700 ${isDark ? 'bg-gradient-to-br from-indigo-600 to-slate-900' : 'bg-gradient-to-br from-emerald-500 to-blue-700'}`}>
@@ -702,7 +703,7 @@ const ParentDashboard = ({ profile, user }) => {
             </div>
           </>
         ) : (
-          <div className="space-y-8 animate-in fade-in duration-500">
+          <div className="space-y-8"> {/* ANIMATION REMOVED TO FIX MODAL */}
             <h2 className={`text-4xl font-black italic uppercase font-sans tracking-tight leading-none text-left ${isDark ? 'text-white' : 'text-slate-800'}`}>Discussions</h2>
             <div className="grid gap-6">
               {offers.length === 0 ? <div className={`py-24 text-center rounded-[4rem] border-2 border-dashed italic text-xl shadow-inner ${isDark ? 'bg-slate-900 border-slate-800 text-slate-500' : 'bg-white border-slate-100 text-slate-400'}`}>Aucune offre active...</div>
@@ -721,35 +722,35 @@ const ParentDashboard = ({ profile, user }) => {
         )}
       </main>
 
-      <div className={`fixed bottom-10 left-1/2 -translate-x-1/2 w-[90%] max-w-md backdrop-blur-xl p-2.5 rounded-[3rem] shadow-2xl flex items-center justify-between z-50 border ${isDark ? 'bg-slate-900/95 border-slate-800' : 'bg-slate-900/95 border-white/10'}`}>
+      <div className={`fixed bottom-10 left-1/2 -translate-x-1/2 w-[90%] max-w-md backdrop-blur-xl p-2.5 rounded-[3rem] shadow-2xl flex items-center justify-between z-50 border transition-all ${isDark ? 'bg-slate-900/95 border-slate-800 text-white' : 'bg-slate-900/95 border-white/10 text-slate-100'}`}>
         <button onClick={() => setActiveTab("search")} className={`flex-1 flex flex-col items-center py-4 rounded-[2.5rem] transition-all duration-300 ${activeTab === "search" ? (isDark ? "bg-indigo-500 text-white" : "bg-emerald-500 text-white") : "text-slate-400 hover:text-white"}`}><Search size={22}/><span className="text-[9px] font-black uppercase mt-1.5 tracking-widest">Trouver</span></button>
-        <button onClick={() => setActiveTab("messages")} className={`flex-1 flex flex-col items-center py-4 rounded-[2.5rem] transition-all duration-300 relative ${activeTab === "messages" ? (isDark ? "bg-indigo-500 text-white" : "bg-emerald-500 text-white") : "text-slate-400 hover:text-white"}`}><MessageSquare size={22}/><span className="text-[9px] font-black uppercase mt-1.5 font-sans tracking-widest">Offres</span>{unreadCount > 0 && <div className="absolute top-3 right-1/3 w-2.5 h-2.5 bg-red-500 rounded-full border-2 border-slate-900 animate-pulse"></div>}</button>
-      </div>
-
+        <button onClick={() => setActiveTab("messages")} className={`flex-1 flex flex-col items-center py-4 rounded-[2.5rem] transition-all duration-300 relative ${activeTab === "messages" ? (isDark ? "bg-indigo-500 text-white" : "bg-emerald-500 text-white") : "text-slate-400 hover:text-white"}`}><MessageSquare size={22}/><span className="text-[9px] font-black uppercase mt-1.5 font-sans tracking-widest">Offres</span>{unreadCount > 0 && <div className="absolute top-3 right-1/3 w-2.5 h-2.5 bg-red-500 rounded-full border-2 border-slate-900 animate-pulse"></div>}</button></div>
+    
+      {/* MODALE DU PROFIL SELECTIONNÉ */}
       {selectedSitter && (
-        <div className="fixed inset-0 bg-slate-900/90 backdrop-blur-md z-[100] flex items-end md:items-center justify-center p-4">
-          <div className={`w-full max-w-xl rounded-[4rem] overflow-hidden shadow-2xl animate-in slide-in-from-bottom-10 duration-500 p-10 space-y-10 ${isDark ? 'bg-slate-900 text-white' : 'bg-white text-slate-900'}`}>
+        <div className="fixed inset-0 bg-slate-900/90 backdrop-blur-md z-[100] flex items-center justify-center p-6 text-slate-900">
+          <div className="bg-white w-full max-w-xl rounded-[4rem] overflow-hidden shadow-2xl animate-in slide-in-from-bottom-10 duration-500 p-10 space-y-10">
             <div className="flex justify-between items-start">
               <div className="flex gap-8 items-center text-left">
-                 <div className={`w-28 h-28 rounded-[2.5rem] overflow-hidden border-4 shadow-2xl ${isDark ? 'bg-slate-800 border-slate-700 shadow-slate-950' : 'bg-white border-white shadow-slate-200'}`}><img src={getSPhoto(selectedSitter)} alt="profile" className="w-full h-full object-cover" /></div>
+                 <div className="w-28 h-28 rounded-[2.5rem] overflow-hidden border-4 shadow-2xl border-white shadow-slate-200"><img src={getSPhoto(selectedSitter)} alt="profile" className="w-full h-full object-cover" /></div>
                  <div className="space-y-1"><h3 className="text-4xl font-black tracking-tighter font-sans leading-none">{selectedSitter.name}</h3><RatingStars rating={selectedSitter.rating || 5} size={20}/></div>
               </div>
-              <button onClick={() => setSelectedSitter(null)} className={`p-4 rounded-full transition-all ${isDark ? 'bg-slate-800 text-white hover:bg-red-500/20' : 'bg-slate-50 text-slate-800 hover:bg-red-50'}`}><X size={24}/></button>
+              <button onClick={() => setSelectedSitter(null)} className="p-4 rounded-full transition-all bg-slate-50 text-slate-800 hover:bg-red-50"><X size={24}/></button>
             </div>
             <div className="max-h-[300px] overflow-y-auto space-y-6 pr-2 text-left custom-scrollbar">
-                <div className={`p-10 rounded-[3.5rem] space-y-6 shadow-inner border ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-slate-50 border-slate-100/50 shadow-slate-100'}`}>
+                <div className="p-10 rounded-[3.5rem] space-y-6 shadow-inner border bg-slate-50 border-slate-100/50 shadow-slate-100">
                     <div className="flex justify-between items-center"><span className="font-black text-slate-500 text-[11px] uppercase tracking-widest italic">Lieu</span><span className="font-black uppercase">{selectedSitter.city || "France"}</span></div>
                     <div className="flex justify-between items-center"><span className="font-black text-slate-500 text-[11px] uppercase tracking-widest italic">Visites</span><span className="font-black uppercase">{selectedSitter.views || 0} 👀</span></div>
-                    {/* AFFICHAGE LEVEL DANS MODALE */}
+                    {/* AJOUT AFFICHAGE LEVEL DANS MODALE */}
                     {selectedSitter.level && <div className="flex justify-between items-center"><span className="font-black text-slate-500 text-[11px] uppercase tracking-widest italic">Niveau</span><span className="font-black uppercase text-indigo-500">NIV {selectedSitter.level} 👑</span></div>}
                 </div>
                 {sitterReviews.length > 0 && (
                     <div className="space-y-4">
                         <h4 className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-500 ml-5 italic">Avis de parents</h4>
                         {sitterReviews.map((r, idx) => (
-                            <div key={idx} className={`p-6 rounded-[2rem] shadow-sm space-y-3 border ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-100'}`}>
+                            <div key={idx} className="p-6 rounded-[2rem] shadow-sm space-y-3 border bg-white border-slate-100">
                                 <div className="flex justify-between items-center"><span className="font-black text-xs">{r.parentName}</span><RatingStars rating={r.rating} size={12} /></div>
-                                <p className={`text-xs italic leading-relaxed ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>"{r.text}"</p>
+                                <p className="text-xs italic leading-relaxed text-slate-500">"{r.text}"</p>
                             </div>
                         ))}
                     </div>
@@ -759,18 +760,18 @@ const ParentDashboard = ({ profile, user }) => {
               <div className="grid grid-cols-2 gap-4 text-left">
                   <div className="space-y-2">
                       <label className="text-[10px] font-black uppercase italic ml-4 text-slate-400 font-sans">Prix (€/H)</label>
-                      <input id="neg-p" type="number" defaultValue={selectedSitter.price} className={`w-full p-6 rounded-[2.5rem] outline-none font-black text-2xl shadow-inner ${isDark ? 'bg-slate-800 text-white' : 'bg-slate-50 text-slate-800'}`} />
+                      <input id="neg-p" type="number" defaultValue={selectedSitter.price} className="w-full p-6 rounded-[2.5rem] outline-none font-black text-2xl shadow-inner bg-slate-50 text-slate-800" />
                   </div>
                   <div className="space-y-2">
                       <label className="text-[10px] font-black uppercase italic ml-4 text-slate-400 font-sans">Temps (H)</label>
-                      <input id="neg-h" type="number" defaultValue="2" className={`w-full p-6 rounded-[2.5rem] outline-none font-black text-2xl shadow-inner ${isDark ? 'bg-slate-800 text-white' : 'bg-slate-50 text-slate-800'}`} />
+                      <input id="neg-h" type="number" defaultValue="2" className="w-full p-6 rounded-[2.5rem] outline-none font-black text-2xl shadow-inner bg-slate-50 text-slate-800" />
                   </div>
               </div>
               <button onClick={() => {
                   const p = document.getElementById('neg-p').value;
                   const h = document.getElementById('neg-h').value;
                   handleBooking(selectedSitter, p, h);
-              }} className={`w-full py-8 rounded-[2.5rem] font-black text-sm shadow-xl shadow-emerald-500/20 uppercase tracking-[0.2em] active:scale-95 transition-all ${isDark ? 'bg-indigo-600 text-white' : 'bg-emerald-500 text-white'}`}>ENVOYER LA DEMANDE</button>
+              }} className="w-full py-8 rounded-[2.5rem] font-black text-sm shadow-xl shadow-emerald-500/20 uppercase tracking-[0.2em] active:scale-95 transition-all bg-emerald-500 text-white">ENVOYER LA DEMANDE</button>
             </div>
           </div>
         </div>
@@ -808,6 +809,7 @@ const SitterDashboard = ({ user, profile }) => {
         if (d.availability) setAvailability(d.availability);
       }
     });
+    // FILTRE SÉCURITÉ POUR LE SITTER
     const qOffers = query(
       collection(db, 'artifacts', appId, 'public', 'data', 'offers'), 
       where("sitterId", "==", user.uid)
