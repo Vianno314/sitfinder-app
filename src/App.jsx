@@ -73,13 +73,7 @@ const SitFinderLogo = ({ className = "w-16 h-16", glow = true }) => (
 const RatingStars = ({ rating = 5, size = 14, interactive = false, onRate = null }) => (
   <div className="flex gap-0.5 text-amber-400">
     {[...Array(5)].map((_, i) => (
-      <Star 
-        key={i} 
-        size={size} 
-        onClick={() => interactive && onRate && onRate(i + 1)} 
-        fill={i < Math.floor(rating) ? "currentColor" : "none"} 
-        className={`${i < Math.floor(rating) ? "" : "text-slate-200"} ${interactive ? "cursor-pointer hover:scale-125 transition-all" : ""}`} 
-      />
+      <Star key={i} size={size} onClick={() => interactive && onRate && onRate(i + 1)} fill={i < Math.floor(rating) ? "currentColor" : "none"} className={`${i < Math.floor(rating) ? "" : "text-slate-200"} ${interactive ? "cursor-pointer hover:scale-125 transition-all" : ""}`} />
     ))}
   </div>
 );
@@ -248,13 +242,11 @@ const ChatRoom = ({ offer, currentUser, onBack, isDark }) => {
       setTimeout(scrollToBottom, 100);
     });
     
-    // CORRECTION APPEL : Recherche du numéro plus robuste
     const getContact = async () => {
         const isSitter = currentUser.uid === offer.sitterId;
         const otherId = isSitter ? offer.parentId : offer.sitterId;
         
         try {
-            // Essaie de lire le profil public (Sitter)
             const publicDoc = await getDoc(doc(db, 'artifacts', appId, 'public', 'data', 'sitters', otherId));
             if (publicDoc.exists() && publicDoc.data().phone) {
                 setOtherUserPhone(publicDoc.data().phone);
@@ -263,7 +255,6 @@ const ChatRoom = ({ offer, currentUser, onBack, isDark }) => {
         } catch(e) {}
         
         try {
-             // Essaie de lire le profil privé (Parent/Sitter)
              const d = await getDoc(doc(db, 'artifacts', appId, 'users', otherId, 'settings', 'profile'));
              if (d.exists()) setOtherUserPhone(d.data().phone);
         } catch(e) {}
@@ -324,7 +315,6 @@ const ChatRoom = ({ offer, currentUser, onBack, isDark }) => {
     } catch (e) { console.error(e); }
   };
 
-  // CORRECTION AVIS : AJOUT D'ALERTES POUR SAVOIR SI CA MARCHE
   const submitReview = async () => {
       try {
           await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'sitters', offer.sitterId, 'reviews'), {
@@ -332,11 +322,11 @@ const ChatRoom = ({ offer, currentUser, onBack, isDark }) => {
               rating: reviewRating, text: reviewText, createdAt: Timestamp.now()
           });
           await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'offers', offer.id), { status: 'reviewed' });
-          alert("Avis publié avec succès ! Merci.");
+          alert("Votre avis a été publié avec succès ! ✨");
           setShowReview(false);
       } catch (e) { 
           console.error(e); 
-          alert("Erreur: Impossible de publier l'avis. Vérifiez votre connexion.");
+          alert("Erreur lors de l'envoi de l'avis. Vérifiez votre connexion.");
       }
   };
 
@@ -363,7 +353,7 @@ const ChatRoom = ({ offer, currentUser, onBack, isDark }) => {
           <div key={m.id} className={`flex ${m.senderId === 'system' ? 'justify-center' : m.senderId === currentUser.uid ? 'justify-end' : 'justify-start'}`}>
             <div className={`max-w-[80%] p-4 rounded-[2rem] text-sm shadow-sm relative group ${
               m.senderId === 'system' ? (isDark ? 'bg-slate-800 text-emerald-400 border-slate-700' : 'bg-emerald-50 text-emerald-700 border-emerald-100') + ' text-[10px] font-black uppercase border px-6 py-2 text-center' :
-              m.senderId === currentUser.uid ? 'bg-blue-600 text-white rounded-br-none' : (isDark ? 'bg-slate-800 text-slate-200 border-slate-700' : 'bg-white text-slate-700 border-slate-100') + ' rounded-bl-none border'
+              m.senderId === currentUser.uid ? 'bg-blue-600 text-white rounded-br-none' : (isDark ? 'bg-slate-800 text-slate-200 border-slate-700' : 'bg-white text-slate-800 border-slate-100') + ' rounded-bl-none border'
             }`}> 
                 {m.text} 
                 {translations[m.id] && <p className="text-[10px] mt-2 opacity-70 italic border-t border-white/20 pt-1">{translations[m.id]}</p>}
@@ -415,6 +405,7 @@ const AuthScreen = () => {
   const [password, setPassword] = useState("");
   const [name, setName] = useState("");
   const [role, setRole] = useState("parent");
+  const [level, setLevel] = useState("1"); // AJOUT : State pour le niveau
   const [loading, setLoading] = useState(false);
 
   const handleAuth = async (e) => {
@@ -423,8 +414,9 @@ const AuthScreen = () => {
       if (isRegister) {
         if (password.length < 6) throw new Error("Mot de passe trop court.");
         const cred = await createUserWithEmailAndPassword(auth, email, password);
+        // AJOUT : Sauvegarde du niveau dans le profil initial
         await setDoc(doc(db, 'artifacts', appId, 'users', cred.user.uid, 'settings', 'profile'), {
-          uid: cred.user.uid, name: name.trim() || "User", role, email, avatarStyle: "avataaars", favorites: [], createdAt: new Date().toISOString()
+          uid: cred.user.uid, name: name.trim() || "User", role, email, level: role === 'sitter' ? level : null, avatarStyle: "avataaars", favorites: [], createdAt: new Date().toISOString()
         });
       } else { await signInWithEmailAndPassword(auth, email, password); }
     } catch (err) { alert("Email ou mot de passe invalide."); } finally { setLoading(false); }
@@ -444,10 +436,20 @@ const AuthScreen = () => {
           <input required type="email" placeholder="Email" className="w-full p-5 bg-slate-50 rounded-2xl outline-none font-bold shadow-inner" value={email} onChange={(e) => setEmail(e.target.value)} />
           <input required type="password" placeholder="Mot de passe" className="w-full p-5 bg-slate-50 rounded-2xl outline-none font-bold shadow-inner" value={password} onChange={(e) => setPassword(e.target.value)} />
           {isRegister && (
+            <>
             <div className="grid grid-cols-2 gap-3 p-1 bg-slate-100 rounded-2xl mt-4">
               <button type="button" onClick={() => setRole("parent")} className={`py-3 rounded-xl font-black text-[10px] ${role === "parent" ? "bg-white shadow text-emerald-600" : "text-slate-400"}`}>PARENT</button>
               <button type="button" onClick={() => setRole("sitter")} className={`py-3 rounded-xl font-black text-[10px] ${role === "sitter" ? "bg-white shadow text-blue-600" : "text-slate-400"}`}>SITTER</button>
             </div>
+            {/* AJOUT : SÉLECTION DU NIVEAU POUR LES SITTERS */}
+            {role === "sitter" && (
+              <div className="grid grid-cols-3 gap-1 mt-2">
+                <button type="button" onClick={() => setLevel("1")} className={`py-2 rounded-lg text-[10px] font-black uppercase transition-all ${level === "1" ? "bg-slate-900 text-white" : "bg-slate-200 text-slate-500"}`}>NIV 1 🍼<br/><span className="text-[8px] opacity-70 font-normal">Garde+Repas</span></button>
+                <button type="button" onClick={() => setLevel("2")} className={`py-2 rounded-lg text-[10px] font-black uppercase transition-all ${level === "2" ? "bg-slate-900 text-white" : "bg-slate-200 text-slate-500"}`}>NIV 2 🧸<br/><span className="text-[8px] opacity-70 font-normal">+ Change</span></button>
+                <button type="button" onClick={() => setLevel("3")} className={`py-2 rounded-lg text-[10px] font-black uppercase transition-all ${level === "3" ? "bg-slate-900 text-white" : "bg-slate-200 text-slate-500"}`}>NIV 3 👑<br/><span className="text-[8px] opacity-70 font-normal">+ Bain/Soins</span></button>
+              </div>
+            )}
+            </>
           )}
           <button disabled={loading} className="w-full bg-slate-900 text-white py-6 rounded-[2rem] font-black text-sm shadow-xl mt-8 flex justify-center items-center gap-3 active:scale-95 transition-all uppercase tracking-widest">
             {loading ? <Loader2 className="animate-spin text-white" /> : (isRegister ? "CRÉER MON COMPTE" : "ME CONNECTER")}
@@ -466,13 +468,14 @@ const AuthScreen = () => {
 const CompleteProfileScreen = ({ uid }) => {
   const [name, setName] = useState("");
   const [role, setRole] = useState("parent");
+  const [level, setLevel] = useState("1"); // AJOUT State
   const [loading, setLoading] = useState(false);
   const finish = async () => {
     if (!name.trim()) return;
     setLoading(true);
     try {
         await setDoc(doc(db, 'artifacts', appId, 'users', uid, 'settings', 'profile'), {
-            uid, name: name.trim(), role, avatarStyle: "avataaars", favorites: [], createdAt: new Date().toISOString()
+            uid, name: name.trim(), role, level: role === 'sitter' ? level : null, avatarStyle: "avataaars", favorites: [], createdAt: new Date().toISOString()
         });
     } catch(e) { console.error(e); }
     setLoading(false);
@@ -486,6 +489,14 @@ const CompleteProfileScreen = ({ uid }) => {
           <button onClick={() => setRole("parent")} className={`py-4 rounded-xl font-black text-[10px] ${role === "parent" ? "bg-white shadow text-emerald-600" : "text-slate-400"}`}>PARENT</button>
           <button onClick={() => setRole("sitter")} className={`py-4 rounded-xl font-black text-[10px] ${role === "sitter" ? "bg-white shadow text-blue-600" : "text-slate-400"}`}>SITTER</button>
         </div>
+        {/* AJOUT SÉLECTION LEVEL */}
+        {role === "sitter" && (
+              <div className="grid grid-cols-3 gap-1 mt-2">
+                <button type="button" onClick={() => setLevel("1")} className={`py-2 rounded-lg text-[10px] font-black uppercase transition-all ${level === "1" ? "bg-slate-900 text-white" : "bg-slate-200 text-slate-500"}`}>NIV 1 🍼</button>
+                <button type="button" onClick={() => setLevel("2")} className={`py-2 rounded-lg text-[10px] font-black uppercase transition-all ${level === "2" ? "bg-slate-900 text-white" : "bg-slate-200 text-slate-500"}`}>NIV 2 🧸</button>
+                <button type="button" onClick={() => setLevel("3")} className={`py-2 rounded-lg text-[10px] font-black uppercase transition-all ${level === "3" ? "bg-slate-900 text-white" : "bg-slate-200 text-slate-500"}`}>NIV 3 👑</button>
+              </div>
+        )}
         <button onClick={finish} disabled={loading} className="w-full bg-emerald-600 text-white py-6 rounded-[2rem] font-black shadow-lg uppercase transition-all active:scale-95 shadow-emerald-200">VALIDER</button>
       </div>
     </div>
@@ -647,7 +658,11 @@ const ParentDashboard = ({ profile, user }) => {
               : filteredSitters.sort((a,b) => (b.views || 0) - (a.views || 0)).map((s) => (
                 <div key={s.id} className={`p-10 rounded-[3.5rem] shadow-xl border hover:shadow-2xl transition-all flex flex-col min-h-[520px] group/card relative ${isDark ? 'bg-slate-900 border-slate-800 shadow-slate-950' : 'bg-white border-slate-50 shadow-slate-200'}`}>
                   <button onClick={() => toggleFavorite(s.id)} className={`absolute top-8 right-8 p-3 rounded-2xl transition-all ${profile.favorites?.includes(s.id) ? 'bg-red-50 text-red-500' : (isDark ? 'bg-slate-800 text-slate-600' : 'bg-slate-50 text-slate-300')} shadow-md`}><Heart size={20} fill={profile.favorites?.includes(s.id) ? "currentColor" : "none"}/></button>
-                  <div className="flex flex-col gap-2.5 mb-8">{(s.hasCV) && <div className="flex items-center gap-2 bg-emerald-50 text-emerald-600 px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest w-fit border border-emerald-100"><ShieldCheck size={10}/> VÉRIFIÉ</div>}</div>
+                  <div className="flex flex-col gap-2.5 mb-8">
+                    {(s.hasCV) && <div className="flex items-center gap-2 bg-emerald-50 text-emerald-600 px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest w-fit border border-emerald-100"><ShieldCheck size={10}/> VÉRIFIÉ</div>}
+                    {/* AJOUT AFFICHAGE LEVEL */}
+                    {s.level && <div className="flex items-center gap-2 bg-indigo-50 text-indigo-600 px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest w-fit border border-indigo-100 mt-1">NIV {s.level} 👑</div>}
+                  </div>
                   <div className={`w-28 h-28 rounded-[2.5rem] mb-6 overflow-hidden border-4 shadow-xl ring-4 group-hover/card:scale-110 transition-transform duration-500 ${isDark ? 'bg-slate-800 border-slate-700 ring-slate-900' : 'bg-slate-50 border-white ring-slate-50/50'}`}><img src={getSPhoto(s)} alt="profile" className="w-full h-full object-cover" /></div>
                   <h4 className={`font-black text-4xl font-sans mb-1 leading-none tracking-tighter text-left ${isDark ? 'text-white' : 'text-slate-800'}`}>{s.name}</h4>
                   <div className="flex items-center gap-3 text-slate-400 mb-6"><RatingStars rating={s.rating || 5} size={18}/><span className={`text-[10px] font-black uppercase px-2 py-0.5 rounded-lg border ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-slate-50 border-slate-100'}`}>{s.city}</span></div>
@@ -680,11 +695,10 @@ const ParentDashboard = ({ profile, user }) => {
         )}
       </main>
 
-      <div className={`fixed bottom-10 left-1/2 -translate-x-1/2 w-[90%] max-w-md backdrop-blur-xl p-2.5 rounded-[3rem] shadow-2xl flex items-center justify-between z-50 border transition-all ${isDark ? 'bg-slate-900/95 border-slate-800 text-white' : 'bg-slate-900/95 border-white/10 text-slate-100'}`}>
+      <div className={`fixed bottom-10 left-1/2 -translate-x-1/2 w-[90%] max-w-md backdrop-blur-xl p-2.5 rounded-[3rem] shadow-2xl flex items-center justify-between z-50 border ${isDark ? 'bg-slate-900/95 border-slate-800' : 'bg-slate-900/95 border-white/10'}`}>
         <button onClick={() => setActiveTab("search")} className={`flex-1 flex flex-col items-center py-4 rounded-[2.5rem] transition-all duration-300 ${activeTab === "search" ? (isDark ? "bg-indigo-500 text-white" : "bg-emerald-500 text-white") : "text-slate-400 hover:text-white"}`}><Search size={22}/><span className="text-[9px] font-black uppercase mt-1.5 tracking-widest">Trouver</span></button>
-        <button onClick={() => setActiveTab("messages")} className={`flex-1 flex flex-col items-center py-4 rounded-[2.5rem] transition-all duration-300 relative ${activeTab === "messages" ? (isDark ? "bg-indigo-500 text-white" : "bg-emerald-500 text-white") : "text-slate-400 hover:text-white"}`}><MessageSquare size={22}/><span className="text-[9px] font-black uppercase mt-1.5 font-sans tracking-widest">Offres</span>{unreadCount > 0 && <div className="absolute top-3 right-1/3 w-2.5 h-2.5 bg-red-500 rounded-full border-2 border-slate-900 animate-pulse"></div>}</button>
-      </div>
-
+        <button onClick={() => setActiveTab("messages")} className={`flex-1 flex flex-col items-center py-4 rounded-[2.5rem] transition-all duration-300 relative ${activeTab === "messages" ? (isDark ? "bg-indigo-500 text-white" : "bg-emerald-500 text-white") : "text-slate-400 hover:text-white"}`}><MessageSquare size={22}/><span className="text-[9px] font-black uppercase mt-1.5 font-sans tracking-widest">Offres</span>{unreadCount > 0 && <div className="absolute top-3 right-1/3 w-2.5 h-2.5 bg-red-500 rounded-full border-2 border-slate-900 animate-pulse"></div>}</button></div>
+    
       {selectedSitter && (
         <div className="fixed inset-0 bg-slate-900/90 backdrop-blur-md z-[100] flex items-end md:items-center justify-center p-4">
           <div className={`w-full max-w-xl rounded-[4rem] overflow-hidden shadow-2xl animate-in slide-in-from-bottom-10 duration-500 p-10 space-y-10 ${isDark ? 'bg-slate-900 text-white' : 'bg-white text-slate-900'}`}>
@@ -699,6 +713,8 @@ const ParentDashboard = ({ profile, user }) => {
                 <div className={`p-10 rounded-[3.5rem] space-y-6 shadow-inner border ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-slate-50 border-slate-100/50 shadow-slate-100'}`}>
                     <div className="flex justify-between items-center"><span className="font-black text-slate-500 text-[11px] uppercase tracking-widest italic">Lieu</span><span className="font-black uppercase">{selectedSitter.city || "France"}</span></div>
                     <div className="flex justify-between items-center"><span className="font-black text-slate-500 text-[11px] uppercase tracking-widest italic">Visites</span><span className="font-black uppercase">{selectedSitter.views || 0} 👀</span></div>
+                    {/* AJOUT AFFICHAGE LEVEL DANS MODALE */}
+                    {selectedSitter.level && <div className="flex justify-between items-center"><span className="font-black text-slate-500 text-[11px] uppercase tracking-widest italic">Niveau</span><span className="font-black uppercase text-indigo-500">NIV {selectedSitter.level} 👑</span></div>}
                 </div>
                 {sitterReviews.length > 0 && (
                     <div className="space-y-4">
@@ -746,6 +762,7 @@ const SitterDashboard = ({ user, profile }) => {
   const [birthDate, setBirthDate] = useState("");
   const [cvName, setCvName] = useState("");
   const [city, setCity] = useState("");
+  const [level, setLevel] = useState(profile?.level || "1"); // AJOUT STATE LEVEL
   const [loading, setLoading] = useState(false);
   const [activeTab, setActiveTab] = useState("profile");
   const [offers, setOffers] = useState([]);
@@ -760,6 +777,7 @@ const SitterDashboard = ({ user, profile }) => {
     const unsubPublic = onSnapshot(doc(db, 'artifacts', appId, 'public', 'data', 'sitters', user.uid), (snap) => {
       if (snap.exists()) {
         const d = snap.data(); setBio(d.bio || ""); setPrice(d.price || ""); setBirthDate(d.birthDate || ""); setCity(d.city || ""); setCvName(d.cvName || ""); setViews(d.views || 0);
+        if (d.level) setLevel(d.level); // CHARGEMENT DU LEVEL
         if (d.availability) setAvailability(d.availability);
       }
     });
@@ -796,7 +814,7 @@ const SitterDashboard = ({ user, profile }) => {
     try {
       await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'sitters', user.uid), {
         name: profile.name, avatarStyle: profile.avatarStyle || 'avataaars', photoURL: profile.photoURL || "", useCustomPhoto: !!profile.useCustomPhoto, views,
-        phone: profile.phone || "", bio: bio.trim(), price, birthDate, availability, cvName, hasCV: !!cvName, city, rating: 5, uid: user.uid, updatedAt: new Date().toISOString()
+        phone: profile.phone || "", bio: bio.trim(), price, birthDate, availability, cvName, hasCV: !!cvName, city, rating: 5, uid: user.uid, level, updatedAt: new Date().toISOString()
       });
       setSaveStatus("PUBLIÉ ! ✨"); setTimeout(() => setSaveStatus(""), 4000);
     } catch(e) { console.error(e); } finally { setLoading(false); }
@@ -836,7 +854,13 @@ const SitterDashboard = ({ user, profile }) => {
                         <div className={`w-28 h-28 rounded-[2.5rem] border-4 shadow-2xl overflow-hidden ring-4 ${isDark ? 'bg-slate-800 border-slate-700 ring-slate-950' : 'bg-white'}`}><img src={myP} alt="profile" className="w-full h-full object-cover" /></div>
                         <button onClick={() => setActiveTab("settings")} className="absolute -bottom-1 -right-1 p-3 bg-slate-900 text-white rounded-xl shadow-xl active:scale-95 transition-all"><Camera size={16}/></button>
                     </div>
-                    <div><h2 className={`text-2xl font-black italic ${isDark ? 'text-white' : 'text-slate-800'}`}>{profile.name}</h2><p className="text-[9px] font-black text-emerald-500 uppercase tracking-widest mt-1 bg-emerald-50 px-3 py-1 rounded-full border border-emerald-100 inline-block">Sitter Pro ✨</p></div>
+                    <div><h2 className={`text-2xl font-black italic ${isDark ? 'text-white' : 'text-slate-800'}`}>{profile.name}</h2>
+                    {/* AFFICHAGE LEVEL SUR PROFIL */}
+                    <div className="flex gap-2 justify-center mt-2">
+                        <span className="text-[9px] font-black text-emerald-500 uppercase tracking-widest bg-emerald-50 px-3 py-1 rounded-full border border-emerald-100 inline-block">Sitter Pro ✨</span>
+                        <span className="text-[9px] font-black text-indigo-500 uppercase tracking-widest bg-indigo-50 px-3 py-1 rounded-full border border-indigo-100 inline-block">NIV {level} 👑</span>
+                    </div>
+                    </div>
                 </div>
                 <div className={`p-8 rounded-[3rem] shadow-xl text-white flex flex-col justify-center space-y-2 transition-all ${isDark ? 'bg-indigo-600' : 'bg-gradient-to-br from-blue-500 to-indigo-600'}`}>
                     <Wallet className="mb-1" size={24}/><p className="text-[10px] font-black uppercase tracking-widest opacity-70">Mon Revenu</p>
@@ -852,8 +876,34 @@ const SitterDashboard = ({ user, profile }) => {
                     <div className="space-y-3 text-left"><label className="text-[11px] font-black text-blue-300 uppercase tracking-widest ml-4 font-sans italic">Ma Ville</label><input type="text" placeholder="Ville" className={`w-full p-8 rounded-[2.5rem] font-bold outline-none shadow-inner border border-transparent ${isDark ? 'bg-slate-800 text-white' : 'bg-slate-50 text-slate-800'}`} value={city} onChange={(e) => setCity(e.target.value)} /></div>
                 </div>
                 <div className="space-y-3 text-left"><label className="text-[11px] font-black text-blue-300 uppercase tracking-widest ml-4 font-sans italic">Naissance</label><input type="date" className={`w-full p-8 rounded-[2.5rem] font-bold outline-none shadow-inner border border-transparent ${isDark ? 'bg-slate-800 text-white' : 'bg-slate-50 text-slate-800'}`} value={birthDate} onChange={(e) => setBirthDate(e.target.value)} /></div>
+                <div className="space-y-3 text-left"><label className="text-[11px] font-black text-blue-300 uppercase tracking-widest ml-4 font-sans italic">Mon Niveau</label>
+                  <div className="grid grid-cols-3 gap-2">
+                    <button onClick={() => setLevel("1")} className={`py-4 rounded-2xl font-black uppercase text-xs transition-all ${level === "1" ? "bg-slate-900 text-white shadow-xl" : "bg-slate-100 text-slate-400"}`}>NIV 1 🍼</button>
+                    <button onClick={() => setLevel("2")} className={`py-4 rounded-2xl font-black uppercase text-xs transition-all ${level === "2" ? "bg-slate-900 text-white shadow-xl" : "bg-slate-100 text-slate-400"}`}>NIV 2 🧸</button>
+                    <button onClick={() => setLevel("3")} className={`py-4 rounded-2xl font-black uppercase text-xs transition-all ${level === "3" ? "bg-slate-900 text-white shadow-xl" : "bg-slate-100 text-slate-400"}`}>NIV 3 👑</button>
+                  </div>
+                </div>
                 <div className="space-y-3 text-left"><label className="text-[11px] font-black text-blue-300 uppercase tracking-widest ml-4 font-sans italic">Ma Bio Professionnelle</label><textarea placeholder="Expériences..." className={`w-full p-10 rounded-[3.5rem] h-64 font-bold outline-none shadow-inner resize-none leading-relaxed ${isDark ? 'bg-slate-800 text-white' : 'bg-slate-50 text-slate-800'}`} value={bio} onChange={(e) => setBio(e.target.value)} /></div>
                 <div className="space-y-3 text-left"><label className="text-[11px] font-black text-blue-300 uppercase tracking-widest ml-4 font-sans italic">Mon CV</label><input type="file" id="cv-f" className="hidden" onChange={(e) => setCvName(e.target.files[0]?.name || "")} accept=".pdf,image/*" /><label htmlFor="cv-f" className={`w-full flex items-center justify-between p-8 border-2 border-dashed rounded-[2.5rem] cursor-pointer hover:bg-emerald-500/5 transition-all shadow-inner ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-slate-50 border-slate-200'}`}><div className="flex items-center gap-6"><div className="p-5 bg-white rounded-3xl text-blue-400 shadow-md transition-transform group-hover:scale-110"><FileUp size={32}/></div><p className={`text-sm font-black ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>{cvName || "Joindre CV"}</p></div>{cvName && <CheckCircle2 className="text-emerald-500" size={32}/>}</label></div>
+                
+                <div className="space-y-8 pt-4">
+                   <div className="flex items-center gap-4 px-2"><div className="p-3 bg-blue-50 rounded-2xl text-blue-500 shadow-sm"><Calendar size={26}/></div><h3 className={`text-sm font-black uppercase tracking-widest italic font-sans leading-none ${isDark ? 'text-white' : 'text-slate-800'}`}>Mes Disponibilités Bento</h3></div>
+                   <div className="grid gap-5">
+                       {Object.entries(availability).map(([day, data]) => (
+                           <div key={day} className={`flex flex-col md:flex-row items-center gap-6 p-8 rounded-[3rem] border transition-all duration-300 ${data.active ? (isDark ? 'bg-slate-800 border-indigo-500/30 shadow-2xl' : 'bg-white border-blue-100 shadow-xl') : 'bg-transparent border-transparent opacity-40'}`}>
+                               <button onClick={() => setAvailability(p => ({...p, [day]: {...p[day], active: !p[day].active}}))} className={`w-full md:w-40 py-5 rounded-2xl font-black text-[10px] uppercase tracking-widest ${data.active ? 'bg-emerald-500 text-white shadow-lg' : 'bg-slate-200 text-slate-400 hover:bg-slate-300'}`}>{day}</button>
+                               {data.active && (
+                                   <div className="flex items-center gap-5 animate-in slide-in-from-left-4 duration-300 flex-1">
+                                       <div className={`flex items-center gap-4 px-8 py-4 rounded-3xl text-[11px] font-black border shadow-inner ${isDark ? 'bg-slate-900 border-slate-700 text-slate-300' : 'bg-blue-50/50 border-blue-50 text-slate-600'}`}>
+                                           <Clock size={18} className="text-blue-400" /><input type="time" className="bg-transparent border-none outline-none" value={data.start} onChange={(e) => setAvailability(p => ({...p, [day]: {...p[day], start: e.target.value}}))} /><span className="text-slate-300 mx-3 text-sm">à</span><input type="time" className="bg-transparent border-none outline-none" value={data.end} onChange={(e) => setAvailability(p => ({...p, [day]: {...p[day], end: e.target.value}}))} />
+                                       </div>
+                                   </div>
+                               )}
+                           </div>
+                       ))}
+                   </div>
+                </div>
+
                 <button onClick={handleSave} disabled={loading} className={`w-full py-10 rounded-[3.5rem] font-black shadow-2xl flex justify-center items-center gap-4 active:scale-95 transition-all uppercase tracking-[0.4em] text-sm hover:brightness-110 shadow-slate-300 ${isDark ? 'bg-indigo-600 text-white' : 'bg-slate-900 text-white'}`}>{loading ? <Loader2 className="animate-spin" size={32}/> : (saveStatus || "PUBLIER MON PROFIL")}</button>
             </div>
           </div>
