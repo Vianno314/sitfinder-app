@@ -957,3 +957,4 @@ export default function App() {
   if (user && !profile) return <CompleteProfileScreen uid={user.uid} />;
   return profile.role === "parent" ? <ParentDashboard profile={profile} user={user} /> : <SitterDashboard user={user} profile={profile} />;
 }
+
