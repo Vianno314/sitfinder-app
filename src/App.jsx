@@ -126,7 +126,7 @@ const SettingsView = ({ user, profile, onBack, isDark, toggleDark }) => {
         await deleteUser(auth.currentUser);
         alert("Compte supprimé avec succès.");
       } catch (err) {
-        alert("Sécurité : merci de vous reconnecter avant de supprimer.");
+        alert("Sécurité : merci de vous reconnecter avant de supprimer votre compte.");
       } finally {
         setLoading(false);
       }
@@ -241,8 +241,23 @@ const ChatRoom = ({ offer, currentUser, onBack, isDark }) => {
       setMessages(msgs.sort((a, b) => (a.createdAt?.seconds || 0) - (b.createdAt?.seconds || 0)));
       setTimeout(scrollToBottom, 100);
     });
+    
+    // CORRECTION : On cherche le téléphone dans le profil PUBLIC si c'est un Sitter
     const getContact = async () => {
-        const otherId = currentUser.uid === offer.sitterId ? offer.parentId : offer.sitterId;
+        const isSitter = currentUser.uid === offer.sitterId;
+        const otherId = isSitter ? offer.parentId : offer.sitterId;
+        
+        // Si je suis Parent, je cherche le profil Public du Sitter
+        if (!isSitter) {
+            const publicDoc = await getDoc(doc(db, 'artifacts', appId, 'public', 'data', 'sitters', otherId));
+            if (publicDoc.exists() && publicDoc.data().phone) {
+                setOtherUserPhone(publicDoc.data().phone);
+                return;
+            }
+        }
+        
+        // Sinon (ou si pas trouvé), je cherche le profil privé (pour Sitter vers Parent)
+        // Note: Cela peut échouer si les règles de sécurité sont strictes, mais c'est le comportement attendu.
         const d = await getDoc(doc(db, 'artifacts', appId, 'users', otherId, 'settings', 'profile'));
         if (d.exists()) setOtherUserPhone(d.data().phone);
     };
@@ -292,19 +307,30 @@ const ChatRoom = ({ offer, currentUser, onBack, isDark }) => {
     try {
       await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'offers', offer.id), { status });
       const text = status === 'accepted' ? "✨ Offre acceptée ! Appelez-vous pour caler les détails." : "L'offre a été refusée.";
-      await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'offers', offer.id, 'messages'), { text, senderId: 'system', createdAt: Timestamp.now() });
+      await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'offers', offer.id, 'messages'), { 
+        text, 
+        senderId: 'system', 
+        parentId: offer.parentId, 
+        sitterId: offer.sitterId, 
+        createdAt: Timestamp.now() 
+      });
     } catch (e) { console.error(e); }
   };
 
   const submitReview = async () => {
       try {
+          // CORRECTION: AJOUT D'UNE ALERTE POUR CONFIRMER L'ENVOI
           await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'sitters', offer.sitterId, 'reviews'), {
               parentId: currentUser.uid, parentName: currentUser.displayName || "Parent",
               rating: reviewRating, text: reviewText, createdAt: Timestamp.now()
           });
           await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'offers', offer.id), { status: 'reviewed' });
+          alert("Votre avis a été publié ! ✨");
           setShowReview(false);
-      } catch (e) { console.error(e); }
+      } catch (e) { 
+          console.error(e); 
+          alert("Erreur lors de l'envoi de l'avis.");
+      }
   };
 
   return (
@@ -330,7 +356,10 @@ const ChatRoom = ({ offer, currentUser, onBack, isDark }) => {
           <div key={m.id} className={`flex ${m.senderId === 'system' ? 'justify-center' : m.senderId === currentUser.uid ? 'justify-end' : 'justify-start'}`}>
             <div className={`max-w-[80%] p-4 rounded-[2rem] text-sm shadow-sm relative group ${
               m.senderId === 'system' ? (isDark ? 'bg-slate-800 text-emerald-400 border-slate-700' : 'bg-emerald-50 text-emerald-700 border-emerald-100') + ' text-[10px] font-black uppercase border px-6 py-2 text-center' :
-              m.senderId === currentUser.uid ? 'bg-blue-600 text-white rounded-br-none' : (isDark ? 'bg-slate-800 text-slate-200 border-slate-700' : 'bg-white text-slate-700 border-slate-100') + ' rounded-bl-none border'
+              // FIX: FORCE COULEUR BLANCHE POUR MES MESSAGES (FOND BLEU)
+              m.senderId === currentUser.uid ? 'bg-blue-600 text-white rounded-br-none' : 
+              // FIX: FORCE COULEUR SOMBRE POUR LES AUTRES MESSAGES (FOND CLAIR)
+              (isDark ? 'bg-slate-800 text-slate-200 border-slate-700' : 'bg-white text-slate-800 border-slate-100') + ' rounded-bl-none border'
             }`}> 
                 {m.text} 
                 {translations[m.id] && <p className="text-[10px] mt-2 opacity-70 italic border-t border-white/20 pt-1">{translations[m.id]}</p>}
@@ -348,7 +377,7 @@ const ChatRoom = ({ offer, currentUser, onBack, isDark }) => {
               <div className="bg-white w-full max-w-md rounded-[3.5rem] p-10 space-y-8 animate-in zoom-in duration-300">
                   <div className="text-center"><h3 className="text-2xl font-black italic uppercase tracking-tighter">Note la prestation</h3></div>
                   <div className="flex justify-center"><RatingStars rating={reviewRating} size={40} interactive={true} onRate={setReviewRating} /></div>
-                  <textarea placeholder="Partage ton avis..." className="w-full p-6 bg-slate-50 rounded-3xl h-32 font-bold outline-none shadow-inner" value={reviewText} onChange={(e) => setReviewText(e.target.value)} />
+                  <textarea placeholder="Partage ton avis..." className="w-full p-6 bg-slate-50 rounded-3xl h-32 font-bold outline-none shadow-inner text-slate-800" value={reviewText} onChange={(e) => setReviewText(e.target.value)} />
                   <div className="flex gap-3 pt-4">
                       <button onClick={() => setShowReview(false)} className="flex-1 py-4 font-black text-[10px] uppercase text-slate-400">Annuler</button>
                       <button onClick={submitReview} className="flex-[2] bg-emerald-500 text-white py-4 rounded-2xl font-black text-[10px] uppercase">Publier</button>
@@ -485,7 +514,7 @@ const ParentDashboard = ({ profile, user }) => {
       setSitters(snap.docs.map(d => ({ id: d.id, ...d.data() })));
       setLoading(false);
     });
-    // FILTRE SÉCURISÉ
+    // FILTRE SÉCURISÉ POUR PARENT
     const qOffers = query(
       collection(db, 'artifacts', appId, 'public', 'data', 'offers'), 
       where("parentId", "==", user.uid)
@@ -528,6 +557,7 @@ const ParentDashboard = ({ profile, user }) => {
   const handleBooking = async (s, p, h) => {
     try {
       const offerText = `Offre : ${h}h à ${p}€/h`;
+      // CRUCIAL : On ajoute tous les marqueurs de messagerie dès la création de l'offre
       const newOffer = await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'offers'), {
         parentId: user.uid, 
         parentName: profile.name, 
@@ -543,11 +573,12 @@ const ParentDashboard = ({ profile, user }) => {
         lastSenderId: user.uid
       });
 
+      // CRUCIAL : On ajoute les ID de sécurité dans le premier message
       await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'offers', newOffer.id, 'messages'), {
         text: `Bonjour ${s.name}, je souhaiterais réserver une garde de ${h}H au prix de ${p}€/H.`, 
         senderId: user.uid, 
-        parentId: user.uid,
-        sitterId: s.id,
+        parentId: user.uid, // Indispensable pour la sécurité
+        sitterId: s.id,     // Indispensable pour la sécurité
         createdAt: Timestamp.now()
       });
 
@@ -645,10 +676,9 @@ const ParentDashboard = ({ profile, user }) => {
         )}
       </main>
 
-      {/* BARRE DE NAVIGATION PARENT : SANS PROFIL */}
       <div className={`fixed bottom-10 left-1/2 -translate-x-1/2 w-[90%] max-w-md backdrop-blur-xl p-2.5 rounded-[3rem] shadow-2xl flex items-center justify-between z-50 border transition-all ${isDark ? 'bg-slate-900/95 border-slate-800 text-white' : 'bg-slate-900/95 border-white/10 text-slate-100'}`}>
         <button onClick={() => setActiveTab("search")} className={`flex-1 flex flex-col items-center py-4 rounded-[2.5rem] transition-all duration-300 ${activeTab === "search" ? (isDark ? "bg-indigo-500 text-white" : "bg-emerald-500 text-white") : "text-slate-400 hover:text-white"}`}><Search size={22}/><span className="text-[9px] font-black uppercase mt-1.5 tracking-widest">Trouver</span></button>
-        <button onClick={() => setActiveTab("messages")} className={`flex-1 flex flex-col items-center py-4 rounded-[2.5rem] transition-all duration-300 relative ${activeTab === "messages" ? (isDark ? "bg-indigo-500 text-white" : "bg-emerald-500 text-white") : "text-slate-400 hover:text-white"}`}><MessageSquare size={22}/><span className="text-[9px] font-black uppercase mt-1.5 tracking-widest">Offres</span>{unreadCount > 0 && <div className="absolute top-3 right-1/3 w-2.5 h-2.5 bg-red-500 rounded-full border-2 border-slate-900 animate-pulse"></div>}</button>
+        <button onClick={() => setActiveTab("messages")} className={`flex-1 flex flex-col items-center py-4 rounded-[2.5rem] transition-all duration-300 relative ${activeTab === "messages" ? (isDark ? "bg-indigo-500 text-white" : "bg-emerald-500 text-white") : "text-slate-400 hover:text-white"}`}><MessageSquare size={22}/><span className="text-[9px] font-black uppercase mt-1.5 font-sans tracking-widest">Offres</span>{unreadCount > 0 && <div className="absolute top-3 right-1/3 w-2.5 h-2.5 bg-red-500 rounded-full border-2 border-slate-900 animate-pulse"></div>}</button>
       </div>
 
       {selectedSitter && (
