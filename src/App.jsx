@@ -209,7 +209,8 @@ const SettingsView = ({ user, profile, onBack, isDark, toggleDark }) => {
                 </div>
                 <button type="button" onClick={() => setPrivateMode(!privateMode)} className={`w-12 h-6 rounded-full relative transition-all ${privateMode ? 'bg-emerald-500' : 'bg-slate-300'}`}><div className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-all ${privateMode ? 'right-1' : 'left-1'}`}></div></button>
             </div>
-            <button disabled={loading} className="w-full bg-slate-900 text-white py-6 rounded-[2.5rem] font-black text-[10px] uppercase shadow-xl">Sauvegarder les réglages</button>
+            {/* BOUTON SAUVEGARDER : COULEUR CHANGEE */}
+            <button disabled={loading} className="w-full bg-emerald-600 text-white py-6 rounded-[2.5rem] font-black text-[10px] uppercase shadow-xl hover:bg-emerald-700 transition-all">Sauvegarder les réglages</button>
         </form>
 
         <div className="space-y-4">
@@ -359,7 +360,9 @@ const ChatRoom = ({ offer, currentUser, onBack, isDark }) => {
           <div key={m.id} className={`flex ${m.senderId === 'system' ? 'justify-center' : m.senderId === currentUser.uid ? 'justify-end' : 'justify-start'}`}>
             <div className={`max-w-[80%] p-4 rounded-[2rem] text-sm shadow-sm relative group ${
               m.senderId === 'system' ? (isDark ? 'bg-slate-800 text-emerald-400 border-slate-700' : 'bg-emerald-50 text-emerald-700 border-emerald-100') + ' text-[10px] font-black uppercase border px-6 py-2 text-center' :
-              m.senderId === currentUser.uid ? 'bg-blue-600 text-white rounded-br-none' : (isDark ? 'bg-slate-800 text-slate-200 border-slate-700' : 'bg-white text-slate-700 border-slate-100') + ' rounded-bl-none border'
+              // COULEURS CHAT MODIFIEES (Bleu Indigo)
+              m.senderId === currentUser.uid ? 'bg-indigo-600 text-white rounded-br-none' : 
+              (isDark ? 'bg-slate-800 text-slate-200 border-slate-700' : 'bg-white text-slate-800 border-slate-100') + ' rounded-bl-none border'
             }`}> 
                 {m.text} 
                 {translations[m.id] && <p className="text-[10px] mt-2 opacity-70 italic border-t border-white/20 pt-1">{translations[m.id]}</p>}
@@ -395,7 +398,7 @@ const ChatRoom = ({ offer, currentUser, onBack, isDark }) => {
 
       <form onSubmit={sendMessage} className={`p-4 border-t flex gap-4 pb-12 ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-100'}`}>
         <input type="text" placeholder="Répondre..." className={`flex-1 p-4 rounded-2xl outline-none font-bold shadow-inner ${isDark ? 'bg-slate-800 text-white' : 'bg-slate-50 text-slate-700'}`} value={newMessage} onChange={(e) => setNewMessage(e.target.value)} />
-        <button type="submit" className="bg-blue-600 text-white p-4 rounded-2xl shadow-lg active:scale-95 transition-all"><Send size={20}/></button>
+        <button type="submit" className="bg-indigo-600 text-white p-4 rounded-2xl shadow-lg active:scale-95 transition-all"><Send size={20}/></button>
       </form>
     </div>
   );
@@ -484,7 +487,8 @@ const AuthScreen = () => {
             )}
             </>
           )}
-          <button disabled={loading} className="w-full bg-slate-900 text-white py-6 rounded-[2rem] font-black text-sm shadow-xl mt-8 flex justify-center items-center gap-3 active:scale-95 transition-all uppercase tracking-widest">
+          {/* BOUTON CONNEXION : COULEUR CHANGEE */}
+          <button disabled={loading} className="w-full bg-emerald-600 text-white py-6 rounded-[2rem] font-black text-sm shadow-xl mt-8 flex justify-center items-center gap-3 active:scale-95 transition-all uppercase tracking-widest hover:bg-emerald-700">
             {loading ? <Loader2 className="animate-spin text-white" /> : (isRegister ? "CRÉER MON COMPTE" : "ME CONNECTER")}
           </button>
         </form>
@@ -700,6 +704,7 @@ const ParentDashboard = ({ profile, user }) => {
                   <p className={`italic mb-8 leading-relaxed text-sm flex-1 line-clamp-3 text-left ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>"{s.bio || "..."}"</p>
                   <div className={`flex justify-between items-center pt-8 border-t mt-auto ${isDark ? 'border-slate-800' : 'border-slate-50'}`}>
                     <span className="text-3xl font-black text-emerald-600 font-sans">{s.price || 0}€<span className="text-[10px] text-slate-400 ml-1">/H</span></span>
+                    {/* BOUTON PROFIL : COULEUR CHANGEE */}
                     <button onClick={() => setSelectedSitter(s)} className={`px-10 py-5 rounded-[2.5rem] font-black text-[10px] uppercase shadow-lg active:scale-95 transition-all hover:bg-emerald-600 tracking-widest ${isDark ? 'bg-indigo-600 text-white' : 'bg-slate-900 text-white'}`}>VOIR PROFIL</button>
                   </div>
                 </div>
@@ -769,11 +774,12 @@ const ParentDashboard = ({ profile, user }) => {
                       <input id="neg-h" type="number" defaultValue="2" className="w-full p-6 rounded-[2.5rem] outline-none font-black text-2xl shadow-inner bg-slate-50 text-slate-800" />
                   </div>
               </div>
+              {/* BOUTON ENVOYER DEMANDE : COULEUR CHANGEE */}
               <button onClick={() => {
                   const p = document.getElementById('neg-p').value;
                   const h = document.getElementById('neg-h').value;
                   handleBooking(selectedSitter, p, h);
-              }} className="w-full py-8 rounded-[2.5rem] font-black text-sm shadow-xl shadow-emerald-500/20 uppercase tracking-[0.2em] active:scale-95 transition-all bg-emerald-500 text-white">ENVOYER LA DEMANDE</button>
+              }} className="w-full py-8 rounded-[2.5rem] font-black text-sm shadow-xl shadow-emerald-500/20 uppercase tracking-[0.2em] active:scale-95 transition-all bg-emerald-600 text-white hover:bg-emerald-700">ENVOYER LA DEMANDE</button>
             </div>
           </div>
         </div>
@@ -902,6 +908,25 @@ const SitterDashboard = ({ user, profile }) => {
                 <div className="space-y-3 text-left"><label className="text-[11px] font-black text-blue-300 uppercase tracking-widest ml-4 font-sans italic">Naissance</label><input type="date" className={`w-full p-8 rounded-[2.5rem] font-bold outline-none shadow-inner border border-transparent ${isDark ? 'bg-slate-800 text-white' : 'bg-slate-50 text-slate-800'}`} value={birthDate} onChange={(e) => setBirthDate(e.target.value)} /></div>
                 <div className="space-y-3 text-left"><label className="text-[11px] font-black text-blue-300 uppercase tracking-widest ml-4 font-sans italic">Ma Bio Professionnelle</label><textarea placeholder="Expériences..." className={`w-full p-10 rounded-[3.5rem] h-64 font-bold outline-none shadow-inner resize-none leading-relaxed ${isDark ? 'bg-slate-800 text-white' : 'bg-slate-50 text-slate-800'}`} value={bio} onChange={(e) => setBio(e.target.value)} /></div>
                 <div className="space-y-3 text-left"><label className="text-[11px] font-black text-blue-300 uppercase tracking-widest ml-4 font-sans italic">Mon CV</label><input type="file" id="cv-f" className="hidden" onChange={(e) => setCvName(e.target.files[0]?.name || "")} accept=".pdf,image/*" /><label htmlFor="cv-f" className={`w-full flex items-center justify-between p-8 border-2 border-dashed rounded-[2.5rem] cursor-pointer hover:bg-emerald-500/5 transition-all shadow-inner ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-slate-50 border-slate-200'}`}><div className="flex items-center gap-6"><div className="p-5 bg-white rounded-3xl text-blue-400 shadow-md transition-transform group-hover:scale-110"><FileUp size={32}/></div><p className={`text-sm font-black ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>{cvName || "Joindre CV"}</p></div>{cvName && <CheckCircle2 className="text-emerald-500" size={32}/>}</label></div>
+                
+                <div className="space-y-8 pt-4">
+                   <div className="flex items-center gap-4 px-2"><div className="p-3 bg-blue-50 rounded-2xl text-blue-500 shadow-sm"><Calendar size={26}/></div><h3 className={`text-sm font-black uppercase tracking-widest italic font-sans leading-none ${isDark ? 'text-white' : 'text-slate-800'}`}>Mes Disponibilités Bento</h3></div>
+                   <div className="grid gap-5">
+                       {Object.entries(availability).map(([day, data]) => (
+                           <div key={day} className={`flex flex-col md:flex-row items-center gap-6 p-8 rounded-[3rem] border transition-all duration-300 ${data.active ? (isDark ? 'bg-slate-800 border-indigo-500/30 shadow-2xl' : 'bg-white border-blue-100 shadow-xl') : 'bg-transparent border-transparent opacity-40'}`}>
+                               <button onClick={() => setAvailability(p => ({...p, [day]: {...p[day], active: !p[day].active}}))} className={`w-full md:w-40 py-5 rounded-2xl font-black text-[10px] uppercase tracking-widest ${data.active ? 'bg-emerald-500 text-white shadow-lg' : 'bg-slate-200 text-slate-400 hover:bg-slate-300'}`}>{day}</button>
+                               {data.active && (
+                                   <div className="flex items-center gap-5 animate-in slide-in-from-left-4 duration-300 flex-1">
+                                       <div className={`flex items-center gap-4 px-8 py-4 rounded-3xl text-[11px] font-black border shadow-inner ${isDark ? 'bg-slate-900 border-slate-700 text-slate-300' : 'bg-blue-50/50 border-blue-50 text-slate-600'}`}>
+                                           <Clock size={18} className="text-blue-400" /><input type="time" className="bg-transparent border-none outline-none" value={data.start} onChange={(e) => setAvailability(p => ({...p, [day]: {...p[day], start: e.target.value}}))} /><span className="text-slate-300 mx-3 text-sm">à</span><input type="time" className="bg-transparent border-none outline-none" value={data.end} onChange={(e) => setAvailability(p => ({...p, [day]: {...p[day], end: e.target.value}}))} />
+                                       </div>
+                                   </div>
+                               )}
+                           </div>
+                       ))}
+                   </div>
+                </div>
+
                 <button onClick={handleSave} disabled={loading} className={`w-full py-10 rounded-[3.5rem] font-black shadow-2xl flex justify-center items-center gap-4 active:scale-95 transition-all uppercase tracking-[0.4em] text-sm hover:brightness-110 shadow-slate-300 ${isDark ? 'bg-indigo-600 text-white' : 'bg-slate-900 text-white'}`}>{loading ? <Loader2 className="animate-spin" size={32}/> : (saveStatus || "PUBLIER MON PROFIL")}</button>
             </div>
           </div>
