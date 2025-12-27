@@ -101,8 +101,8 @@ const SplashScreen = ({ message = "La recherche en toute confiance" }) => (
       <SitFinderLogo className="w-40 h-40" />
     </div>
     <div className="text-center space-y-4 animate-in fade-in slide-in-from-bottom-4 duration-1000 delay-300">
-      {/* NOM CHANGÉ ICI */}
-      <h1 className="text-6xl font-black tracking-tighter text-slate-800 italic leading-none uppercase">BABY<span className="text-emerald-500 font-sans italic">KEEPER</span></h1>
+      {/* NOM CORRIGÉ + COULEUR UNIQUE BLEU INDIGO */}
+      <h1 className="text-6xl font-black tracking-tighter text-indigo-600 italic leading-none uppercase font-sans">BABYKEEPER</h1>
       <p className="text-blue-600/60 font-bold uppercase tracking-[0.4em] text-[10px] px-4 font-sans">{message}</p>
     </div>
   </div>
@@ -169,8 +169,8 @@ const SettingsView = ({ user, profile, onBack, isDark, toggleDark }) => {
     <div className={`min-h-screen font-sans animate-in slide-in-from-right duration-500 pb-32 ${isDark ? 'bg-slate-950 text-white' : 'bg-slate-50 text-slate-800'}`}>
       <div className={`${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-100'} p-6 border-b flex items-center gap-4 sticky top-0 z-50 shadow-sm`}>
         <button onClick={onBack} className={`p-2 rounded-full ${isDark ? 'hover:bg-slate-800' : 'hover:bg-slate-50'}`}><ArrowLeft size={20}/></button>
-        {/* NOM CHANGÉ ICI */}
-        <h2 className="font-black text-xl italic uppercase">Réglages BABYKEEPER</h2>
+        {/* NOM CORRIGÉ + COULEUR UNIQUE */}
+        <h2 className="font-black text-xl italic uppercase text-indigo-600">Réglages BABYKEEPER</h2>
       </div>
 
       <div className="max-w-2xl mx-auto p-6 space-y-8 mt-4 text-left">
@@ -343,8 +343,8 @@ const ChatRoom = ({ offer, currentUser, onBack, isDark }) => {
       <div className={`p-6 border-b flex items-center justify-between sticky top-0 z-20 shadow-sm ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-100'}`}>
         <div className="flex items-center gap-4">
           <button onClick={onBack} className={`p-2 rounded-full ${isDark ? 'hover:bg-slate-800' : 'hover:bg-slate-50'}`}><ArrowLeft size={20}/></button>
-          {/* NOM CHANGÉ ICI */}
-          <div className="text-left"><h3 className="font-black tracking-tight uppercase italic text-xs">BABYKEEPER CHAT</h3><p className="text-[10px] text-emerald-500 font-black uppercase tracking-widest">{offer.price}€/H • {offer.status}</p></div>
+          {/* NOM CORRIGÉ + COULEUR UNIQUE */}
+          <div className="text-left"><h3 className="font-black tracking-tight uppercase italic text-xs text-indigo-600">BABYKEEPER CHAT</h3><p className="text-[10px] text-emerald-500 font-black uppercase tracking-widest">{offer.price}€/H • {offer.status}</p></div>
         </div>
         <div className="flex gap-2">
             <button onClick={handleReport} className="p-3 text-slate-300 hover:text-red-500 transition-colors"><Flag size={18}/></button>
@@ -459,8 +459,8 @@ const AuthScreen = () => {
       <div className="w-full max-w-lg bg-white p-10 md:p-12 rounded-[4rem] shadow-2xl border border-white z-10 shadow-slate-100">
         <div className="flex flex-col items-center mb-10 text-center">
           <SitFinderLogo className="mb-6 h-24 w-24" />
-          {/* NOM CHANGÉ ICI */}
-          <h2 className="text-4xl font-black italic uppercase tracking-tighter leading-none">BABY<span className="text-emerald-500 italic">KEEPER</span></h2>
+          {/* NOM CORRIGÉ + COULEUR UNIQUE BLEU INDIGO */}
+          <h2 className="text-4xl font-black italic uppercase tracking-tighter leading-none text-indigo-600 font-sans">BABYKEEPER</h2>
           <p className="text-slate-400 text-sm font-bold uppercase tracking-widest mt-2">La recherche en toute confiance</p>
         </div>
         <form onSubmit={handleAuth} className="space-y-4">
@@ -656,7 +656,8 @@ const ParentDashboard = ({ profile, user }) => {
   return (
     <div className={`min-h-screen font-sans pb-32 ${isDark ? 'bg-slate-950 text-white' : 'bg-slate-50 text-slate-800'}`}>
       <nav className={`p-6 flex justify-between items-center sticky top-0 z-40 border-b shadow-sm ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-100'}`}>
-        <div className="flex items-center gap-3"><SitFinderLogo className="w-10 h-10" glow={false} /><span className="font-black italic text-2xl uppercase tracking-tight">SIT<span className="text-emerald-500">FINDER</span></span></div>
+        {/* NOM CORRIGÉ ICI (DASHBOARD PARENT) + COULEUR UNIQUE */}
+        <div className="flex items-center gap-3"><SitFinderLogo className="w-10 h-10" glow={false} /><span className="font-black italic text-2xl uppercase tracking-tight text-indigo-600 font-sans">BABYKEEPER</span></div>
         <div className="flex items-center gap-2">
           <div className="relative p-2 text-slate-400">
               <Bell size={22}/>
@@ -874,7 +875,8 @@ const SitterDashboard = ({ user, profile }) => {
   return (
     <div className={`min-h-screen font-sans pb-32 animate-in fade-in duration-500 ${isDark ? 'bg-slate-950 text-white' : 'bg-slate-50 text-slate-800'}`}>
       <nav className={`p-6 flex justify-between items-center sticky top-0 z-40 border-b shadow-sm ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-100'}`}>
-        <div className="flex items-center gap-3 text-slate-900"><SitFinderLogo className="w-10 h-10" glow={false} /><span className="font-black italic text-xl uppercase tracking-tighter leading-none">SIT<span className="text-emerald-500 italic">FINDER</span></span></div>
+        {/* NOM CORRIGÉ ICI (DASHBOARD SITTER) + COULEUR UNIQUE */}
+        <div className="flex items-center gap-3 text-slate-900"><SitFinderLogo className="w-10 h-10" glow={false} /><span className="font-black italic text-xl uppercase tracking-tighter leading-none text-indigo-600 font-sans">BABYKEEPER</span></div>
         <div className="flex items-center gap-2">
           <div className="relative p-2 text-slate-400">
               <Bell size={22}/>
