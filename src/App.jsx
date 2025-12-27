@@ -67,7 +67,7 @@ const SitFinderLogo = ({ className = "w-16 h-16", glow = true }) => (
       </>
     )}
     <div className="relative bg-white p-0.5 rounded-full shadow-xl ring-4 ring-white overflow-hidden flex items-center justify-center h-full w-full">
-      <img src="/logo.png" alt="SitFinder Logo" className="w-full h-full object-cover" />
+      <img src="/logo.png" alt="BabyKeeper Logo" className="w-full h-full object-cover" />
     </div>
   </div>
 );
@@ -103,9 +103,9 @@ const SplashScreen = ({ message = "La recherche en toute confiance" }) => (
       <SitFinderLogo className="w-40 h-40" />
     </div>
     <div className="text-center space-y-4 animate-in fade-in slide-in-from-bottom-4 duration-1000 delay-300">
-      {/* DEGRADE SATELLA SUR LE TITRE SITFINDER */}
+      {/* DEGRADE SATELLA SUR LE TITRE BABYKEEPER */}
       <h1 className="text-6xl font-black tracking-tighter italic leading-none uppercase font-sans text-transparent bg-clip-text bg-gradient-to-r from-[#E64545] to-[#E0720F]">
-        SITFINDER
+        BABYKEEPER
       </h1>
       <p className="text-[#E64545]/60 font-bold uppercase tracking-[0.4em] text-[10px] px-4 font-sans">{message}</p>
     </div>
@@ -174,7 +174,7 @@ const SettingsView = ({ user, profile, onBack, isDark, toggleDark }) => {
       <div className={`${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-100'} p-6 border-b flex items-center gap-4 sticky top-0 z-50 shadow-sm`}>
         <button onClick={onBack} className={`p-2 rounded-full ${isDark ? 'hover:bg-slate-800' : 'hover:bg-slate-50'}`}><ArrowLeft size={20}/></button>
         {/* TITRE ROUGE */}
-        <h2 className="font-black text-xl italic uppercase text-[#E64545]">Réglages SITFINDER</h2>
+        <h2 className="font-black text-xl italic uppercase text-[#E64545]">Réglages BABYKEEPER</h2>
       </div>
 
       <div className="max-w-2xl mx-auto p-6 space-y-8 mt-4 text-left">
@@ -220,7 +220,8 @@ const SettingsView = ({ user, profile, onBack, isDark, toggleDark }) => {
         </form>
 
         <div className="space-y-4">
-          <a href="mailto:vianney.bordais@gmail.com" className="w-full p-6 border-2 border-[#E0720F]/20 text-[#E0720F] rounded-[2.5rem] font-black text-[10px] uppercase flex items-center justify-center gap-3 hover:bg-orange-50 transition-all">
+          {/* ADRESSE EMAIL DE SUPPORT MISE A JOUR */}
+          <a href="mailto:babykeeper.bordais@gmail.com" className="w-full p-6 border-2 border-[#E0720F]/20 text-[#E0720F] rounded-[2.5rem] font-black text-[10px] uppercase flex items-center justify-center gap-3 hover:bg-orange-50 transition-all">
             <Mail size={18}/> Support Technique
           </a>
           <button onClick={() => signOut(auth)} className="w-full p-6 border-2 border-dashed border-red-100 text-red-500 rounded-[2.5rem] font-black text-[10px] uppercase flex items-center justify-center gap-3"><LogOut size={18}/> Déconnexion</button>
@@ -330,7 +331,7 @@ const ChatRoom = ({ offer, currentUser, onBack, isDark }) => {
         <div className="flex items-center gap-4">
           <button onClick={onBack} className={`p-2 rounded-full ${isDark ? 'hover:bg-slate-800' : 'hover:bg-slate-50'}`}><ArrowLeft size={20}/></button>
           {/* TITRE DEGRADE */}
-          <div className="text-left"><h3 className="font-black tracking-tight uppercase italic text-xs text-transparent bg-clip-text bg-gradient-to-r from-[#E64545] to-[#E0720F]">SITFINDER CHAT</h3><p className="text-[10px] text-[#E0720F] font-black uppercase tracking-widest">{offer.price}€/H • {offer.status}</p></div>
+          <div className="text-left"><h3 className="font-black tracking-tight uppercase italic text-xs text-transparent bg-clip-text bg-gradient-to-r from-[#E64545] to-[#E0720F]">BABYKEEPER CHAT</h3><p className="text-[10px] text-[#E0720F] font-black uppercase tracking-widest">{offer.price}€/H • {offer.status}</p></div>
         </div>
         <div className="flex gap-2">
             <button onClick={handleReport} className="p-3 text-slate-300 hover:text-red-500 transition-colors"><Flag size={18}/></button>
@@ -446,7 +447,7 @@ const AuthScreen = () => {
         <div className="flex flex-col items-center mb-10 text-center">
           <SitFinderLogo className="mb-6 h-24 w-24" />
           {/* TITRE AVEC DEGRADE SATELLA */}
-          <h2 className="text-4xl font-black italic uppercase tracking-tighter leading-none text-transparent bg-clip-text bg-gradient-to-r from-[#E64545] to-[#E0720F]">SITFINDER</h2>
+          <h2 className="text-4xl font-black italic uppercase tracking-tighter leading-none text-transparent bg-clip-text bg-gradient-to-r from-[#E64545] to-[#E0720F]">BABYKEEPER</h2>
           <p className="text-[#E64545] text-sm font-bold uppercase tracking-widest mt-2">La recherche en toute confiance</p>
         </div>
         <form onSubmit={handleAuth} className="space-y-4">
@@ -477,7 +478,7 @@ const AuthScreen = () => {
             </>
           )}
           {/* BOUTON CONNEXION : ROUGE */}
-          <button disabled={loading} className="w-full bg-[#E64545] text-white py-6 rounded-[2rem] font-black text-sm shadow-xl mt-8 flex justify-center items-center gap-3 active:scale-95 transition-all uppercase tracking-widest hover:bg-[#E64545]/90">
+          <button disabled={loading} className="w-full bg-[#E64545] text-white py-6 rounded-[2rem] font-black text-sm shadow-xl mt-8 flex justify-center items-center gap-3 active:scale-95 transition-all uppercase tracking-widest hover:brightness-110">
             {loading ? <Loader2 className="animate-spin text-white" /> : (isRegister ? "CRÉER MON COMPTE" : "ME CONNECTER")}
           </button>
         </form>
@@ -643,7 +644,7 @@ const ParentDashboard = ({ profile, user }) => {
     <div className={`min-h-screen font-sans pb-32 ${isDark ? 'bg-slate-950 text-white' : 'bg-slate-50 text-slate-800'}`}>
       <nav className={`p-6 flex justify-between items-center sticky top-0 z-40 border-b shadow-sm ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-100'}`}>
         {/* NOM CORRIGÉ ICI (DASHBOARD PARENT) + COULEUR UNIQUE DEGRADE SATELLA */}
-        <div className="flex items-center gap-3"><SitFinderLogo className="w-10 h-10" glow={false} /><span className="font-black italic text-2xl uppercase tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-[#E64545] to-[#E0720F]">SITFINDER</span></div>
+        <div className="flex items-center gap-3"><SitFinderLogo className="w-10 h-10" glow={false} /><span className="font-black italic text-2xl uppercase tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-[#E64545] to-[#E0720F]">BABYKEEPER</span></div>
         <div className="flex items-center gap-2">
           <div className="relative p-2 text-slate-400">
               <Bell size={22}/>
@@ -862,13 +863,13 @@ const SitterDashboard = ({ user, profile }) => {
     <div className={`min-h-screen font-sans pb-32 animate-in fade-in duration-500 ${isDark ? 'bg-slate-950 text-white' : 'bg-slate-50 text-slate-800'}`}>
       <nav className={`p-6 flex justify-between items-center sticky top-0 z-40 border-b shadow-sm ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-100'}`}>
         {/* NOM CORRIGÉ ICI (DASHBOARD SITTER) + COULEUR UNIQUE DEGRADE SATELLA */}
-        <div className="flex items-center gap-3 text-slate-900"><SitFinderLogo className="w-10 h-10" glow={false} /><span className="font-black italic text-xl uppercase tracking-tighter leading-none text-transparent bg-clip-text bg-gradient-to-r from-[#E64545] to-[#E0720F]">SITFINDER</span></div>
+        <div className="flex items-center gap-3 text-slate-900"><SitFinderLogo className="w-10 h-10" glow={false} /><span className="font-black italic text-xl uppercase tracking-tighter leading-none text-transparent bg-clip-text bg-gradient-to-r from-[#E64545] to-[#E0720F]">BABYKEEPER</span></div>
         <div className="flex items-center gap-2">
           <div className="relative p-2 text-slate-400">
               <Bell size={22}/>
               {unreadCount > 0 && <span className="absolute top-1 right-1 w-4 h-4 bg-[#E64545] text-white text-[8px] font-black rounded-full flex items-center justify-center border-2 border-white animate-bounce">{unreadCount}</span>}
           </div>
-          <button onClick={() => setActiveTab("settings")} className={`p-3 rounded-2xl transition-all ${isDark ? 'bg-slate-800 text-indigo-400' : 'bg-slate-50 text-slate-300'}`}><Settings size={22} /></button>
+          <button onClick={() => setActiveTab("settings")} className={`p-3 rounded-2xl transition-all ${isDark ? 'bg-slate-800 text-[#E0720F]' : 'bg-slate-50 text-slate-300'}`}><Settings size={22} /></button>
           <button onClick={() => signOut(auth)} className={`p-3 rounded-2xl transition-all ${isDark ? 'bg-slate-800 text-slate-400' : 'bg-slate-50 text-slate-300'}`}><LogOut size={22} /></button>
         </div>
       </nav>
@@ -933,12 +934,12 @@ const SitterDashboard = ({ user, profile }) => {
               <h2 className="text-4xl font-black italic uppercase tracking-tighter leading-none text-left">Missions</h2>
               <div className="grid gap-6">
                   {offers.sort((a,b) => (b.lastMsgAt?.seconds || 0) - (a.lastMsgAt?.seconds || 0)).map(o => (
-                      <div key={o.id} onClick={() => markAsRead(o)} className={`p-10 rounded-[3.5rem] shadow-xl border flex items-center justify-between hover:border-emerald-200 cursor-pointer active:scale-[0.99] shadow-md ${isDark ? 'bg-slate-900 border-slate-800 shadow-slate-950' : 'bg-white border-slate-100 shadow-slate-50'}`}>
+                      <div key={o.id} onClick={() => markAsRead(o)} className={`p-10 rounded-[3.5rem] shadow-xl border flex items-center justify-between hover:border-[#E0720F]/30 cursor-pointer active:scale-[0.99] shadow-md ${isDark ? 'bg-slate-900 border-slate-800 shadow-slate-950' : 'bg-white border-slate-100 shadow-slate-50'}`}>
                           <div className="flex items-center gap-8 text-slate-800">
-                              <div className={`w-24 h-24 rounded-[2.5rem] overflow-hidden shadow-sm border ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-emerald-50 border-emerald-100'}`}><img src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${o.parentName}`} alt="avatar" /></div>
-                              <div className="text-left"><h4 className={`font-black text-3xl italic leading-tight ${isDark ? 'text-white' : ''}`}>{o.parentName}</h4><p className={`text-[11px] font-black uppercase tracking-[0.3em] mt-1 ${isDark ? 'text-indigo-400' : 'text-emerald-500'}`}>{o.status === 'accepted' ? 'Validé ✨' : `Offre : ${o.price}€/H`}</p></div>
+                              <div className={`w-24 h-24 rounded-[2.5rem] overflow-hidden shadow-sm border ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-[#E64545] border-[#E64545]'}`}><img src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${o.parentName}`} alt="avatar" /></div>
+                              <div className="text-left"><h4 className={`font-black text-3xl italic leading-tight ${isDark ? 'text-white' : ''}`}>{o.parentName}</h4><p className={`text-[11px] font-black uppercase tracking-[0.3em] mt-1 ${isDark ? 'text-indigo-400' : 'text-[#E0720F]'}`}>{o.status === 'accepted' ? 'Validé ✨' : `Offre : ${o.price}€/H`}</p></div>
                           </div>
-                          {o.hasUnread && o.lastSenderId !== user.uid && <div className="w-4 h-4 bg-red-500 rounded-full animate-pulse shadow-xl"></div>}
+                          {o.hasUnread && o.lastSenderId !== user.uid && <div className="w-4 h-4 bg-[#E64545] rounded-full animate-pulse shadow-xl"></div>}
                       </div>
                   ))}
               </div>
