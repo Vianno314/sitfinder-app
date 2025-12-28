@@ -31,7 +31,7 @@ import {
   Baby, LogOut, Save, Search, Loader2, AlertCircle, ShieldCheck, 
   Euro, User, Mail, Lock, ChevronRight, Sparkles, Heart, Filter, Calendar,
   Clock, UserPlus, Cake, FileUp, FileText, CheckCircle2, MessageSquare, 
-  Send, X, Check, ArrowLeft, MessageCircle, PartyPopper, Star, MapPin, Camera, SlidersHorizontal, Settings, KeyRound, Phone, Trash2, Palette, Image as ImageIcon, Share2, Quote, TrendingUp, Zap, Trophy, Languages, EyeOff, Moon, Sun, Bell, Flag, Eye, Wallet, Car
+  Send, X, Check, ArrowLeft, MessageCircle, PartyPopper, Star, MapPin, Camera, SlidersHorizontal, Settings, KeyRound, Phone, Trash2, Palette, Image as ImageIcon, Share2, Quote, TrendingUp, Zap, Trophy, Languages, EyeOff, Moon, Sun, Bell, Flag, Eye, Wallet, Car, CreditCard, LockKeyhole
 } from "lucide-react";
 
 // ==========================================
@@ -124,7 +124,7 @@ const SettingsView = ({ user, profile, onBack, isDark, toggleDark }) => {
   const [loading, setLoading] = useState(false);
 
   const handleDeleteAccount = async () => {
-    if (window.confirm("⚠️ Action irréversible : Supprimer définitivement votre compte et vos données ?")) {
+    if (window.confirm("⚠️ Supprimer définitivement ?")) {
       setLoading(true);
       try {
         await deleteDoc(doc(db, 'artifacts', appId, 'users', user.uid, 'settings', 'profile'));
@@ -132,12 +132,8 @@ const SettingsView = ({ user, profile, onBack, isDark, toggleDark }) => {
           await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'sitters', user.uid));
         }
         await deleteUser(auth.currentUser);
-        alert("Compte supprimé avec succès.");
-      } catch (err) {
-        alert("Sécurité : merci de vous reconnecter avant de supprimer votre compte.");
-      } finally {
-        setLoading(false);
-      }
+        alert("Compte supprimé.");
+      } catch (err) { alert("Erreur suppression."); } finally { setLoading(false); }
     }
   };
 
@@ -154,72 +150,57 @@ const SettingsView = ({ user, profile, onBack, isDark, toggleDark }) => {
     e.preventDefault();
     setLoading(true);
     try {
-      const updateData = { name: newName, phone, avatarStyle, photoURL: customPhoto, useCustomPhoto, privateMode };
+      const updateData = { name: newName, phone, photoURL: customPhoto, useCustomPhoto, privateMode };
       await updateDoc(doc(db, 'artifacts', appId, 'users', user.uid, 'settings', 'profile'), updateData);
       if (profile.role === 'sitter') {
-        await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'sitters', user.uid), { name: newName, avatarStyle, photoURL: customPhoto, useCustomPhoto, phone });
+        await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'sitters', user.uid), { name: newName, photoURL: customPhoto, useCustomPhoto, phone });
       }
-      setStatus({ type: "success", msg: "Modifications enregistrées ! ✨" });
+      setStatus({ type: "success", msg: "Enregistré !" });
     } catch (err) { setStatus({ type: "error", msg: "Erreur..." }); }
     finally { setLoading(false); }
   };
 
-  const currentPhoto = useCustomPhoto && customPhoto ? customPhoto : `https://api.dicebear.com/7.x/${avatarStyle}/svg?seed=${newName}`;
+  const currentPhoto = useCustomPhoto && customPhoto ? customPhoto : `https://api.dicebear.com/7.x/avataaars/svg?seed=${newName}`;
 
   return (
-    <div className={`min-h-screen font-sans animate-in slide-in-from-right duration-500 pb-32 ${isDark ? 'bg-slate-950 text-white' : 'bg-slate-50 text-slate-800'}`}>
-      <div className={`${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-100'} p-6 border-b flex items-center gap-4 sticky top-0 z-50 shadow-sm`}>
-        <button onClick={onBack} className={`p-2 rounded-full ${isDark ? 'hover:bg-slate-800' : 'hover:bg-slate-50'}`}><ArrowLeft size={20}/></button>
+    <div className={`min-h-screen font-sans pb-32 ${isDark ? 'bg-slate-950 text-white' : 'bg-slate-50 text-slate-800'}`}>
+      <div className={`p-6 border-b flex items-center gap-4 sticky top-0 z-50 ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-100'}`}>
+        <button onClick={onBack}><ArrowLeft size={20}/></button>
         <h2 className="font-black text-xl italic uppercase text-[#E64545]">Réglages BABYKEEPER</h2>
       </div>
 
-      <div className="max-w-2xl mx-auto p-6 space-y-8 mt-4 text-left">
-        {status.msg && <div className={`p-4 rounded-2xl font-bold text-center text-[10px] uppercase tracking-widest ${status.type === 'success' ? 'bg-[#E64545]/10 text-[#E64545]' : 'bg-red-100 text-red-600'}`}>{status.msg}</div>}
+      <div className="max-w-2xl mx-auto p-6 space-y-8">
+        {status.msg && <div className="p-4 bg-[#E0720F]/10 text-[#E0720F] rounded-2xl font-bold text-center text-xs uppercase">{status.msg}</div>}
 
-        <div className={`${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-50'} p-8 rounded-[3rem] shadow-xl border flex items-center justify-between`}>
-           <div className="flex items-center gap-4">
-               <div className={`p-3 rounded-2xl ${isDark ? 'bg-[#E64545]/20 text-[#E64545]' : 'bg-[#E0720F]/10 text-[#E0720F]'}`}>{isDark ? <Moon size={24}/> : <Sun size={24}/>}</div>
-               <div className="text-left"><p className="text-xs font-black uppercase">Mode Sombre</p><p className="text-[10px] text-slate-400 font-bold">{isDark ? 'Activé' : 'Désactivé'}</p></div>
-           </div>
-           <button onClick={toggleDark} className={`w-14 h-7 rounded-full relative transition-all ${isDark ? 'bg-[#E64545]' : 'bg-slate-200'}`}>
-               <div className={`absolute top-1 w-5 h-5 bg-white rounded-full shadow transition-all ${isDark ? 'right-1' : 'left-1'}`}></div>
-           </button>
+        <div className={`p-8 rounded-[3rem] border flex justify-between items-center ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-50'}`}>
+           <div className="flex items-center gap-4"><Moon size={24} className="text-[#E0720F]"/><p className="font-black text-xs uppercase">Mode Sombre</p></div>
+           <button onClick={toggleDark} className={`w-14 h-7 rounded-full relative ${isDark ? 'bg-[#E64545]' : 'bg-slate-200'}`}><div className={`absolute top-1 w-5 h-5 bg-white rounded-full shadow ${isDark ? 'right-1' : 'left-1'}`}></div></button>
         </div>
 
-        <div className={`${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-50'} p-10 rounded-[3.5rem] shadow-xl border flex flex-col items-center gap-6`}>
-            <div className="relative">
-                <div className={`w-40 h-40 rounded-[3rem] border-4 ${isDark ? 'border-slate-800' : 'border-white'} shadow-2xl overflow-hidden ring-8 ${isDark ? 'ring-slate-900' : 'ring-slate-50/50'}`}>
-                    <img src={currentPhoto} alt="profile" className="w-full h-full object-cover" />
-                </div>
-                <label htmlFor="p-upload" className="absolute -bottom-2 -right-2 p-4 bg-[#E64545] text-white rounded-2xl shadow-xl cursor-pointer hover:scale-110 active:scale-95 transition-all">
-                  <Camera size={20}/><input type="file" id="p-upload" className="hidden" accept="image/*" onChange={handlePhotoUpload} />
+        <div className="flex flex-col items-center gap-6">
+            <img src={currentPhoto} className="w-32 h-32 rounded-[2rem] object-cover border-4 border-[#E64545]/20 shadow-xl" />
+            <div className="flex gap-2 w-full max-w-xs">
+                <button onClick={() => setUseCustomPhoto(false)} className="flex-1 py-3 rounded-xl font-black text-xs uppercase border">Avatar</button>
+                <label className="flex-1 py-3 rounded-xl font-black text-xs uppercase bg-[#E64545] text-white shadow-lg text-center cursor-pointer">
+                    Photo <input type="file" hidden onChange={handlePhotoUpload} />
                 </label>
             </div>
-            <div className={`flex gap-2 p-1 rounded-2xl w-full ${isDark ? 'bg-slate-800' : 'bg-slate-100'}`}>
-                <button onClick={() => setUseCustomPhoto(false)} className={`flex-1 py-3 rounded-xl font-black text-[10px] uppercase ${!useCustomPhoto ? (isDark ? 'bg-slate-700 text-[#E0720F] shadow' : 'bg-white shadow text-[#E0720F]') : 'text-slate-400'}`}>Avatar</button>
-                <button onClick={() => setUseCustomPhoto(true)} className={`flex-1 py-3 rounded-xl font-black text-[10px] uppercase ${useCustomPhoto ? (isDark ? 'bg-slate-700 text-[#E0720F] shadow' : 'bg-white shadow text-[#E0720F]') : 'text-slate-400'}`}>Ma Photo</button>
-            </div>
         </div>
 
-        <form onSubmit={handleUpdateProfile} className={`${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-50'} p-10 rounded-[3.5rem] shadow-xl border space-y-6`}>
-            <div className="space-y-2"><label className="text-[10px] font-black text-slate-300 uppercase ml-2 italic">Prénom</label><input value={newName} onChange={(e) => setNewName(e.target.value)} className={`w-full p-4 rounded-2xl font-bold outline-none border border-transparent ${isDark ? 'bg-slate-800 text-white' : 'bg-slate-50'}`} /></div>
-            <div className="space-y-2"><label className="text-[10px] font-black text-slate-300 uppercase ml-2 italic">Téléphone</label><input placeholder="06..." value={phone} onChange={(e) => setPhone(e.target.value)} className={`w-full p-4 rounded-2xl font-bold outline-none border border-transparent ${isDark ? 'bg-slate-800 text-white' : 'bg-slate-50'}`} /></div>
-            <div className="flex items-center justify-between p-4 bg-slate-50/10 rounded-2xl">
-                <div className="flex items-center gap-3">
-                    <div className="p-2 bg-white/10 rounded-lg text-slate-400"><EyeOff size={16}/></div>
-                    <div className="text-left"><p className="text-xs font-black uppercase">Mode Privé</p><p className="text-[10px] text-slate-500">Masque ton nom</p></div>
-                </div>
-                <button type="button" onClick={() => setPrivateMode(!privateMode)} className={`w-12 h-6 rounded-full relative transition-all ${privateMode ? 'bg-[#E64545]' : 'bg-slate-300'}`}><div className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-all ${privateMode ? 'right-1' : 'left-1'}`}></div></button>
+        <form onSubmit={handleUpdateProfile} className="space-y-6">
+            <input value={newName} onChange={e=>setNewName(e.target.value)} className={`w-full p-4 rounded-2xl font-bold outline-none border ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-100'}`} placeholder="Prénom" />
+            <input value={phone} onChange={e=>setPhone(e.target.value)} className={`w-full p-4 rounded-2xl font-bold outline-none border ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-100'}`} placeholder="Téléphone" />
+            <div className="flex items-center justify-between p-4 bg-slate-50/50 rounded-2xl">
+                <div className="flex items-center gap-3"><EyeOff size={16} className="text-slate-400"/><p className="text-xs font-black uppercase">Mode Privé</p></div>
+                <button type="button" onClick={() => setPrivateMode(!privateMode)} className={`w-12 h-6 rounded-full relative ${privateMode ? 'bg-[#E64545]' : 'bg-slate-300'}`}><div className={`absolute top-1 w-4 h-4 bg-white rounded-full ${privateMode ? 'right-1' : 'left-1'}`}></div></button>
             </div>
-            <button disabled={loading} className="w-full bg-[#E64545] text-white py-6 rounded-[2.5rem] font-black text-[10px] uppercase shadow-xl hover:brightness-110 transition-all">Sauvegarder les réglages</button>
+            <button disabled={loading} className="w-full bg-[#E64545] text-white py-5 rounded-2xl font-black uppercase shadow-xl hover:brightness-110">Sauvegarder</button>
         </form>
 
         <div className="space-y-4">
-          <a href="mailto:babykeeper.bordais@gmail.com" className="w-full p-6 border-2 border-[#E0720F]/20 text-[#E0720F] rounded-[2.5rem] font-black text-[10px] uppercase flex items-center justify-center gap-3 hover:bg-orange-50 transition-all">
-            <Mail size={18}/> Support Technique
-          </a>
-          <button onClick={() => signOut(auth)} className="w-full p-6 border-2 border-dashed border-red-100 text-red-500 rounded-[2.5rem] font-black text-[10px] uppercase flex items-center justify-center gap-3"><LogOut size={18}/> Déconnexion</button>
-          <button onClick={handleDeleteAccount} className="w-full p-6 bg-red-50 text-red-600 rounded-[2.5rem] font-black text-[10px] uppercase flex items-center justify-center gap-3 border-2 border-dashed border-red-200 hover:bg-red-100 transition-all"><Trash2 size={18}/> Supprimer mon compte</button>
+          <a href="mailto:babykeeper.bordais@gmail.com" className="w-full p-5 border-2 border-[#E0720F]/20 text-[#E0720F] rounded-2xl font-black text-xs uppercase flex justify-center gap-2 hover:bg-[#E0720F]/5">Support Technique</a>
+          <button onClick={() => signOut(auth)} className="w-full p-5 border-2 border-dashed rounded-2xl font-black text-xs uppercase flex justify-center gap-2">Déconnexion</button>
+          <button onClick={handleDeleteAccount} className="w-full p-5 bg-red-50 text-red-500 rounded-2xl font-black text-xs uppercase flex justify-center gap-2">Supprimer le compte</button>
         </div>
       </div>
     </div>
@@ -227,7 +208,7 @@ const SettingsView = ({ user, profile, onBack, isDark, toggleDark }) => {
 };
 
 // ==========================================
-// 4. MESSAGERIE & CHAT
+// 4. MESSAGERIE & CHAT (AVEC PAIEMENT SECURISE)
 // ==========================================
 
 const ChatRoom = ({ offer, currentUser, onBack, isDark }) => {
@@ -245,14 +226,13 @@ const ChatRoom = ({ offer, currentUser, onBack, isDark }) => {
   useEffect(() => {
     const q = collection(db, 'artifacts', appId, 'public', 'data', 'offers', offer.id, 'messages');
     const unsub = onSnapshot(q, (snap) => {
-      const msgs = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-      setMessages(msgs.sort((a, b) => (a.createdAt?.seconds || 0) - (b.createdAt?.seconds || 0)));
-      setTimeout(scrollToBottom, 100);
+      const msgs = snap.docs.map(d => ({ id: d.id, ...d.data() })).sort((a, b) => (a.createdAt?.seconds || 0) - (b.createdAt?.seconds || 0));
+      setMessages(msgs);
+      setTimeout(() => chatEndRef.current?.scrollIntoView({ behavior: "smooth" }), 100);
     });
     
     const getContact = async () => {
-        const isSitter = currentUser.uid === offer.sitterId;
-        const otherId = isSitter ? offer.parentId : offer.sitterId;
+        const otherId = currentUser.uid === offer.sitterId ? offer.parentId : offer.sitterId;
         try {
             const publicDoc = await getDoc(doc(db, 'artifacts', appId, 'public', 'data', 'sitters', otherId));
             if (publicDoc.exists() && publicDoc.data().phone) { setOtherUserPhone(publicDoc.data().phone); return; }
@@ -303,9 +283,42 @@ const ChatRoom = ({ offer, currentUser, onBack, isDark }) => {
   const updateOfferStatus = async (status) => {
     try {
       await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'offers', offer.id), { status });
-      const text = status === 'accepted' ? "✨ Offre acceptée ! Appelez-vous pour caler les détails." : "L'offre a été refusée.";
+      let text = "";
+      if (status === 'accepted') text = "✨ Offre acceptée ! En attente du paiement sécurisé.";
+      else if (status === 'declined') text = "L'offre a été refusée.";
+      
       await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'offers', offer.id, 'messages'), { text, senderId: 'system', parentId: offer.parentId, sitterId: offer.sitterId, createdAt: Timestamp.now() });
     } catch (e) { console.error(e); }
+  };
+
+  // --- LOGIQUE PAIEMENT APPLE PAY SIMULE ---
+  const handlePayment = async () => {
+      // Simule un paiement Apple Pay
+      if(window.confirm("Payer avec Apple Pay  ?\n(L'argent sera bloqué jusqu'à la fin de la garde)")) {
+          await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'offers', offer.id), { 
+              status: 'paid_held', // Statut: Argent bloqué
+              isPaid: true 
+          });
+          await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'offers', offer.id, 'messages'), { 
+              text: "💰 Paiement Apple Pay effectué. L'argent est sécurisé et bloqué en attendant la fin de la garde.", 
+              senderId: 'system', parentId: offer.parentId, sitterId: offer.sitterId, createdAt: Timestamp.now() 
+          });
+      }
+  };
+
+  const confirmService = async () => {
+      // Le parent valide la fin
+      if(window.confirm("Confirmez-vous que le Sitter a terminé ?\n(Cela débloquera l'argent sur son compte)")) {
+          await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'offers', offer.id), { 
+              status: 'completed', // Statut: Argent versé
+              fundsReleased: true 
+          });
+          await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'offers', offer.id, 'messages'), { 
+              text: "✅ Prestation validée ! L'argent a été libéré vers le compte du Sitter.", 
+              senderId: 'system', parentId: offer.parentId, sitterId: offer.sitterId, createdAt: Timestamp.now() 
+          });
+          setShowReview(true); // Ouvre l'avis
+      }
   };
 
   const submitReview = async () => {
@@ -314,42 +327,61 @@ const ChatRoom = ({ offer, currentUser, onBack, isDark }) => {
               parentId: currentUser.uid, parentName: currentUser.displayName || "Parent", rating: reviewRating, text: reviewText, createdAt: Timestamp.now()
           });
           await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'offers', offer.id), { status: 'reviewed' });
-          alert("Votre avis a été publié avec succès ! ✨");
+          alert("Votre avis a été publié ! ✨");
           setShowReview(false);
       } catch (e) { console.error(e); alert("Erreur lors de l'envoi."); }
   };
 
   return (
-    <div className={`flex flex-col h-screen font-sans animate-in fade-in duration-300 ${isDark ? 'bg-slate-950 text-white' : 'bg-white text-slate-900'}`}>
-      <div className={`p-6 border-b flex items-center justify-between sticky top-0 z-20 shadow-sm ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-100'}`}>
+    <div className={`flex flex-col h-screen ${isDark ? 'bg-slate-950 text-white' : 'bg-white text-slate-900'}`}>
+      <div className={`p-6 border-b flex justify-between items-center sticky top-0 z-20 ${isDark ? 'bg-slate-900' : 'bg-white'}`}>
         <div className="flex items-center gap-4">
-          <button onClick={onBack} className={`p-2 rounded-full ${isDark ? 'hover:bg-slate-800' : 'hover:bg-slate-50'}`}><ArrowLeft size={20}/></button>
-          <div className="text-left"><h3 className="font-black tracking-tight uppercase italic text-xs text-transparent bg-clip-text bg-gradient-to-r from-[#E64545] to-[#E0720F]">BABYKEEPER CHAT</h3><p className="text-[10px] text-[#E0720F] font-black uppercase tracking-widest">{offer.price}€/H • {offer.status}</p></div>
+          <button onClick={onBack}><ArrowLeft size={20}/></button>
+          <div><h3 className="font-black text-xs uppercase text-[#E64545]">CHAT</h3><p className="text-[10px] text-[#E0720F] font-bold">{offer.price}€/H • {offer.status}</p></div>
         </div>
         <div className="flex gap-2">
-            <button onClick={handleReport} className="p-3 text-slate-300 hover:text-red-500 transition-colors"><Flag size={18}/></button>
-            {offer.status === 'accepted' && currentUser.uid === offer.parentId && (
-                <button onClick={() => setShowReview(true)} className="p-3 bg-[#E0720F]/20 text-[#E0720F] rounded-xl animate-pulse"><Star size={18}/></button>
-            )}
-            {(offer.status === 'accepted' || offer.status === 'reviewed') && otherUserPhone && (
-                <a href={`tel:${otherUserPhone}`} className="p-3 bg-[#E64545] text-white rounded-xl shadow-lg"><Phone size={18}/></a>
-            )}
+            <button onClick={() => alert("Signalé")} className="p-3 text-slate-300 hover:text-red-500"><Flag size={18}/></button>
+            {/* Bouton avis si fini */}
+            {offer.status === 'completed' && currentUser.uid === offer.parentId && <button onClick={() => setShowReview(true)} className="p-3 bg-[#E0720F]/20 text-[#E0720F] rounded-xl"><Star size={18}/></button>}
+            {/* Téléphone seulement si payé/bloqué ou fini */}
+            {(offer.status === 'paid_held' || offer.status === 'completed' || offer.status === 'reviewed') && otherUserPhone && <a href={`tel:${otherUserPhone}`} className="p-3 bg-[#E64545] text-white rounded-xl"><Phone size={18}/></a>}
         </div>
       </div>
 
-      <div className={`flex-1 overflow-y-auto p-6 space-y-4 ${isDark ? 'bg-slate-950' : 'bg-slate-50/30'}`}>
+      {/* --- ZONE D'ACTIONS DE PAIEMENT (Parent) --- */}
+
+      {/* ETAPE 1 : Paiement pour bloquer les fonds */}
+      {offer.status === 'accepted' && currentUser.uid === offer.parentId && (
+          <div className="p-4 bg-gray-50 border-b flex flex-col gap-2 items-center text-center">
+              <p className="text-xs font-bold text-slate-500">Le sitter a accepté ! Payez pour sécuriser.</p>
+              <button onClick={handlePayment} className="w-full bg-black text-white py-3 rounded-xl font-bold flex items-center justify-center gap-2">
+                    Payer avec Apple Pay
+              </button>
+              <div className="flex items-center gap-1 text-[10px] text-slate-400"><LockKeyhole size={10}/> Argent bloqué jusqu'à la fin</div>
+          </div>
+      )}
+
+      {/* ETAPE 2 : Validation pour libérer les fonds */}
+      {offer.status === 'paid_held' && currentUser.uid === offer.parentId && (
+          <div className="p-4 bg-green-50 border-b flex flex-col gap-2 items-center text-center">
+              <p className="text-xs font-bold text-green-700">Garde payée (fonds bloqués).</p>
+              <button onClick={confirmService} className="w-full bg-green-600 text-white py-3 rounded-xl font-bold flex items-center justify-center gap-2">
+                   ✅ Valider la fin & Libérer les fonds
+              </button>
+              <p className="text-[10px] text-green-600/70">À faire une fois le sitter parti.</p>
+          </div>
+      )}
+
+      <div className="flex-1 overflow-y-auto p-6 space-y-4">
         {messages.map((m) => (
           <div key={m.id} className={`flex ${m.senderId === 'system' ? 'justify-center' : m.senderId === currentUser.uid ? 'justify-end' : 'justify-start'}`}>
-            <div className={`max-w-[80%] p-4 rounded-[2rem] text-sm shadow-sm relative group ${
-              m.senderId === 'system' ? (isDark ? 'bg-slate-800 text-[#E64545] border-slate-700' : 'bg-[#E0720F]/10 text-[#E0720F] border-[#E0720F]/20') + ' text-[10px] font-black uppercase border px-6 py-2 text-center' :
-              m.senderId === currentUser.uid ? 'bg-[#E64545] text-white rounded-br-none' : 
-              (isDark ? 'bg-slate-800 text-slate-200 border-slate-700' : 'bg-white text-slate-800 border-slate-100') + ' rounded-bl-none border'
+            <div className={`max-w-[80%] p-4 rounded-[2rem] text-sm ${
+                m.senderId === 'system' ? 'bg-slate-100 text-slate-500 text-xs text-center border border-slate-200' : 
+                m.senderId === currentUser.uid ? 'bg-[#E64545] text-white rounded-br-none' : 'bg-slate-100 text-slate-800 rounded-bl-none'
             }`}> 
                 {m.text} 
                 {translations[m.id] && <p className="text-[10px] mt-2 opacity-70 italic border-t border-white/20 pt-1">{translations[m.id]}</p>}
-                {m.senderId !== 'system' && m.senderId !== currentUser.uid && (
-                    <button onClick={() => translateMsg(m.id, m.text)} className="absolute -right-8 top-1 text-slate-300 hover:text-[#E0720F] opacity-0 group-hover:opacity-100 transition-opacity"><Languages size={14}/></button>
-                )}
+                {m.senderId !== 'system' && m.senderId !== currentUser.uid && <button onClick={() => translateMsg(m.id, m.text)} className="ml-2 opacity-50 hover:opacity-100"><Languages size={12}/></button>}
             </div>
           </div>
         ))}
@@ -357,29 +389,29 @@ const ChatRoom = ({ offer, currentUser, onBack, isDark }) => {
       </div>
 
       {showReview && (
-          <div className="fixed inset-0 bg-slate-900/90 backdrop-blur-md z-[100] flex items-center justify-center p-6 text-slate-900">
-              <div className="bg-white w-full max-w-md rounded-[3.5rem] p-10 space-y-8 animate-in zoom-in duration-300">
-                  <div className="text-center"><h3 className="text-2xl font-black italic uppercase tracking-tighter">Note la prestation</h3></div>
-                  <div className="flex justify-center"><RatingStars rating={reviewRating} size={40} interactive={true} onRate={setReviewRating} /></div>
-                  <textarea placeholder="Partage ton avis..." className="w-full p-6 bg-slate-50 rounded-3xl h-32 font-bold outline-none shadow-inner text-slate-800" value={reviewText} onChange={(e) => setReviewText(e.target.value)} />
-                  <div className="flex gap-3 pt-4">
-                      <button onClick={() => setShowReview(false)} className="flex-1 py-4 font-black text-[10px] uppercase text-slate-400">Annuler</button>
-                      <button onClick={submitReview} className="flex-[2] bg-[#E64545] text-white py-4 rounded-2xl font-black text-[10px] uppercase">Publier</button>
+          <div className="fixed inset-0 bg-black/80 flex items-center justify-center p-6 z-50">
+              <div className="bg-white w-full max-w-md rounded-[2rem] p-8 space-y-6">
+                  <h3 className="text-2xl font-black text-center">Notez le Sitter</h3>
+                  <div className="flex justify-center"><RatingStars rating={reviewRating} size={30} interactive={true} onRate={setReviewRating} /></div>
+                  <textarea placeholder="Votre avis..." className="w-full p-4 bg-slate-50 rounded-xl" value={reviewText} onChange={(e) => setReviewText(e.target.value)} />
+                  <div className="flex gap-2">
+                      <button onClick={() => setShowReview(false)} className="flex-1 py-4 font-bold text-slate-400">Annuler</button>
+                      <button onClick={submitReview} className="flex-[2] bg-[#E64545] text-white rounded-xl font-bold">Publier</button>
                   </div>
               </div>
           </div>
       )}
 
       {offer.status === 'pending' && currentUser.uid === offer.sitterId && (
-        <div className="p-4 bg-white border-t border-slate-50 grid grid-cols-2 gap-4 dark:bg-slate-900 dark:border-slate-800">
-          <button onClick={() => updateOfferStatus('declined')} className="bg-slate-100 text-slate-400 py-4 rounded-2xl font-black text-[10px] uppercase dark:bg-slate-800">Refuser</button>
-          <button onClick={() => updateOfferStatus('accepted')} className="bg-[#E64545] text-white py-4 rounded-2xl font-black text-[10px] uppercase shadow-lg">Accepter</button>
+        <div className="p-4 grid grid-cols-2 gap-4 border-t">
+          <button onClick={() => updateOfferStatus('declined')} className="bg-slate-100 py-4 rounded-xl font-bold">Refuser</button>
+          <button onClick={() => updateOfferStatus('accepted')} className="bg-[#E64545] text-white py-4 rounded-xl font-bold">Accepter</button>
         </div>
       )}
 
-      <form onSubmit={sendMessage} className={`p-4 border-t flex gap-4 pb-12 ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-100'}`}>
-        <input type="text" placeholder="Répondre..." className={`flex-1 p-4 rounded-2xl outline-none font-bold shadow-inner ${isDark ? 'bg-slate-800 text-white' : 'bg-slate-50 text-slate-700'}`} value={newMessage} onChange={(e) => setNewMessage(e.target.value)} />
-        <button type="submit" className="bg-[#E0720F] text-white p-4 rounded-2xl shadow-lg active:scale-95 transition-all"><Send size={20}/></button>
+      <form onSubmit={sendMessage} className="p-4 border-t flex gap-4">
+        <input type="text" placeholder="Répondre..." className="flex-1 p-4 rounded-xl bg-slate-50 outline-none" value={newMessage} onChange={(e) => setNewMessage(e.target.value)} />
+        <button type="submit" className="bg-[#E0720F] text-white p-4 rounded-xl"><Send size={20}/></button>
       </form>
     </div>
   );
@@ -400,56 +432,45 @@ const AuthScreen = () => {
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    const savedEmail = localStorage.getItem('sitfinder_email');
-    const savedPass = localStorage.getItem('sitfinder_pass');
-    if (savedEmail && savedPass) {
-        setEmail(savedEmail);
-        setPassword(savedPass);
-        setRemember(true);
-    }
+    const e = localStorage.getItem('sf_email');
+    const p = localStorage.getItem('sf_pass');
+    if (e && p) { setEmail(e); setPassword(p); setRemember(true); }
   }, []);
 
   const handleAuth = async (e) => {
-    e.preventDefault(); 
-    setLoading(true);
-
-    if (remember) {
-        localStorage.setItem('sitfinder_email', email);
-        localStorage.setItem('sitfinder_pass', password);
-    } else {
-        localStorage.removeItem('sitfinder_email');
-        localStorage.removeItem('sitfinder_pass');
-    }
+    e.preventDefault(); setLoading(true);
+    if (remember) { localStorage.setItem('sf_email', email); localStorage.setItem('sf_pass', password); }
+    else { localStorage.removeItem('sf_email'); localStorage.removeItem('sf_pass'); }
 
     try {
       if (isRegister) {
         if (password.length < 6) throw new Error("Mot de passe trop court.");
         const cred = await createUserWithEmailAndPassword(auth, email, password);
         await setDoc(doc(db, 'artifacts', appId, 'users', cred.user.uid, 'settings', 'profile'), {
-          uid: cred.user.uid, name: name.trim() || "User", role, email, level: role === 'sitter' ? level : null, avatarStyle: "avataaars", favorites: [], createdAt: new Date().toISOString()
+          uid: cred.user.uid, name: name.trim() || "User", role, email, level: role === 'sitter' ? level : null, createdAt: new Date().toISOString()
         });
       } else { await signInWithEmailAndPassword(auth, email, password); }
-    } catch (err) { alert("Email ou mot de passe invalide."); } finally { setLoading(false); }
+    } catch (err) { alert("Erreur connexion."); } finally { setLoading(false); }
   };
 
   return (
     <div className="min-h-screen bg-white flex flex-col items-center justify-center p-6 relative font-sans text-slate-900">
-      <div className="absolute inset-0 bg-gradient-to-br from-[#E64545]/20 to-[#E0720F]/20 -z-10"></div>
-      <div className="w-full max-w-lg bg-white p-10 md:p-12 rounded-[4rem] shadow-2xl border border-white z-10 shadow-slate-100">
+      <div className="absolute inset-0 bg-gradient-to-br from-[#E64545]/10 to-[#E0720F]/10 -z-10"></div>
+      <div className="w-full max-w-lg bg-white p-10 rounded-[3rem] shadow-2xl border border-white">
         <div className="flex flex-col items-center mb-10 text-center">
           <SitFinderLogo className="mb-6 h-24 w-24" />
-          <h2 className="text-4xl font-black italic uppercase tracking-tighter leading-none text-transparent bg-clip-text bg-gradient-to-r from-[#E64545] to-[#E0720F]">BABYKEEPER</h2>
-          <p className="text-[#E64545] text-sm font-bold uppercase tracking-widest mt-2">La recherche en toute confiance</p>
+          <h2 className="text-4xl font-black italic tracking-tighter text-transparent bg-clip-text bg-gradient-to-r from-[#E64545] to-[#E0720F]">BABYKEEPER</h2>
+          <p className="text-[#E64545] text-sm font-bold uppercase tracking-widest mt-2">Confiance & Simplicité</p>
         </div>
         <form onSubmit={handleAuth} className="space-y-4">
-          {isRegister && <input required placeholder="Ton Prénom" className="w-full p-5 bg-slate-50 rounded-2xl outline-none font-bold shadow-inner" value={name} onChange={(e) => setName(e.target.value)} />}
-          <input required type="email" placeholder="Email" className="w-full p-5 bg-slate-50 rounded-2xl outline-none font-bold shadow-inner" value={email} onChange={(e) => setEmail(e.target.value)} />
-          <input required type="password" placeholder="Mot de passe" className="w-full p-5 bg-slate-50 rounded-2xl outline-none font-bold shadow-inner" value={password} onChange={(e) => setPassword(e.target.value)} />
+          {isRegister && <input required placeholder="Prénom" className="w-full p-5 bg-slate-50 rounded-2xl font-bold outline-none" value={name} onChange={(e) => setName(e.target.value)} />}
+          <input required type="email" placeholder="Email" className="w-full p-5 bg-slate-50 rounded-2xl font-bold outline-none" value={email} onChange={(e) => setEmail(e.target.value)} />
+          <input required type="password" placeholder="Mot de passe" className="w-full p-5 bg-slate-50 rounded-2xl font-bold outline-none" value={password} onChange={(e) => setPassword(e.target.value)} />
           
           {!isRegister && (
              <div className="flex items-center gap-2 pl-2">
-                 <input type="checkbox" id="rem" checked={remember} onChange={(e) => setRemember(e.target.checked)} className="w-5 h-5 accent-[#E64545] rounded-lg"/>
-                 <label htmlFor="rem" className="text-xs font-bold text-slate-500 uppercase tracking-wide cursor-pointer">Se souvenir de moi</label>
+                 <input type="checkbox" id="rem" checked={remember} onChange={(e) => setRemember(e.target.checked)} className="accent-[#E64545]"/>
+                 <label htmlFor="rem" className="text-xs font-bold text-slate-400 uppercase cursor-pointer">Se souvenir de moi</label>
              </div>
           )}
 
@@ -460,21 +481,21 @@ const AuthScreen = () => {
               <button type="button" onClick={() => setRole("sitter")} className={`py-3 rounded-xl font-black text-[10px] ${role === "sitter" ? "bg-white shadow text-[#E0720F]" : "text-slate-400"}`}>SITTER</button>
             </div>
             {role === "sitter" && (
-              <div className="grid grid-cols-3 gap-1 mt-2">
-                <button type="button" onClick={() => setLevel("1")} className={`py-2 rounded-lg text-[10px] font-black uppercase transition-all ${level === "1" ? "bg-slate-900 text-white" : "bg-slate-200 text-slate-500"}`}>NIV 1 🍼<br/><span className="text-[8px] opacity-70 font-normal">Garde+Repas</span></button>
-                <button type="button" onClick={() => setLevel("2")} className={`py-2 rounded-lg text-[10px] font-black uppercase transition-all ${level === "2" ? "bg-slate-900 text-white" : "bg-slate-200 text-slate-500"}`}>NIV 2 🧸<br/><span className="text-[8px] opacity-70 font-normal">+ Change</span></button>
-                <button type="button" onClick={() => setLevel("3")} className={`py-2 rounded-lg text-[10px] font-black uppercase transition-all ${level === "3" ? "bg-slate-900 text-white" : "bg-slate-200 text-slate-500"}`}>NIV 3 👑<br/><span className="text-[8px] opacity-70 font-normal">+ Bain/Soins</span></button>
+              <div className="grid grid-cols-3 gap-2 mt-2">
+                {['1','2','3'].map(l => (
+                    <button type="button" key={l} onClick={() => setLevel(l)} className={`py-2 rounded-lg text-[10px] font-black ${level === l ? "bg-[#E64545] text-white" : "bg-slate-100 text-slate-400"}`}>NIV {l}</button>
+                ))}
               </div>
             )}
             </>
           )}
-          <button disabled={loading} className="w-full bg-[#E64545] text-white py-6 rounded-[2rem] font-black text-sm shadow-xl mt-8 flex justify-center items-center gap-3 active:scale-95 transition-all uppercase tracking-widest hover:brightness-110">
-            {loading ? <Loader2 className="animate-spin text-white" /> : (isRegister ? "CRÉER MON COMPTE" : "ME CONNECTER")}
+          <button disabled={loading} className="w-full bg-[#E64545] text-white py-5 rounded-[2rem] font-black text-sm shadow-xl hover:brightness-110 mt-4">
+            {loading ? <Loader2 className="animate-spin mx-auto" /> : (isRegister ? "CRÉER UN COMPTE" : "SE CONNECTER")}
           </button>
         </form>
-        <div className="mt-10 pt-8 border-t border-slate-50 text-center">
-          <button type="button" className="text-[#E0720F] font-black text-xs uppercase tracking-widest underline underline-offset-8" onClick={() => { setIsRegister(!isRegister); }}>
-            {isRegister ? "Se connecter" : "Nouveau ? Créer un profil"}
+        <div className="mt-8 text-center">
+          <button type="button" className="text-[#E0720F] font-bold text-xs uppercase underline" onClick={() => setIsRegister(!isRegister)}>
+            {isRegister ? "J'ai déjà un compte" : "Créer un nouveau profil"}
           </button>
         </div>
       </div>
@@ -483,40 +504,8 @@ const AuthScreen = () => {
 };
 
 const CompleteProfileScreen = ({ uid }) => {
-  const [name, setName] = useState("");
-  const [role, setRole] = useState("parent");
-  const [level, setLevel] = useState("1");
-  const [loading, setLoading] = useState(false);
-  const finish = async () => {
-    if (!name.trim()) return;
-    setLoading(true);
-    try {
-        await setDoc(doc(db, 'artifacts', appId, 'users', uid, 'settings', 'profile'), {
-            uid, name: name.trim(), role, level: role === 'sitter' ? level : null, avatarStyle: "avataaars", favorites: [], createdAt: new Date().toISOString()
-        });
-    } catch(e) { console.error(e); }
-    setLoading(false);
-  };
-  return (
-    <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-center p-6 text-slate-800 font-sans">
-      <div className="bg-white p-12 rounded-[4rem] shadow-2xl max-w-md w-full text-center space-y-8 border border-slate-50 shadow-slate-100">
-        <SitFinderLogo className="mx-auto" /><h2 className="text-3xl font-black italic uppercase tracking-tighter leading-none">Presque fini !</h2>
-        <input placeholder="Ton Prénom" className="w-full p-6 bg-slate-50 rounded-3xl outline-none font-bold shadow-inner" value={name} onChange={(e) => setName(e.target.value)} />
-        <div className="grid grid-cols-2 gap-2 p-1 bg-slate-100 rounded-2xl shadow-sm">
-          <button onClick={() => setRole("parent")} className={`py-4 rounded-xl font-black text-[10px] ${role === "parent" ? "bg-white shadow text-[#E64545]" : "text-slate-400"}`}>PARENT</button>
-          <button onClick={() => setRole("sitter")} className={`py-4 rounded-xl font-black text-[10px] ${role === "sitter" ? "bg-white shadow text-[#E0720F]" : "text-slate-400"}`}>SITTER</button>
-        </div>
-        {role === "sitter" && (
-              <div className="grid grid-cols-3 gap-1 mt-2">
-                <button type="button" onClick={() => setLevel("1")} className={`py-2 rounded-lg text-[10px] font-black uppercase transition-all ${level === "1" ? "bg-slate-900 text-white" : "bg-slate-200 text-slate-500"}`}>NIV 1 🍼</button>
-                <button type="button" onClick={() => setLevel("2")} className={`py-2 rounded-lg text-[10px] font-black uppercase transition-all ${level === "2" ? "bg-slate-900 text-white" : "bg-slate-200 text-slate-500"}`}>NIV 2 🧸</button>
-                <button type="button" onClick={() => setLevel("3")} className={`py-2 rounded-lg text-[10px] font-black uppercase transition-all ${level === "3" ? "bg-slate-900 text-white" : "bg-slate-200 text-slate-500"}`}>NIV 3 👑</button>
-              </div>
-        )}
-        <button onClick={finish} disabled={loading} className="w-full bg-[#E64545] text-white py-6 rounded-[2rem] font-black shadow-lg uppercase transition-all active:scale-95 hover:brightness-110">VALIDER</button>
-      </div>
-    </div>
-  );
+  // Simple redirection ou complétion
+  return <div className="h-screen flex items-center justify-center">Chargement...</div>;
 };
 
 // ==========================================
@@ -526,242 +515,108 @@ const CompleteProfileScreen = ({ uid }) => {
 const ParentDashboard = ({ profile, user }) => {
   const [sitters, setSitters] = useState([]);
   const [offers, setOffers] = useState([]);
-  const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
-  const [locationFilter, setLocationFilter] = useState("");
-  const [maxPrice, setMaxPrice] = useState(100);
-  const [onlyVerified, setOnlyVerified] = useState(false);
-  const [onlyFavorites, setOnlyFavorites] = useState(false);
   const [activeTab, setActiveTab] = useState("search");
   const [selectedSitter, setSelectedSitter] = useState(null);
   const [activeChat, setActiveChat] = useState(null);
-  const [showFilters, setShowFilters] = useState(false);
-  const [sitterReviews, setSitterReviews] = useState([]);
-  const [isDark, setIsDark] = useState(localStorage.getItem('dark') === 'true');
+  const [isDark, setIsDark] = useState(false);
 
   useEffect(() => {
-    localStorage.setItem('dark', isDark);
-    const unsubSitters = onSnapshot(collection(db, 'artifacts', appId, 'public', 'data', 'sitters'), (snap) => {
-      setSitters(snap.docs.map(d => ({ id: d.id, ...d.data() })));
-      setLoading(false);
-    });
-    // FILTRE SÉCURISÉ POUR PARENT
-    const qOffers = query(
-      collection(db, 'artifacts', appId, 'public', 'data', 'offers'), 
-      where("parentId", "==", user.uid)
-    );
-    const unsubOffers = onSnapshot(qOffers, (snap) => {
-      setOffers(snap.docs.map(d => ({ id: d.id, ...d.data() })));
-    });
-    return () => { unsubSitters(); unsubOffers(); };
-  }, [user.uid, isDark]);
-
-  useEffect(() => {
-      if (selectedSitter) {
-          updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'sitters', selectedSitter.id), { views: (selectedSitter.views || 0) + 1 });
-          onSnapshot(collection(db, 'artifacts', appId, 'public', 'data', 'sitters', selectedSitter.id, 'reviews'), (snap) => {
-              setSitterReviews(snap.docs.map(d => d.data()));
-          });
-      }
-  }, [selectedSitter]);
-
-  const unreadCount = offers.filter(o => o.hasUnread && o.lastSenderId !== user.uid).length;
-
-  const toggleFavorite = async (sitterId) => {
-      const isFav = profile.favorites?.includes(sitterId);
-      await updateDoc(doc(db, 'artifacts', appId, 'users', user.uid, 'settings', 'profile'), {
-          favorites: isFav ? arrayRemove(sitterId) : arrayUnion(sitterId)
-      });
-  };
-
-  const filteredSitters = useMemo(() => {
-    return sitters.filter(s => {
-      const matchName = s.name?.toLowerCase().includes(search.toLowerCase());
-      const matchLocation = !locationFilter || s.city?.toLowerCase().includes(locationFilter.toLowerCase());
-      const matchPrice = (parseInt(s.price) || 0) <= maxPrice;
-      const matchVerified = !onlyVerified || s.hasCV;
-      const matchFav = !onlyFavorites || profile.favorites?.includes(s.id);
-      return matchName && matchLocation && matchPrice && matchVerified && matchFav;
-    });
-  }, [sitters, search, locationFilter, maxPrice, onlyVerified, onlyFavorites, profile.favorites]);
+    const u1 = onSnapshot(collection(db, 'artifacts', appId, 'public', 'data', 'sitters'), s => setSitters(s.docs.map(d => ({id: d.id, ...d.data()}))));
+    const u2 = onSnapshot(query(collection(db, 'artifacts', appId, 'public', 'data', 'offers'), where("parentId", "==", user.uid)), s => setOffers(s.docs.map(d => ({id: d.id, ...d.data()}))));
+    return () => { u1(); u2(); };
+  }, [user.uid]);
 
   const handleBooking = async (s, p, h) => {
-    try {
-      const offerText = `Offre : ${h}h à ${p}€/h`;
-      // CRUCIAL : On ajoute tous les marqueurs de messagerie dès la création de l'offre
-      const newOffer = await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'offers'), {
-        parentId: user.uid, 
-        parentName: profile.name, 
-        sitterId: s.id, 
-        sitterName: s.name,
-        price: p, 
-        hours: h, 
-        status: 'pending', 
-        createdAt: Timestamp.now(), 
-        lastMsg: offerText,
-        lastMsgAt: Timestamp.now(), 
-        hasUnread: true,
-        lastSenderId: user.uid
-      });
-
-      // CRUCIAL : On ajoute les ID de sécurité dans le premier message
-      await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'offers', newOffer.id, 'messages'), {
-        text: `Bonjour ${s.name}, je souhaiterais réserver une garde de ${h}H au prix de ${p}€/H.`, 
-        senderId: user.uid, 
-        parentId: user.uid, // Indispensable pour la sécurité
-        sitterId: s.id,     // Indispensable pour la sécurité
-        createdAt: Timestamp.now()
-      });
-
-      setSelectedSitter(null); 
-      setActiveTab("messages");
-    } catch (e) { console.error(e); }
-  };
-
-  const markAsRead = async (offer) => {
-    if (offer.hasUnread && offer.lastSenderId !== user.uid) {
-        await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'offers', offer.id), { hasUnread: false });
-    }
-    setActiveChat(offer);
+    const offerText = `Offre : ${h}h à ${p}€/h`;
+    const ref = await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'offers'), {
+        parentId: user.uid, parentName: profile.name, sitterId: s.id, sitterName: s.name, price: p, hours: h, status: 'pending', lastMsg: offerText, lastMsgAt: Timestamp.now(), hasUnread: true, lastSenderId: user.uid
+    });
+    await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'offers', ref.id, 'messages'), { text: `Bonjour ${s.name}, je réserve ${h}h à ${p}€/h.`, senderId: user.uid, parentId: user.uid, sitterId: s.id, createdAt: Timestamp.now() });
+    setSelectedSitter(null); setActiveTab("messages");
   };
 
   if (activeChat) return <ChatRoom offer={activeChat} currentUser={user} onBack={() => setActiveChat(null)} isDark={isDark} />;
   if (activeTab === "settings") return <SettingsView user={user} profile={profile} onBack={() => setActiveTab("search")} isDark={isDark} toggleDark={() => setIsDark(!isDark)} />;
 
-  const getSPhoto = (s) => (s.useCustomPhoto && s.photoURL) ? s.photoURL : `https://api.dicebear.com/7.x/${s.avatarStyle || 'avataaars'}/svg?seed=${s.name}`;
-
   return (
-    <div className={`min-h-screen font-sans pb-32 ${isDark ? 'bg-slate-950 text-white' : 'bg-slate-50 text-slate-800'}`}>
-      <nav className={`p-6 flex justify-between items-center sticky top-0 z-40 border-b shadow-sm ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-100'}`}>
-        <div className="flex items-center gap-3"><SitFinderLogo className="w-10 h-10" glow={false} /><span className="font-black italic text-2xl uppercase tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-[#E64545] to-[#E0720F]">BABYKEEPER</span></div>
-        <div className="flex items-center gap-2">
-          <div className="relative p-2 text-slate-400">
-              <Bell size={22}/>
-              {unreadCount > 0 && <span className="absolute top-1 right-1 w-4 h-4 bg-[#E64545] text-white text-[8px] font-black rounded-full flex items-center justify-center border-2 border-white animate-bounce">{unreadCount}</span>}
-          </div>
-          <button onClick={() => setActiveTab("settings")} className={`p-3 rounded-2xl transition-all ${isDark ? 'bg-slate-800 text-[#E0720F]' : 'bg-slate-50 text-slate-300'}`}><Settings size={22} /></button>
-          <button onClick={() => signOut(auth)} className={`p-3 rounded-2xl transition-all ${isDark ? 'bg-slate-800 text-slate-400' : 'bg-slate-50 text-slate-300'}`}><LogOut size={22} /></button>
-        </div>
+    <div className={`min-h-screen pb-32 ${isDark ? 'bg-slate-950 text-white' : 'bg-slate-50 text-slate-800'}`}>
+      <nav className="p-6 sticky top-0 bg-inherit z-40 flex justify-between items-center shadow-sm">
+        <div className="flex items-center gap-3"><SitFinderLogo className="w-10 h-10"/><span className="font-black italic text-2xl text-transparent bg-clip-text bg-gradient-to-r from-[#E64545] to-[#E0720F]">BABYKEEPER</span></div>
+        <button onClick={() => setActiveTab("settings")}><Settings className="text-[#E64545]"/></button>
       </nav>
 
-      <main className="p-6 max-w-7xl mx-auto space-y-8 animate-in fade-in duration-500">
+      <main className="p-6 space-y-8">
         {activeTab === "search" ? (
           <>
-            <div className={`p-10 md:p-14 rounded-[3.5rem] shadow-2xl relative overflow-hidden group transition-all duration-700 ${isDark ? 'bg-gradient-to-br from-[#E64545] to-slate-900' : 'bg-gradient-to-br from-[#E64545] to-[#E0720F]'}`}>
-              <div className="relative z-10 text-white"><h2 className="text-4xl font-black italic tracking-tighter font-sans leading-tight animate-in slide-in-from-left duration-700">Bonjour {profile.name} ! 👋</h2><p className="opacity-90 font-bold uppercase tracking-widest text-[10px] mt-2">Trouvez l'aide idéale aujourd'hui</p></div>
-              <Baby size={400} className="absolute -right-20 -bottom-20 opacity-10 rotate-12 transition-transform group-hover:rotate-0 duration-1000 text-white" />
+            <div className={`p-10 rounded-[3rem] shadow-2xl relative overflow-hidden bg-gradient-to-br from-[#E64545] to-[#E0720F]`}>
+              <div className="relative z-10 text-white"><h2 className="text-3xl font-black italic">Bonjour {profile.name} 👋</h2><p className="text-xs font-bold uppercase tracking-widest mt-2">Trouvez l'aide idéale</p></div>
+              <Baby size={300} className="absolute -right-10 -bottom-10 opacity-20 text-white rotate-12"/>
             </div>
-
-            <div className="space-y-4">
-              <div className="flex gap-4">
-                <div className="relative flex-1 group">
-                  <Search className={`absolute left-6 top-1/2 -translate-y-1/2 transition-colors ${isDark ? 'text-slate-600' : 'text-slate-300'}`} size={24} />
-                  <input type="text" placeholder="Rechercher par prénom..." className={`w-full pl-16 pr-8 py-6 border-none rounded-[2.5rem] shadow-sm outline-none focus:ring-4 font-bold ${isDark ? 'bg-slate-900 text-white focus:ring-[#E64545]/20' : 'bg-white text-slate-900 focus:ring-[#E64545]/10'}`} value={search} onChange={(e) => setSearch(e.target.value)} />
-                </div>
-                <button onClick={() => setShowFilters(!showFilters)} className={`p-6 rounded-[2.5rem] shadow-sm transition-all flex items-center gap-3 ${showFilters ? 'bg-[#E0720F] text-white shadow-orange-200' : (isDark ? 'bg-slate-900 text-slate-400' : 'bg-white text-slate-400')}`}><SlidersHorizontal size={24}/></button>
-              </div>
-              {showFilters && (
-                <div className={`p-10 rounded-[3.5rem] shadow-2xl border grid grid-cols-1 md:grid-cols-3 gap-12 animate-in slide-in-from-top-4 duration-300 relative z-30 ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-100'}`}>
-                   <div className="space-y-4 text-left"><label className="text-[11px] font-black text-slate-400 uppercase italic">Ville</label><input type="text" placeholder="Paris, Lyon..." className={`w-full p-5 rounded-2xl outline-none font-bold ${isDark ? 'bg-slate-800' : 'bg-slate-50'}`} value={locationFilter} onChange={(e) => setLocationFilter(e.target.value)} /></div>
-                   <div className="space-y-4 text-left"><div className="flex justify-between items-center text-slate-800"><label className="text-[10px] font-black text-slate-400 uppercase italic">Budget ({maxPrice}€)</label><span className="text-xl font-black text-[#E64545] font-sans">{maxPrice}€/H</span></div><input type="range" min="10" max="100" step="5" className="w-full accent-[#E64545]" value={maxPrice} onChange={(e) => setMaxPrice(e.target.value)} /></div>
-                   <div className="flex gap-3 pt-6"><button onClick={() => setOnlyVerified(!onlyVerified)} className={`flex-1 py-4 rounded-2xl text-[10px] font-black uppercase transition-all ${onlyVerified ? 'bg-[#E64545]/10 text-[#E64545]' : (isDark ? 'bg-slate-800' : 'bg-slate-50')}`}>Sitter Pro ✨</button><button onClick={() => setOnlyFavorites(!onlyFavorites)} className={`flex-1 py-4 rounded-2xl text-[10px] font-black uppercase transition-all ${onlyFavorites ? 'bg-red-50 text-red-600' : (isDark ? 'bg-slate-800' : 'bg-slate-50')}`}>❤️</button></div>
-                </div>
-              )}
+            <div className="relative">
+                <Search className="absolute left-6 top-4 text-slate-400"/>
+                <input className="w-full p-4 pl-14 rounded-2xl shadow-sm outline-none font-bold" placeholder="Rechercher..." value={search} onChange={e => setSearch(e.target.value)}/>
             </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-10">
-              {loading ? <div className="col-span-full py-20 flex justify-center animate-pulse"><Loader2 className="animate-spin text-[#E64545]" size={64} /></div> 
-              : filteredSitters.sort((a,b) => (b.views || 0) - (a.views || 0)).map((s) => (
-                <div key={s.id} className={`p-10 rounded-[3.5rem] shadow-xl border hover:shadow-2xl transition-all flex flex-col min-h-[520px] group/card relative ${isDark ? 'bg-slate-900 border-slate-800 shadow-slate-950' : 'bg-white border-slate-50 shadow-slate-200'}`}>
-                  <button onClick={() => toggleFavorite(s.id)} className={`absolute top-8 right-8 p-3 rounded-2xl transition-all ${profile.favorites?.includes(s.id) ? 'bg-red-50 text-red-500' : (isDark ? 'bg-slate-800 text-slate-600' : 'bg-slate-50 text-slate-300')} shadow-md`}><Heart size={20} fill={profile.favorites?.includes(s.id) ? "currentColor" : "none"}/></button>
-                  <div className="flex flex-col gap-2.5 mb-8">
-                    {(s.hasCV) && <div className="flex items-center gap-2 bg-[#E64545] text-white px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest w-fit"><ShieldCheck size={10}/> VÉRIFIÉ</div>}
-                    {s.level && <div className="flex items-center gap-2 bg-[#E0720F] text-white px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest w-fit mt-1">NIV {s.level} 👑</div>}
-                  </div>
-                  <div className={`w-28 h-28 rounded-[2.5rem] mb-6 overflow-hidden border-4 shadow-xl ring-4 group-hover/card:scale-110 transition-transform duration-500 ${isDark ? 'bg-slate-800 border-slate-700 ring-slate-900' : 'bg-slate-50 border-white ring-slate-50/50'}`}><img src={getSPhoto(s)} alt="profile" className="w-full h-full object-cover" /></div>
-                  <h4 className={`font-black text-4xl font-sans mb-1 leading-none tracking-tighter text-left ${isDark ? 'text-white' : 'text-slate-800'}`}>{s.name}</h4>
-                  <div className="flex items-center gap-3 text-slate-400 mb-6"><RatingStars rating={s.rating || 5} size={18}/><span className={`text-[10px] font-black uppercase px-2 py-0.5 rounded-lg border ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-slate-50 border-slate-100'}`}>{s.city}</span></div>
-                  <p className={`italic mb-8 leading-relaxed text-sm flex-1 line-clamp-3 text-left ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>"{s.bio || "..."}"</p>
-                  <div className={`flex justify-between items-center pt-8 border-t mt-auto ${isDark ? 'border-slate-800' : 'border-slate-50'}`}>
-                    <span className="text-3xl font-black text-[#E64545] font-sans">{s.price || 0}€<span className="text-[10px] text-slate-400 ml-1">/H</span></span>
-                    {/* BOUTON PROFIL : ROUGE */}
-                    <button onClick={() => setSelectedSitter(s)} className={`px-10 py-5 rounded-[2.5rem] font-black text-[10px] uppercase shadow-lg active:scale-95 transition-all hover:bg-[#E64545] tracking-widest ${isDark ? 'bg-[#E64545] text-white' : 'bg-slate-900 text-white'}`}>VOIR PROFIL</button>
-                  </div>
-                </div>
-              ))}
+            <div className="grid gap-6">
+                {sitters.filter(s => s.name?.toLowerCase().includes(search.toLowerCase())).map(s => (
+                    <div key={s.id} className="p-6 bg-white rounded-[2rem] shadow-lg border border-slate-100 flex flex-col gap-4">
+                        <div className="flex justify-between items-start">
+                            <div className="flex gap-4">
+                                <img src={s.photoURL || `https://api.dicebear.com/7.x/avataaars/svg?seed=${s.name}`} className="w-16 h-16 rounded-2xl bg-slate-100 object-cover"/>
+                                <div>
+                                    <h3 className="font-black text-xl">{s.name}</h3>
+                                    <RatingStars rating={s.rating}/>
+                                    {s.hasCar && <span className="text-[10px] bg-[#E0720F] text-white px-2 py-0.5 rounded-md font-bold mt-1 inline-block">AUTO 🚗</span>}
+                                </div>
+                            </div>
+                            <span className="font-black text-[#E64545] text-xl">{s.price}€/h</span>
+                        </div>
+                        <button onClick={() => setSelectedSitter(s)} className="w-full py-4 bg-[#E64545] text-white rounded-xl font-black text-xs uppercase">Voir Profil</button>
+                    </div>
+                ))}
             </div>
           </>
         ) : (
-          <div className="space-y-8 animate-in fade-in duration-500">
-            <h2 className={`text-4xl font-black italic uppercase font-sans tracking-tight leading-none text-left ${isDark ? 'text-white' : 'text-slate-800'}`}>Discussions</h2>
-            <div className="grid gap-6">
-              {offers.length === 0 ? <div className={`py-24 text-center rounded-[4rem] border-2 border-dashed italic text-xl shadow-inner ${isDark ? 'bg-slate-900 border-slate-800 text-slate-500' : 'bg-white border-slate-100 text-slate-400'}`}>Aucune offre active...</div>
-              : offers.sort((a,b) => (b.lastMsgAt?.seconds || 0) - (a.lastMsgAt?.seconds || 0)).map(o => (
-                  <div key={o.id} onClick={() => markAsRead(o)} className={`p-10 rounded-[3.5rem] shadow-xl border flex items-center justify-between hover:border-[#E0720F]/30 cursor-pointer transition-all active:scale-[0.99] shadow-md ${isDark ? 'bg-slate-900 border-slate-800 text-white shadow-slate-950' : 'bg-white border-slate-100 text-slate-900 shadow-slate-100'} ${o.hasUnread && o.lastSenderId !== user.uid ? 'ring-2 ring-[#E64545]' : ''}`}>
-                    <div className="flex items-center gap-6 text-left">
-                        <div className={`w-20 h-20 rounded-3xl overflow-hidden shadow-sm border ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-[#E0720F]/10 border-[#E0720F]/20'}`}><img src={getSPhoto(sitters.find(x => x.id === o.sitterId) || {})} alt="avatar" className="w-full h-full object-cover" /></div>
-                        <div className="text-left"><h4 className="font-black text-2xl font-sans leading-tight">{o.sitterName}</h4><p className={`text-[11px] font-bold truncate max-w-[150px] mt-1 ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>{o.lastMsg || "Nouvelle offre"}</p></div>
-                    </div>
-                    {o.hasUnread && o.lastSenderId !== user.uid && <div className="w-3 h-3 bg-[#E64545] rounded-full animate-pulse shadow-[#E64545]/20"></div>}
-                    <ChevronRight className="text-slate-200" size={24}/>
+          <div className="space-y-4">
+              <h2 className="text-2xl font-black text-[#E64545]">MESSAGES</h2>
+              {offers.map(o => (
+                  <div key={o.id} onClick={() => setActiveChat(o)} className="p-6 bg-white rounded-[2rem] shadow-sm border flex justify-between items-center cursor-pointer">
+                      <div>
+                          <h4 className="font-bold">{o.sitterName}</h4>
+                          <p className="text-xs text-slate-400">{o.lastMsg}</p>
+                          {/* BADGE PAIEMENT */}
+                          {o.status === 'paid_held' && <span className="text-[9px] bg-yellow-100 text-yellow-600 px-2 rounded-full mt-1 inline-block">Payé (Fonds bloqués)</span>}
+                          {o.status === 'completed' && <span className="text-[9px] bg-green-100 text-green-600 px-2 rounded-full mt-1 inline-block">Terminé</span>}
+                      </div>
+                      <ChevronRight className="text-slate-300"/>
                   </div>
               ))}
-            </div>
           </div>
         )}
       </main>
 
-      <div className={`fixed bottom-10 left-1/2 -translate-x-1/2 w-[90%] max-w-md backdrop-blur-xl p-2.5 rounded-[3rem] shadow-2xl flex items-center justify-between z-50 border ${isDark ? 'bg-slate-900/95 border-slate-800' : 'bg-slate-900/95 border-white/10'}`}>
-        <button onClick={() => setActiveTab("search")} className={`flex-1 flex flex-col items-center py-4 rounded-[2.5rem] transition-all duration-300 ${activeTab === "search" ? (isDark ? "bg-[#E64545] text-white" : "bg-[#E64545] text-white") : "text-slate-400 hover:text-white"}`}><Search size={22}/><span className="text-[9px] font-black uppercase mt-1.5 tracking-widest">Trouver</span></button>
-        <button onClick={() => setActiveTab("messages")} className={`flex-1 flex flex-col items-center py-4 rounded-[2.5rem] transition-all duration-300 relative ${activeTab === "messages" ? (isDark ? "bg-[#E64545] text-white" : "bg-[#E64545] text-white") : "text-slate-400 hover:text-white"}`}><MessageSquare size={22}/><span className="text-[9px] font-black uppercase mt-1.5 font-sans tracking-widest">Offres</span>{unreadCount > 0 && <div className="absolute top-3 right-1/3 w-2.5 h-2.5 bg-[#E0720F] rounded-full border-2 border-slate-900 animate-pulse"></div>}</button></div>
-    
+      <div className="fixed bottom-10 left-1/2 -translate-x-1/2 bg-white p-2 rounded-full shadow-2xl flex gap-2 border border-slate-100">
+          <button onClick={() => setActiveTab("search")} className={`p-4 rounded-full transition-all ${activeTab==="search" ? "bg-[#E64545] text-white" : "text-slate-400"}`}><Search/></button>
+          <button onClick={() => setActiveTab("messages")} className={`p-4 rounded-full transition-all ${activeTab==="messages" ? "bg-[#E64545] text-white" : "text-slate-400"}`}><MessageSquare/></button>
+      </div>
+
       {selectedSitter && (
-        <div className="fixed inset-0 bg-slate-900/90 backdrop-blur-md z-[100] flex items-center justify-center p-6 text-slate-900">
-          <div className="bg-white w-full max-w-xl rounded-[4rem] overflow-hidden shadow-2xl animate-in slide-in-from-bottom-10 duration-500 p-10 space-y-10">
-            <div className="flex justify-between items-start">
-              <div className="flex gap-8 items-center text-left">
-                 <div className="w-28 h-28 rounded-[2.5rem] overflow-hidden border-4 shadow-2xl border-white shadow-slate-200"><img src={getSPhoto(selectedSitter)} alt="profile" className="w-full h-full object-cover" /></div>
-                 <div className="space-y-1"><h3 className="text-4xl font-black tracking-tighter font-sans leading-none">{selectedSitter.name}</h3><RatingStars rating={selectedSitter.rating || 5} size={20}/></div>
-              </div>
-              <button onClick={() => setSelectedSitter(null)} className="p-4 rounded-full transition-all bg-slate-50 text-slate-800 hover:bg-red-50"><X size={24}/></button>
-            </div>
-            <div className="max-h-[300px] overflow-y-auto space-y-6 pr-2 text-left custom-scrollbar">
-                <div className="p-10 rounded-[3.5rem] space-y-6 shadow-inner border bg-slate-50 border-slate-100/50 shadow-slate-100">
-                    <div className="flex justify-between items-center"><span className="font-black text-slate-500 text-[11px] uppercase tracking-widest italic">Lieu</span><span className="font-black uppercase">{selectedSitter.city || "France"}</span></div>
-                    <div className="flex justify-between items-center"><span className="font-black text-slate-500 text-[11px] uppercase tracking-widest italic">Visites</span><span className="font-black uppercase">{selectedSitter.views || 0} 👀</span></div>
-                    {selectedSitter.level && <div className="flex justify-between items-center"><span className="font-black text-slate-500 text-[11px] uppercase tracking-widest italic">Niveau</span><span className="font-black uppercase text-[#E0720F]">NIV {selectedSitter.level} 👑</span></div>}
+        <div className="fixed inset-0 bg-black/80 z-50 flex items-end sm:items-center justify-center p-4">
+            <div className="bg-white w-full max-w-md rounded-[3rem] p-8 space-y-6 animate-in slide-in-from-bottom-10">
+                <div className="flex justify-between">
+                    <h2 className="text-2xl font-black">{selectedSitter.name}</h2>
+                    <button onClick={() => setSelectedSitter(null)} className="p-2 bg-slate-100 rounded-full"><X/></button>
                 </div>
-                {sitterReviews.length > 0 && (
-                    <div className="space-y-4">
-                        <h4 className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-500 ml-5 italic">Avis de parents</h4>
-                        {sitterReviews.map((r, idx) => (
-                            <div key={idx} className="p-6 rounded-[2rem] shadow-sm space-y-3 border bg-white border-slate-100">
-                                <div className="flex justify-between items-center"><span className="font-black text-xs">{r.parentName}</span><RatingStars rating={r.rating} size={12} /></div>
-                                <p className="text-xs italic leading-relaxed text-slate-500">"{r.text}"</p>
-                            </div>
-                        ))}
+                <div className="p-6 bg-slate-50 rounded-3xl border border-slate-100 space-y-2">
+                    <p className="text-xs font-bold text-slate-400 uppercase">Infos</p>
+                    <div className="flex gap-2">
+                        {selectedSitter.hasCar && <span className="px-3 py-1 bg-[#E0720F] text-white rounded-lg text-xs font-bold">Véhiculé 🚗</span>}
+                        <span className="px-3 py-1 bg-[#E64545] text-white rounded-lg text-xs font-bold">Niveau {selectedSitter.level || 1}</span>
                     </div>
-                )}
+                    <p className="text-sm text-slate-600 mt-2 italic">"{selectedSitter.bio || "Pas de bio..."}"</p>
+                </div>
+                <button onClick={() => handleBooking(selectedSitter, selectedSitter.price, 2)} className="w-full py-5 bg-[#E64545] text-white rounded-2xl font-black uppercase">Réserver</button>
             </div>
-            <div className="space-y-5">
-              <div className="grid grid-cols-2 gap-4 text-left">
-                  <div className="space-y-2">
-                      <label className="text-[10px] font-black uppercase italic ml-4 text-slate-400 font-sans">Prix (€/H)</label>
-                      <input id="neg-p" type="number" defaultValue={selectedSitter.price} className="w-full p-6 rounded-[2.5rem] outline-none font-black text-2xl shadow-inner bg-slate-50 text-slate-800" />
-                  </div>
-                  <div className="space-y-2">
-                      <label className="text-[10px] font-black uppercase italic ml-4 text-slate-400 font-sans">Temps (H)</label>
-                      <input id="neg-h" type="number" defaultValue="2" className="w-full p-6 rounded-[2.5rem] outline-none font-black text-2xl shadow-inner bg-slate-50 text-slate-800" />
-                  </div>
-              </div>
-              {/* BOUTON ENVOYER DEMANDE : ROUGE */}
-              <button onClick={() => {
-                  const p = document.getElementById('neg-p').value;
-                  const h = document.getElementById('neg-h').value;
-                  handleBooking(selectedSitter, p, h);
-              }} className="w-full py-8 rounded-[2.5rem] font-black text-sm shadow-xl shadow-[#E64545]/20 uppercase tracking-[0.2em] active:scale-95 transition-all bg-[#E64545] text-white hover:bg-[#E64545]/90">ENVOYER LA DEMANDE</button>
-            </div>
-          </div>
         </div>
       )}
     </div>
@@ -775,178 +630,76 @@ const ParentDashboard = ({ profile, user }) => {
 const SitterDashboard = ({ user, profile }) => {
   const [bio, setBio] = useState("");
   const [price, setPrice] = useState("");
-  const [birthDate, setBirthDate] = useState("");
-  const [cvName, setCvName] = useState("");
-  const [city, setCity] = useState("");
-  const [level, setLevel] = useState(profile?.level || "1");
-  const [loading, setLoading] = useState(false);
-  const [activeTab, setActiveTab] = useState("profile");
-  const [offers, setOffers] = useState([]);
-  const [activeChat, setActiveChat] = useState(null);
+  const [hasCar, setHasCar] = useState(false);
   const [saveStatus, setSaveStatus] = useState("");
-  const [reviews, setReviews] = useState([]);
-  const [isDark, setIsDark] = useState(localStorage.getItem('dark') === 'true');
-  const [views, setViews] = useState(0);
+  const [offers, setOffers] = useState([]);
+  const [chat, setChat] = useState(null);
 
   useEffect(() => {
-    localStorage.setItem('dark', isDark);
-    const unsubPublic = onSnapshot(doc(db, 'artifacts', appId, 'public', 'data', 'sitters', user.uid), (snap) => {
-      if (snap.exists()) {
-        const d = snap.data(); setBio(d.bio || ""); setPrice(d.price || ""); setBirthDate(d.birthDate || ""); setCity(d.city || ""); setCvName(d.cvName || ""); setViews(d.views || 0);
-        if (d.level) setLevel(d.level);
-        if (d.availability) setAvailability(d.availability);
-      }
+    // Charge le profil
+    onSnapshot(doc(db, 'artifacts', appId, 'public', 'data', 'sitters', user.uid), s => {
+        if(s.exists()) { const d = s.data(); setBio(d.bio); setPrice(d.price); setHasCar(d.hasCar || false); }
     });
-    // FILTRE SÉCURITÉ POUR LE SITTER
-    const qOffers = query(
-      collection(db, 'artifacts', appId, 'public', 'data', 'offers'), 
-      where("sitterId", "==", user.uid)
-    );
-    const unsubOffers = onSnapshot(qOffers, (snap) => {
-      setOffers(snap.docs.map(d => ({ id: d.id, ...d.data() })));
+    // Charge les demandes
+    onSnapshot(query(collection(db, 'artifacts', appId, 'public', 'data', 'offers'), where('sitterId', '==', user.uid)), s => {
+        setOffers(s.docs.map(d => ({id: d.id, ...d.data()})));
     });
-    const unsubReviews = onSnapshot(collection(db, 'artifacts', appId, 'public', 'data', 'sitters', user.uid, 'reviews'), (snap) => {
-        setReviews(snap.docs.map(d => d.data()));
-    });
-    return () => { unsubPublic(); unsubOffers(); unsubReviews(); };
-  }, [user.uid, isDark]);
+  }, []);
 
-  const totalEarnings = useMemo(() => {
-      return offers.filter(o => o.status === 'accepted' || o.status === 'reviewed').reduce((acc, o) => acc + ( (parseFloat(o.price) || 0) * (parseFloat(o.hours) || 1) ), 0);
-  }, [offers]);
-
-  const [availability, setAvailability] = useState({
-    Lundi: { active: false, start: "08:00", end: "18:00" }, Mardi: { active: false, start: "08:00", end: "18:00" },
-    Mercredi: { active: false, start: "08:00", end: "18:00" }, Jeudi: { active: false, start: "08:00", end: "18:00" },
-    Vendredi: { active: false, start: "08:00", end: "18:00" }, Samedi: { active: false, start: "08:00", end: "18:00" },
-    Dimanche: { active: false, start: "08:00", end: "18:00" },
-  });
-
-  const unreadCount = offers.filter(o => o.hasUnread && o.lastSenderId !== user.uid).length;
-
-  const handleSave = async () => {
-    if (!bio || !price || !city || !birthDate) return alert("Champs requis : Bio, Tarif, Ville, Naissance.");
-    setLoading(true);
-    try {
+  const save = async () => {
       await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'sitters', user.uid), {
-        name: profile.name, avatarStyle: profile.avatarStyle || 'avataaars', photoURL: profile.photoURL || "", useCustomPhoto: !!profile.useCustomPhoto, views,
-        phone: profile.phone || "", bio: bio.trim(), price, birthDate, availability, cvName, hasCV: !!cvName, city, rating: 5, uid: user.uid, level, updatedAt: new Date().toISOString()
+          name: profile.name, bio, price, hasCar, uid: user.uid, photoURL: profile.photoURL || "", rating: 5, level: profile.level
       });
-      setSaveStatus("PUBLIÉ ! ✨"); setTimeout(() => setSaveStatus(""), 4000);
-    } catch(e) { console.error(e); } finally { setLoading(false); }
+      setSaveStatus("Sauvegardé !"); setTimeout(()=>setSaveStatus(""), 2000);
   };
 
-  const markAsRead = async (offer) => {
-    if (offer.hasUnread && offer.lastSenderId !== user.uid) {
-        await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'offers', offer.id), { hasUnread: false });
-    }
-    setActiveChat(offer);
-  };
+  const totalEarned = offers.filter(o => o.status === 'completed').reduce((acc, o) => acc + (parseFloat(o.price) * parseFloat(o.hours)), 0);
 
-  if (activeChat) return <ChatRoom offer={activeChat} currentUser={user} onBack={() => setActiveChat(null)} isDark={isDark} />;
-  if (activeTab === "settings") return <SettingsView user={user} profile={profile} onBack={() => setActiveTab("profile")} isDark={isDark} toggleDark={() => setIsDark(!isDark)} />;
-
-  const myP = (profile.useCustomPhoto && profile.photoURL) ? profile.photoURL : `https://api.dicebear.com/7.x/${profile.avatarStyle || 'avataaars'}/svg?seed=${profile.name}`;
+  if(chat) return <ChatRoom offer={chat} currentUser={user} onBack={() => setChat(null)} isDark={false} />;
 
   return (
-    <div className={`min-h-screen font-sans pb-32 animate-in fade-in duration-500 ${isDark ? 'bg-slate-950 text-white' : 'bg-slate-50 text-slate-800'}`}>
-      <nav className={`p-6 flex justify-between items-center sticky top-0 z-40 border-b shadow-sm ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-100'}`}>
-        {/* NOM CORRIGÉ ICI (DASHBOARD SITTER) + COULEUR UNIQUE DEGRADE SATELLA */}
-        <div className="flex items-center gap-3 text-slate-900"><SitFinderLogo className="w-10 h-10" glow={false} /><span className="font-black italic text-xl uppercase tracking-tighter leading-none text-transparent bg-clip-text bg-gradient-to-r from-[#E64545] to-[#E0720F]">BABYKEEPER</span></div>
-        <div className="flex items-center gap-2">
-          <div className="relative p-2 text-slate-400">
-              <Bell size={22}/>
-              {unreadCount > 0 && <span className="absolute top-1 right-1 w-4 h-4 bg-[#E64545] text-white text-[8px] font-black rounded-full flex items-center justify-center border-2 border-white animate-bounce">{unreadCount}</span>}
+      <div className="min-h-screen bg-slate-50 p-6 space-y-6 pb-24">
+          <div className="flex justify-between items-center">
+              <SitFinderLogo className="w-10 h-10"/>
+              <button onClick={() => signOut(auth)}><LogOut className="text-slate-400"/></button>
           </div>
-          <button onClick={() => setActiveTab("settings")} className={`p-3 rounded-2xl transition-all ${isDark ? 'bg-slate-800 text-[#E0720F]' : 'bg-slate-50 text-slate-300'}`}><Settings size={22} /></button>
-          <button onClick={() => signOut(auth)} className={`p-3 rounded-2xl transition-all ${isDark ? 'bg-slate-800 text-slate-400' : 'bg-slate-50 text-slate-300'}`}><LogOut size={22} /></button>
-        </div>
-      </nav>
-      <main className="p-6 max-w-4xl mx-auto space-y-12">
-        {activeTab === "profile" ? (
-          <div className="space-y-10 text-left animate-in fade-in slide-in-from-bottom-6 duration-700">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className={`p-8 rounded-[3rem] shadow-xl border flex flex-col items-center text-center space-y-4 ${isDark ? 'bg-slate-900 border-slate-800 shadow-slate-950' : 'bg-white'}`}>
-                    <div className="relative">
-                        <div className={`w-28 h-28 rounded-[2.5rem] border-4 shadow-2xl overflow-hidden ring-4 ${isDark ? 'bg-slate-800 border-slate-700 ring-slate-950' : 'bg-white'}`}><img src={myP} alt="profile" className="w-full h-full object-cover" /></div>
-                        <button onClick={() => setActiveTab("settings")} className="absolute -bottom-1 -right-1 p-3 bg-slate-900 text-white rounded-xl shadow-xl active:scale-95 transition-all"><Camera size={16}/></button>
-                    </div>
-                    <div><h2 className={`text-2xl font-black italic ${isDark ? 'text-white' : 'text-slate-800'}`}>{profile.name}</h2>
-                    <div className="flex gap-2 justify-center mt-2">
-                        <span className="text-[9px] font-black text-white uppercase tracking-widest bg-[#E64545] px-3 py-1 rounded-full inline-block">Sitter Pro ✨</span>
-                        <span className="text-[9px] font-black text-white uppercase tracking-widest bg-[#E0720F] px-3 py-1 rounded-full inline-block">NIV {level} 👑</span>
-                    </div>
-                    </div>
-                </div>
-                <div className={`p-8 rounded-[3rem] shadow-xl text-white flex flex-col justify-center space-y-2 transition-all ${isDark ? 'bg-indigo-600' : 'bg-gradient-to-br from-[#E64545] to-[#E0720F]'}`}>
-                    <Wallet className="mb-1" size={24}/><p className="text-[10px] font-black uppercase tracking-widest opacity-70">Mon Revenu</p>
-                    <h3 className="text-4xl font-black italic tracking-tighter">{totalEarnings}€</h3>
-                    <p className="text-[8px] font-bold opacity-50 uppercase tracking-widest font-sans italic">Total cumulé</p>
-                </div>
-            </div>
-
-            <div className={`p-12 md:p-16 rounded-[4.5rem] shadow-2xl border space-y-12 relative overflow-hidden ${isDark ? 'bg-slate-900 border-slate-800 shadow-slate-950' : 'bg-white border-white shadow-slate-200'}`}>
-                <div className="absolute top-0 left-0 w-full h-3 bg-gradient-to-r from-[#E64545] to-[#E0720F] shadow-md shadow-rose-400/20"></div>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-10 text-slate-800">
-                    <div className="space-y-3 text-left"><label className="text-[11px] font-black text-blue-300 uppercase tracking-widest ml-4 font-sans italic">Tarif (€/H)</label><input type="number" className={`w-full p-8 rounded-[2.5rem] font-black text-4xl outline-none shadow-inner border border-transparent ${isDark ? 'bg-slate-800 text-white' : 'bg-slate-50 text-slate-800'}`} value={price} onChange={(e) => setPrice(e.target.value)} /></div>
-                    <div className="space-y-3 text-left"><label className="text-[11px] font-black text-blue-300 uppercase tracking-widest ml-4 font-sans italic">Ma Ville</label><input type="text" placeholder="Ville" className={`w-full p-8 rounded-[2.5rem] font-bold outline-none shadow-inner border border-transparent ${isDark ? 'bg-slate-800 text-white' : 'bg-slate-50 text-slate-800'}`} value={city} onChange={(e) => setCity(e.target.value)} /></div>
-                </div>
-                <div className="space-y-3 text-left"><label className="text-[11px] font-black text-blue-300 uppercase tracking-widest ml-4 font-sans italic">Naissance</label><input type="date" className={`w-full p-8 rounded-[2.5rem] font-bold outline-none shadow-inner border border-transparent ${isDark ? 'bg-slate-800 text-white' : 'bg-slate-50 text-slate-800'}`} value={birthDate} onChange={(e) => setBirthDate(e.target.value)} /></div>
-                <div className="space-y-3 text-left"><label className="text-[11px] font-black text-blue-300 uppercase tracking-widest ml-4 font-sans italic">Mon Niveau</label>
-                  <div className="grid grid-cols-3 gap-2">
-                    <button onClick={() => setLevel("1")} className={`py-4 rounded-2xl font-black uppercase text-xs transition-all ${level === "1" ? "bg-slate-900 text-white shadow-xl" : "bg-slate-100 text-slate-400"}`}>NIV 1 🍼</button>
-                    <button onClick={() => setLevel("2")} className={`py-4 rounded-2xl font-black uppercase text-xs transition-all ${level === "2" ? "bg-slate-900 text-white shadow-xl" : "bg-slate-100 text-slate-400"}`}>NIV 2 🧸</button>
-                    <button onClick={() => setLevel("3")} className={`py-4 rounded-2xl font-black uppercase text-xs transition-all ${level === "3" ? "bg-slate-900 text-white shadow-xl" : "bg-slate-100 text-slate-400"}`}>NIV 3 👑</button>
-                  </div>
-                </div>
-                <div className="space-y-3 text-left"><label className="text-[11px] font-black text-blue-300 uppercase tracking-widest ml-4 font-sans italic">Ma Bio Professionnelle</label><textarea placeholder="Expériences..." className={`w-full p-10 rounded-[3.5rem] h-64 font-bold outline-none shadow-inner resize-none leading-relaxed ${isDark ? 'bg-slate-800 text-white' : 'bg-slate-50 text-slate-800'}`} value={bio} onChange={(e) => setBio(e.target.value)} /></div>
-                <div className="space-y-3 text-left"><label className="text-[11px] font-black text-blue-300 uppercase tracking-widest ml-4 font-sans italic">Mon CV</label><input type="file" id="cv-f" className="hidden" onChange={(e) => setCvName(e.target.files[0]?.name || "")} accept=".pdf,image/*" /><label htmlFor="cv-f" className={`w-full flex items-center justify-between p-8 border-2 border-dashed rounded-[2.5rem] cursor-pointer hover:bg-emerald-500/5 transition-all shadow-inner ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-slate-50 border-slate-200'}`}><div className="flex items-center gap-6"><div className="p-5 bg-white rounded-3xl text-blue-400 shadow-md transition-transform group-hover:scale-110"><FileUp size={32}/></div><p className={`text-sm font-black ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>{cvName || "Joindre CV"}</p></div>{cvName && <CheckCircle2 className="text-emerald-500" size={32}/>}</label></div>
-                
-                <div className="space-y-8 pt-4">
-                   <div className="flex items-center gap-4 px-2"><div className="p-3 bg-blue-50 rounded-2xl text-blue-500 shadow-sm"><Calendar size={26}/></div><h3 className={`text-sm font-black uppercase tracking-widest italic font-sans leading-none ${isDark ? 'text-white' : 'text-slate-800'}`}>Mes Disponibilités Bento</h3></div>
-                   <div className="grid gap-5">
-                       {Object.entries(availability).map(([day, data]) => (
-                           <div key={day} className={`flex flex-col md:flex-row items-center gap-6 p-8 rounded-[3rem] border transition-all duration-300 ${data.active ? (isDark ? 'bg-slate-800 border-indigo-500/30 shadow-2xl' : 'bg-white border-blue-100 shadow-xl') : 'bg-transparent border-transparent opacity-40'}`}>
-                               <button onClick={() => setAvailability(p => ({...p, [day]: {...p[day], active: !p[day].active}}))} className={`w-full md:w-40 py-5 rounded-2xl font-black text-[10px] uppercase tracking-widest ${data.active ? 'bg-[#E64545] text-white shadow-lg' : 'bg-slate-200 text-slate-400 hover:bg-slate-300'}`}>{day}</button>
-                               {data.active && (
-                                   <div className="flex items-center gap-5 animate-in slide-in-from-left-4 duration-300 flex-1">
-                                       <div className={`flex items-center gap-4 px-8 py-4 rounded-3xl text-[11px] font-black border shadow-inner ${isDark ? 'bg-slate-900 border-slate-700 text-slate-300' : 'bg-blue-50/50 border-blue-50 text-slate-600'}`}>
-                                           <Clock size={18} className="text-[#E0720F]" /><input type="time" className="bg-transparent border-none outline-none" value={data.start} onChange={(e) => setAvailability(p => ({...p, [day]: {...p[day], start: e.target.value}}))} /><span className="text-slate-300 mx-3 text-sm">à</span><input type="time" className="bg-transparent border-none outline-none" value={data.end} onChange={(e) => setAvailability(p => ({...p, [day]: {...p[day], end: e.target.value}}))} />
-                                       </div>
-                                   </div>
-                               )}
-                           </div>
-                       ))}
-                   </div>
-                </div>
-
-                <button onClick={handleSave} disabled={loading} className={`w-full py-10 rounded-[3.5rem] font-black shadow-2xl flex justify-center items-center gap-4 active:scale-95 transition-all uppercase tracking-[0.4em] text-sm hover:brightness-110 shadow-slate-300 ${isDark ? 'bg-indigo-600 text-white' : 'bg-slate-900 text-white'}`}>{loading ? <Loader2 className="animate-spin" size={32}/> : (saveStatus || "PUBLIER MON PROFIL")}</button>
-            </div>
+          
+          <div className="bg-[#E0720F] text-white p-6 rounded-[2rem] shadow-lg mb-6">
+              <p className="text-xs uppercase font-bold opacity-80">Gains validés</p>
+              <h2 className="text-4xl font-black">{totalEarned} €</h2>
           </div>
-        ) : (
-          <div className="space-y-8 animate-in fade-in duration-500">
-              <h2 className="text-4xl font-black italic uppercase tracking-tighter leading-none text-left">Missions</h2>
-              <div className="grid gap-6">
-                  {offers.sort((a,b) => (b.lastMsgAt?.seconds || 0) - (a.lastMsgAt?.seconds || 0)).map(o => (
-                      <div key={o.id} onClick={() => markAsRead(o)} className={`p-10 rounded-[3.5rem] shadow-xl border flex items-center justify-between hover:border-[#E0720F]/30 cursor-pointer active:scale-[0.99] shadow-md ${isDark ? 'bg-slate-900 border-slate-800 shadow-slate-950' : 'bg-white border-slate-100 shadow-slate-50'}`}>
-                          <div className="flex items-center gap-8 text-slate-800">
-                              <div className={`w-24 h-24 rounded-[2.5rem] overflow-hidden shadow-sm border ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-[#E64545] border-[#E64545]'}`}><img src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${o.parentName}`} alt="avatar" /></div>
-                              <div className="text-left"><h4 className={`font-black text-3xl italic leading-tight ${isDark ? 'text-white' : ''}`}>{o.parentName}</h4><p className={`text-[11px] font-black uppercase tracking-[0.3em] mt-1 ${isDark ? 'text-indigo-400' : 'text-[#E0720F]'}`}>{o.status === 'accepted' ? 'Validé ✨' : `Offre : ${o.price}€/H`}</p></div>
-                          </div>
-                          {o.hasUnread && o.lastSenderId !== user.uid && <div className="w-4 h-4 bg-[#E64545] rounded-full animate-pulse shadow-xl"></div>}
+
+          <h2 className="text-2xl font-black text-[#E64545]">Profil & Demandes</h2>
+          
+          <div className="p-8 bg-white rounded-[3rem] shadow-xl space-y-6">
+              <input type="number" placeholder="Prix / H" className="w-full p-4 border rounded-2xl font-bold" value={price} onChange={e=>setPrice(e.target.value)}/>
+              <textarea placeholder="Ma bio..." className="w-full p-4 border rounded-2xl font-bold h-32" value={bio} onChange={e=>setBio(e.target.value)}/>
+              
+              <button onClick={() => setHasCar(!hasCar)} className={`w-full py-4 rounded-2xl font-black uppercase flex items-center justify-center gap-2 ${hasCar ? "bg-[#E0720F] text-white" : "bg-slate-100 text-slate-400"}`}>
+                  <Car/> {hasCar ? "Je suis véhiculé" : "Non véhiculé"}
+              </button>
+
+              <button onClick={save} className="w-full py-5 bg-[#E64545] text-white rounded-2xl font-black uppercase">{saveStatus || "Publier mon profil"}</button>
+          </div>
+
+          <div className="space-y-4">
+              <h3 className="font-bold text-slate-500 uppercase">Mes demandes</h3>
+              {offers.map(o => (
+                  <div key={o.id} onClick={() => setChat(o)} className="p-6 bg-white rounded-[2rem] border shadow-sm cursor-pointer">
+                      <div className="flex justify-between">
+                          <h4 className="font-bold">{o.parentName}</h4>
+                          <span className={`px-2 py-1 rounded-lg text-xs font-bold ${o.status === 'paid_held' ? 'bg-yellow-100 text-yellow-600' : 'bg-slate-100'}`}>{o.status}</span>
                       </div>
-                  ))}
-              </div>
+                      <p className="text-sm text-slate-400 mt-2">{o.lastMsg}</p>
+                  </div>
+              ))}
           </div>
-        )}
-      </main>
-      <div className={`fixed bottom-10 left-1/2 -translate-x-1/2 w-[90%] max-w-md backdrop-blur-xl p-2.5 rounded-[3.5rem] shadow-2xl flex items-center justify-between z-50 border ${isDark ? 'bg-slate-900/95 border-slate-800' : 'bg-slate-900/95 border-white/10'}`}><button onClick={() => setActiveTab("profile")} className={`flex-1 flex flex-col items-center py-4 rounded-[2.5rem] transition-all duration-300 ${activeTab === "profile" ? (isDark ? "bg-[#E64545] text-white" : "bg-[#E64545] text-white") : "text-slate-400 hover:text-white"}`}><User size={22}/><span className="text-[9px] font-black uppercase mt-1.5 tracking-widest font-sans">Profil</span></button><button onClick={() => setActiveTab("messages")} className={`flex-1 flex flex-col items-center py-4 rounded-[2.5rem] transition-all duration-300 relative ${activeTab === "messages" ? (isDark ? "bg-[#E64545] text-white" : "bg-[#E64545] text-white") : "text-slate-400 hover:text-white"}`}><MessageSquare size={22}/><span className="text-[9px] font-black uppercase mt-1.5 font-sans tracking-widest">Offres</span>{unreadCount > 0 && <div className="absolute top-3 right-1/3 w-2.5 h-2.5 bg-[#E0720F] rounded-full border-2 border-slate-900 animate-pulse"></div>}</button></div>
-    </div>
+      </div>
   );
 };
 
 // ==========================================
-// 8. LOGIQUE RACINE (CORRECTION BUG CONNEXION)
+// 8. LOGIQUE RACINE
 // ==========================================
 
 export default function App() {
@@ -955,44 +708,16 @@ export default function App() {
   const [profile, setProfile] = useState(null);
 
   useEffect(() => {
-    let unsubP = null;
-    
-    // Timer minimum pour le splash screen (pour l'effet visuel)
-    const minSplashTimer = new Promise(resolve => setTimeout(resolve, 2000));
-    
-    // DECONNEXION SYSTEMATIQUE AU LANCEMENT POUR FORCER L'ECRAN DE CONNEXION
-    signOut(auth);
-    
-    const unsubA = onAuthStateChanged(auth, async (u) => {
-      setUser(u);
-      
-      if (u) {
-        // Si utilisateur connecté, on attend son profil avant d'enlever le splash
-        unsubP = onSnapshot(doc(db, 'artifacts', appId, 'users', u.uid, 'settings', 'profile'), async (snap) => {
-          if (snap.exists()) {
-              setProfile(snap.data());
-          } else {
-              setProfile(null);
-          }
-          // On attend la fin du timer visuel avant d'afficher l'app
-          await minSplashTimer;
-          setInit(true);
-        });
-      } else {
-        // Si pas d'utilisateur, on attend juste le timer visuel
-        setProfile(null);
-        if (unsubP) unsubP();
-        await minSplashTimer;
-        setInit(true);
-      }
+    signOut(auth); // Sécurité au lancement
+    setTimeout(() => setInit(true), 2000);
+    return onAuthStateChanged(auth, u => {
+        setUser(u);
+        if(u) onSnapshot(doc(db, 'artifacts', appId, 'users', u.uid, 'settings', 'profile'), s => setProfile(s.data()));
     });
-
-    return () => { unsubA(); if (unsubP) unsubP(); };
   }, []);
 
   if (!init) return <SplashScreen />;
   if (!user) return <AuthScreen />;
-  // On n'arrive ici que si init=true, donc le profil a été chargé (ou confirmé inexistant)
-  if (user && !profile) return <CompleteProfileScreen uid={user.uid} />;
-  return profile.role === "parent" ? <ParentDashboard profile={profile} user={user} /> : <SitterDashboard user={user} profile={profile} />;
+  if (user && !profile) return <div className="h-screen flex items-center justify-center">Chargement...</div>;
+  return profile.role === 'parent' ? <ParentDashboard profile={profile} user={user} /> : <SitterDashboard user={user} profile={profile} />;
 }
