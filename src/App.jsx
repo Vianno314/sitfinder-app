@@ -208,7 +208,7 @@ const SettingsView = ({ user, profile, onBack, isDark, toggleDark }) => {
 };
 
 // ==========================================
-// 4. MESSAGERIE & CHAT (AVEC PAIEMENT APPLE PAY)
+// 4. MESSAGERIE & CHAT (AVEC PAIEMENT SECURISE)
 // ==========================================
 
 const ChatRoom = ({ offer, currentUser, onBack, isDark }) => {
@@ -283,7 +283,10 @@ const ChatRoom = ({ offer, currentUser, onBack, isDark }) => {
   const updateOfferStatus = async (status) => {
     try {
       await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'offers', offer.id), { status });
-      const text = status === 'accepted' ? "✨ Offre acceptée ! En attente du paiement." : "L'offre a été refusée.";
+      let text = "";
+      if (status === 'accepted') text = "✨ Offre acceptée ! En attente du paiement sécurisé.";
+      else if (status === 'declined') text = "L'offre a été refusée.";
+      
       await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'offers', offer.id, 'messages'), { text, senderId: 'system', parentId: offer.parentId, sitterId: offer.sitterId, createdAt: Timestamp.now() });
     } catch (e) { console.error(e); }
   };
@@ -329,25 +332,25 @@ const ChatRoom = ({ offer, currentUser, onBack, isDark }) => {
 
   return (
     <div className={`flex flex-col h-screen font-sans animate-in fade-in duration-300 ${isDark ? 'bg-slate-950 text-white' : 'bg-white text-slate-900'}`}>
-      <div className={`p-6 border-b flex justify-between items-center sticky top-0 z-20 shadow-sm ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-100'}`}>
+      <div className={`p-6 border-b flex items-center justify-between sticky top-0 z-20 shadow-sm ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-100'}`}>
         <div className="flex items-center gap-4">
           <button onClick={onBack} className={`p-2 rounded-full ${isDark ? 'hover:bg-slate-800' : 'hover:bg-slate-50'}`}><ArrowLeft size={20}/></button>
           <div className="text-left"><h3 className="font-black tracking-tight uppercase italic text-xs text-transparent bg-clip-text bg-gradient-to-r from-[#E64545] to-[#E0720F]">BABYKEEPER CHAT</h3><p className="text-[10px] text-[#E0720F] font-black uppercase tracking-widest">{offer.price}€/H • {offer.status}</p></div>
         </div>
         <div className="flex gap-2">
             <button onClick={handleReport} className="p-3 text-slate-300 hover:text-red-500 transition-colors"><Flag size={18}/></button>
-            {offer.status === 'completed' && currentUser.uid === offer.parentId && (
-                <button onClick={() => setShowReview(true)} className="p-3 bg-[#E0720F]/20 text-[#E0720F] rounded-xl animate-pulse"><Star size={18}/></button>
-            )}
-            {(offer.status === 'paid_held' || offer.status === 'completed' || offer.status === 'reviewed') && otherUserPhone && (
-                <a href={`tel:${otherUserPhone}`} className="p-3 bg-[#E64545] text-white rounded-xl shadow-lg"><Phone size={18}/></a>
-            )}
+            {/* Bouton avis si fini */}
+            {offer.status === 'completed' && currentUser.uid === offer.parentId && <button onClick={() => setShowReview(true)} className="p-3 bg-[#E0720F]/20 text-[#E0720F] rounded-xl"><Star size={18}/></button>}
+            {/* Téléphone seulement si payé/bloqué ou fini */}
+            {(offer.status === 'paid_held' || offer.status === 'completed' || offer.status === 'reviewed') && otherUserPhone && <a href={`tel:${otherUserPhone}`} className="p-3 bg-[#E64545] text-white rounded-xl"><Phone size={18}/></a>}
         </div>
       </div>
 
-      {/* ZONE PAIEMENT / VALIDATION (AJOUT) */}
+      {/* --- ZONE D'ACTIONS DE PAIEMENT (Parent) --- */}
+
+      {/* ETAPE 1 : Paiement pour bloquer les fonds */}
       {offer.status === 'accepted' && currentUser.uid === offer.parentId && (
-          <div className="p-4 bg-gray-50 border-b flex flex-col gap-2 items-center text-center animate-in slide-in-from-top-2">
+          <div className="p-4 bg-gray-50 border-b flex flex-col gap-2 items-center text-center">
               <p className="text-xs font-bold text-slate-500">Le sitter a accepté ! Payez pour sécuriser.</p>
               <button onClick={handlePayment} className="w-full bg-black text-white py-3 rounded-xl font-bold flex items-center justify-center gap-2">
                     Payer avec Apple Pay
@@ -356,28 +359,27 @@ const ChatRoom = ({ offer, currentUser, onBack, isDark }) => {
           </div>
       )}
 
+      {/* ETAPE 2 : Validation pour libérer les fonds */}
       {offer.status === 'paid_held' && currentUser.uid === offer.parentId && (
-          <div className="p-4 bg-green-50 border-b flex flex-col gap-2 items-center text-center animate-in slide-in-from-top-2">
-              <p className="text-xs font-bold text-green-700">Garde payée (argent bloqué).</p>
+          <div className="p-4 bg-green-50 border-b flex flex-col gap-2 items-center text-center">
+              <p className="text-xs font-bold text-green-700">Garde payée (fonds bloqués).</p>
               <button onClick={confirmService} className="w-full bg-green-600 text-white py-3 rounded-xl font-bold flex items-center justify-center gap-2">
                    ✅ Valider la fin & Libérer les fonds
               </button>
+              <p className="text-[10px] text-green-600/70">À faire une fois le sitter parti.</p>
           </div>
       )}
 
       <div className={`flex-1 overflow-y-auto p-6 space-y-4 ${isDark ? 'bg-slate-950' : 'bg-slate-50/30'}`}>
         {messages.map((m) => (
           <div key={m.id} className={`flex ${m.senderId === 'system' ? 'justify-center' : m.senderId === currentUser.uid ? 'justify-end' : 'justify-start'}`}>
-            <div className={`max-w-[80%] p-4 rounded-[2rem] text-sm shadow-sm relative group ${
-              m.senderId === 'system' ? (isDark ? 'bg-slate-800 text-[#E64545] border-slate-700' : 'bg-[#E0720F]/10 text-[#E0720F] border-[#E0720F]/20') + ' text-[10px] font-black uppercase border px-6 py-2 text-center' :
-              m.senderId === currentUser.uid ? 'bg-[#E64545] text-white rounded-br-none' : 
-              (isDark ? 'bg-slate-800 text-slate-200 border-slate-700' : 'bg-white text-slate-800 border-slate-100') + ' rounded-bl-none border'
+            <div className={`max-w-[80%] p-4 rounded-[2rem] text-sm ${
+                m.senderId === 'system' ? 'bg-slate-100 text-slate-500 text-xs text-center border border-slate-200' : 
+                m.senderId === currentUser.uid ? 'bg-[#E64545] text-white rounded-br-none' : 'bg-slate-100 text-slate-800 rounded-bl-none'
             }`}> 
                 {m.text} 
                 {translations[m.id] && <p className="text-[10px] mt-2 opacity-70 italic border-t border-white/20 pt-1">{translations[m.id]}</p>}
-                {m.senderId !== 'system' && m.senderId !== currentUser.uid && (
-                    <button onClick={() => translateMsg(m.id, m.text)} className="absolute -right-8 top-1 text-slate-300 hover:text-[#E0720F] opacity-0 group-hover:opacity-100 transition-opacity"><Languages size={14}/></button>
-                )}
+                {m.senderId !== 'system' && m.senderId !== currentUser.uid && <button onClick={() => translateMsg(m.id, m.text)} className="ml-2 opacity-50 hover:opacity-100"><Languages size={12}/></button>}
             </div>
           </div>
         ))}
@@ -462,7 +464,7 @@ const AuthScreen = () => {
 
   return (
     <div className="min-h-screen bg-white flex flex-col items-center justify-center p-6 relative font-sans text-slate-900">
-      <div className="absolute inset-0 bg-gradient-to-br from-[#E64545]/10 to-[#E0720F]/10 -z-10"></div>
+      <div className="absolute inset-0 bg-gradient-to-br from-[#E64545]/20 to-[#E0720F]/20 -z-10"></div>
       <div className="w-full max-w-lg bg-white p-10 md:p-12 rounded-[4rem] shadow-2xl border border-white z-10 shadow-slate-100">
         <div className="flex flex-col items-center mb-10 text-center">
           <SitFinderLogo className="mb-6 h-24 w-24" />
@@ -730,7 +732,7 @@ const ParentDashboard = ({ profile, user }) => {
                         <div className={`w-20 h-20 rounded-3xl overflow-hidden shadow-sm border ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-[#E0720F]/10 border-[#E0720F]/20'}`}><img src={getSPhoto(sitters.find(x => x.id === o.sitterId) || {})} alt="avatar" className="w-full h-full object-cover" /></div>
                         <div className="text-left"><h4 className="font-black text-2xl font-sans leading-tight">{o.sitterName}</h4>
                         <p className={`text-[11px] font-bold truncate max-w-[150px] mt-1 ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>{o.lastMsg}</p>
-                        {/* BADGE PAIEMENT */}
+                         {/* BADGE PAIEMENT */}
                         {o.status === 'paid_held' && <span className="text-[9px] bg-yellow-100 text-yellow-600 px-2 rounded-full mt-1 inline-block font-bold">Payé (En attente)</span>}
                         {o.status === 'completed' && <span className="text-[9px] bg-green-100 text-green-600 px-2 rounded-full mt-1 inline-block font-bold">Terminé</span>}
                         </div>
@@ -787,8 +789,8 @@ const ParentDashboard = ({ profile, user }) => {
                       <input id="neg-h" type="number" defaultValue="2" className="w-full p-6 rounded-[2.5rem] outline-none font-black text-2xl shadow-inner bg-slate-50 text-slate-800" />
                   </div>
               </div>
-              
-              <div className="flex justify-between items-center bg-slate-50 p-4 rounded-2xl">
+
+               <div className="flex justify-between items-center bg-slate-50 p-4 rounded-2xl">
                  <div className="flex items-center gap-2 text-xs font-bold text-slate-500"><Car size={16}/> {selectedSitter.hasCar ? "Véhiculé 🚗" : "Non véhiculé"}</div>
               </div>
 
@@ -851,8 +853,11 @@ const SitterDashboard = ({ user, profile }) => {
   }, [user.uid, isDark]);
 
   const totalEarnings = useMemo(() => {
-      return offers.filter(o => o.status === 'completed').reduce((acc, o) => acc + ( (parseFloat(o.price) || 0) * (parseFloat(o.hours) || 1) ), 0);
-  }, [offers]);
+      // On calcule tout ce qui n'est pas "en attente" ou "refusé"
+      return offers
+        .filter(o => ['accepted', 'paid_held', 'completed', 'reviewed'].includes(o.status))
+        .reduce((acc, o) => acc + ((parseFloat(o.price) || 0) * (parseFloat(o.hours) || 0)), 0);
+    }, [offers]);
 
   const [availability, setAvailability] = useState({
     Lundi: { active: false, start: "08:00", end: "18:00" }, Mardi: { active: false, start: "08:00", end: "18:00" },
@@ -890,7 +895,6 @@ const SitterDashboard = ({ user, profile }) => {
   return (
     <div className={`min-h-screen font-sans pb-32 animate-in fade-in duration-500 ${isDark ? 'bg-slate-950 text-white' : 'bg-slate-50 text-slate-800'}`}>
       <nav className={`p-6 flex justify-between items-center sticky top-0 z-40 border-b shadow-sm ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-100'}`}>
-        {/* NOM CORRIGÉ ICI (DASHBOARD SITTER) + COULEUR UNIQUE DEGRADE SATELLA */}
         <div className="flex items-center gap-3 text-slate-900"><SitFinderLogo className="w-10 h-10" glow={false} /><span className="font-black italic text-xl uppercase tracking-tighter leading-none text-transparent bg-clip-text bg-gradient-to-r from-[#E64545] to-[#E0720F]">BABYKEEPER</span></div>
         <div className="flex items-center gap-2">
           <div className="relative p-2 text-slate-400">
@@ -910,12 +914,7 @@ const SitterDashboard = ({ user, profile }) => {
                         <div className={`w-28 h-28 rounded-[2.5rem] border-4 shadow-2xl overflow-hidden ring-4 ${isDark ? 'bg-slate-800 border-slate-700 ring-slate-950' : 'bg-white'}`}><img src={myP} alt="profile" className="w-full h-full object-cover" /></div>
                         <button onClick={() => setActiveTab("settings")} className="absolute -bottom-1 -right-1 p-3 bg-slate-900 text-white rounded-xl shadow-xl active:scale-95 transition-all"><Camera size={16}/></button>
                     </div>
-                    <div><h2 className={`text-2xl font-black italic ${isDark ? 'text-white' : 'text-slate-800'}`}>{profile.name}</h2>
-                    <div className="flex gap-2 justify-center mt-2">
-                        <span className="text-[9px] font-black text-white uppercase tracking-widest bg-[#E64545] px-3 py-1 rounded-full inline-block">Sitter Pro ✨</span>
-                        <span className="text-[9px] font-black text-white uppercase tracking-widest bg-[#E0720F] px-3 py-1 rounded-full inline-block">NIV {level} 👑</span>
-                    </div>
-                    </div>
+                    <div><h2 className={`text-2xl font-black italic ${isDark ? 'text-white' : 'text-slate-800'}`}>{profile.name}</h2><p className="text-[9px] font-black text-white uppercase tracking-widest mt-1 bg-[#E64545] px-3 py-1 rounded-full inline-block">Sitter Pro ✨</p></div>
                 </div>
                 <div className={`p-8 rounded-[3rem] shadow-xl text-white flex flex-col justify-center space-y-2 transition-all ${isDark ? 'bg-indigo-600' : 'bg-gradient-to-br from-[#E64545] to-[#E0720F]'}`}>
                     <Wallet className="mb-1" size={24}/><p className="text-[10px] font-black uppercase tracking-widest opacity-70">Mon Revenu</p>
@@ -931,13 +930,6 @@ const SitterDashboard = ({ user, profile }) => {
                     <div className="space-y-3 text-left"><label className="text-[11px] font-black text-blue-300 uppercase tracking-widest ml-4 font-sans italic">Ma Ville</label><input type="text" placeholder="Ville" className={`w-full p-8 rounded-[2.5rem] font-bold outline-none shadow-inner border border-transparent ${isDark ? 'bg-slate-800 text-white' : 'bg-slate-50 text-slate-800'}`} value={city} onChange={(e) => setCity(e.target.value)} /></div>
                 </div>
                 <div className="space-y-3 text-left"><label className="text-[11px] font-black text-blue-300 uppercase tracking-widest ml-4 font-sans italic">Naissance</label><input type="date" className={`w-full p-8 rounded-[2.5rem] font-bold outline-none shadow-inner border border-transparent ${isDark ? 'bg-slate-800 text-white' : 'bg-slate-50 text-slate-800'}`} value={birthDate} onChange={(e) => setBirthDate(e.target.value)} /></div>
-                <div className="space-y-3 text-left"><label className="text-[11px] font-black text-blue-300 uppercase tracking-widest ml-4 font-sans italic">Mon Niveau</label>
-                  <div className="grid grid-cols-3 gap-2">
-                    <button onClick={() => setLevel("1")} className={`py-4 rounded-2xl font-black uppercase text-xs transition-all ${level === "1" ? "bg-slate-900 text-white shadow-xl" : "bg-slate-100 text-slate-400"}`}>NIV 1 🍼</button>
-                    <button onClick={() => setLevel("2")} className={`py-4 rounded-2xl font-black uppercase text-xs transition-all ${level === "2" ? "bg-slate-900 text-white shadow-xl" : "bg-slate-100 text-slate-400"}`}>NIV 2 🧸</button>
-                    <button onClick={() => setLevel("3")} className={`py-4 rounded-2xl font-black uppercase text-xs transition-all ${level === "3" ? "bg-slate-900 text-white shadow-xl" : "bg-slate-100 text-slate-400"}`}>NIV 3 👑</button>
-                  </div>
-                </div>
                 <div className="space-y-3 text-left"><label className="text-[11px] font-black text-blue-300 uppercase tracking-widest ml-4 font-sans italic">Ma Bio Professionnelle</label><textarea placeholder="Expériences..." className={`w-full p-10 rounded-[3.5rem] h-64 font-bold outline-none shadow-inner resize-none leading-relaxed ${isDark ? 'bg-slate-800 text-white' : 'bg-slate-50 text-slate-800'}`} value={bio} onChange={(e) => setBio(e.target.value)} /></div>
                 <div className="space-y-3 text-left"><label className="text-[11px] font-black text-blue-300 uppercase tracking-widest ml-4 font-sans italic">Mon CV</label><input type="file" id="cv-f" className="hidden" onChange={(e) => setCvName(e.target.files[0]?.name || "")} accept=".pdf,image/*" /><label htmlFor="cv-f" className={`w-full flex items-center justify-between p-8 border-2 border-dashed rounded-[2.5rem] cursor-pointer hover:bg-emerald-500/5 transition-all shadow-inner ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-slate-50 border-slate-200'}`}><div className="flex items-center gap-6"><div className="p-5 bg-white rounded-3xl text-blue-400 shadow-md transition-transform group-hover:scale-110"><FileUp size={32}/></div><p className={`text-sm font-black ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>{cvName || "Joindre CV"}</p></div>{cvName && <CheckCircle2 className="text-emerald-500" size={32}/>}</label></div>
                 
