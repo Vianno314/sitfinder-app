@@ -53,7 +53,7 @@ const db = getFirestore(app, "default");
 const appId = "sitfinder-prod-v1";
 
 // ==========================================
-// 2. UTILITAIRES DE DESIGN (COULEURS SATELLA)
+// 2. UTILITAIRES DE DESIGN
 // ==========================================
 
 const SitFinderLogo = ({ className = "w-16 h-16", glow = true }) => (
@@ -99,6 +99,18 @@ const SplashScreen = ({ message = "La recherche en toute confiance" }) => (
   </div>
 );
 
+// Fonction helper pour afficher l'image ou un placeholder gris si erreur (pas de dessin)
+const UserAvatar = ({ photoURL, size = "w-full h-full", className = "" }) => {
+    if (photoURL) {
+        return <img src={photoURL} alt="User" className={`${size} object-cover ${className}`} />;
+    }
+    return (
+        <div className={`${size} bg-slate-200 flex items-center justify-center text-slate-400 ${className}`}>
+            <User size="50%" />
+        </div>
+    );
+};
+
 // ==========================================
 // 3. COMPOSANT PARAMÈTRES
 // ==========================================
@@ -107,7 +119,6 @@ const SettingsView = ({ user, profile, onBack, isDark, toggleDark }) => {
   const [newName, setNewName] = useState(profile?.name || "");
   const [phone, setPhone] = useState(profile?.phone || "");
   const [customPhoto, setCustomPhoto] = useState(profile?.photoURL || "");
-  const [useCustomPhoto, setUseCustomPhoto] = useState(profile?.useCustomPhoto || false);
   const [privateMode, setPrivateMode] = useState(profile?.privateMode || false);
   const [status, setStatus] = useState({ type: "", msg: "" });
   const [loading, setLoading] = useState(false);
@@ -130,7 +141,7 @@ const SettingsView = ({ user, profile, onBack, isDark, toggleDark }) => {
     const file = e.target.files[0];
     if (file) {
       const reader = new FileReader();
-      reader.onloadend = () => { setCustomPhoto(reader.result); setUseCustomPhoto(true); };
+      reader.onloadend = () => { setCustomPhoto(reader.result); };
       reader.readAsDataURL(file);
     }
   };
@@ -139,17 +150,15 @@ const SettingsView = ({ user, profile, onBack, isDark, toggleDark }) => {
     e.preventDefault();
     setLoading(true);
     try {
-      const updateData = { name: newName, phone, photoURL: customPhoto, useCustomPhoto, privateMode };
+      const updateData = { name: newName, phone, photoURL: customPhoto, privateMode };
       await updateDoc(doc(db, 'artifacts', appId, 'users', user.uid, 'settings', 'profile'), updateData);
       if (profile.role === 'sitter') {
-        await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'sitters', user.uid), { name: newName, photoURL: customPhoto, useCustomPhoto, phone });
+        await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'sitters', user.uid), { name: newName, photoURL: customPhoto, phone });
       }
       setStatus({ type: "success", msg: "Enregistré !" });
     } catch (err) { setStatus({ type: "error", msg: "Erreur..." }); }
     finally { setLoading(false); }
   };
-
-  const currentPhoto = useCustomPhoto && customPhoto ? customPhoto : `https://api.dicebear.com/7.x/avataaars/svg?seed=${newName}`;
 
   return (
     <div className={`min-h-screen font-sans pb-32 ${isDark ? 'bg-slate-950 text-white' : 'bg-slate-50 text-slate-800'}`}>
@@ -167,13 +176,12 @@ const SettingsView = ({ user, profile, onBack, isDark, toggleDark }) => {
         </div>
 
         <div className="flex flex-col items-center gap-6">
-            <img src={currentPhoto} className="w-32 h-32 rounded-[2rem] object-cover border-4 border-[#E64545]/20 shadow-xl" />
-            <div className="flex gap-2 w-full max-w-xs">
-                <button onClick={() => setUseCustomPhoto(false)} className="flex-1 py-3 rounded-xl font-black text-xs uppercase border">Avatar</button>
-                <label className="flex-1 py-3 rounded-xl font-black text-xs uppercase bg-[#E64545] text-white shadow-lg text-center cursor-pointer">
-                    Photo <input type="file" hidden onChange={handlePhotoUpload} />
-                </label>
+            <div className="w-32 h-32 rounded-[2rem] overflow-hidden border-4 border-[#E64545]/20 shadow-xl">
+                <UserAvatar photoURL={customPhoto} />
             </div>
+            <label className="py-3 px-8 rounded-xl font-black text-xs uppercase bg-[#E64545] text-white shadow-lg text-center cursor-pointer hover:bg-red-600 transition-colors">
+                Changer ma photo <input type="file" hidden onChange={handlePhotoUpload} accept="image/*" />
+            </label>
         </div>
 
         <form onSubmit={handleUpdateProfile} className="space-y-6">
@@ -201,7 +209,6 @@ const SettingsView = ({ user, profile, onBack, isDark, toggleDark }) => {
 // ==========================================
 
 const PremiumView = ({ onBack, isDark }) => {
-  // ⚠️ TON LIEN STRIPE EST ICI :
   const STRIPE_LINK = "https://buy.stripe.com/test_8x2dRa29w7tj03KdAUbEA00"; 
 
   return (
@@ -220,7 +227,6 @@ const PremiumView = ({ onBack, isDark }) => {
              <p className="text-sm font-bold opacity-60 uppercase tracking-widest max-w-xs mx-auto">Vous avez déjà effectué une réservation cette semaine.</p>
          </div>
 
-         {/* CARTE PRIX (3€) */}
          <div className={`w-full max-w-sm rounded-[3rem] overflow-hidden shadow-2xl border ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-100'}`}>
              <div className="bg-[#E0720F] p-8 text-center text-white">
                  <span className="text-sm font-black uppercase tracking-widest bg-white/20 px-3 py-1 rounded-full">Passez en illimité</span>
@@ -493,7 +499,7 @@ const AuthScreen = () => {
         if (password.length < 6) throw new Error("Mot de passe trop court.");
         const cred = await createUserWithEmailAndPassword(auth, email, password);
         await setDoc(doc(db, 'artifacts', appId, 'users', cred.user.uid, 'settings', 'profile'), {
-          uid: cred.user.uid, name: name.trim() || "User", role, email, level: role === 'sitter' ? level : null, avatarStyle: "avataaars", favorites: [], createdAt: new Date().toISOString()
+          uid: cred.user.uid, name: name.trim() || "User", role, email, level: role === 'sitter' ? level : null, favorites: [], createdAt: new Date().toISOString()
         });
       } else { await signInWithEmailAndPassword(auth, email, password); }
     } catch (err) { alert("Email ou mot de passe invalide."); } finally { setLoading(false); }
@@ -549,25 +555,52 @@ const AuthScreen = () => {
   );
 };
 
+// --- MODIFICATION ICI : ECRAN COMPLÉTION PROFIL AVEC PHOTO OBLIGATOIRE ---
 const CompleteProfileScreen = ({ uid }) => {
   const [name, setName] = useState("");
   const [role, setRole] = useState("parent");
   const [level, setLevel] = useState("1");
+  const [photo, setPhoto] = useState(null);
   const [loading, setLoading] = useState(false);
+
+  const handlePhotoSelect = (e) => {
+      const file = e.target.files[0];
+      if (file) {
+          const reader = new FileReader();
+          reader.onloadend = () => { setPhoto(reader.result); };
+          reader.readAsDataURL(file);
+      }
+  };
+
   const finish = async () => {
-    if (!name.trim()) return;
+    if (!name.trim()) return alert("Merci d'entrer votre prénom");
+    if (!photo) return alert("Une photo de profil est obligatoire pour la confiance.");
+    
     setLoading(true);
     try {
         await setDoc(doc(db, 'artifacts', appId, 'users', uid, 'settings', 'profile'), {
-            uid, name: name.trim(), role, level: role === 'sitter' ? level : null, avatarStyle: "avataaars", favorites: [], createdAt: new Date().toISOString()
+            uid, name: name.trim(), role, level: role === 'sitter' ? level : null, photoURL: photo, favorites: [], createdAt: new Date().toISOString()
         });
     } catch(e) { console.error(e); }
     setLoading(false);
   };
+
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-center p-6 text-slate-800 font-sans">
       <div className="bg-white p-12 rounded-[4rem] shadow-2xl max-w-md w-full text-center space-y-8 border border-slate-50 shadow-slate-100">
-        <SitFinderLogo className="mx-auto" /><h2 className="text-3xl font-black italic uppercase tracking-tighter leading-none">Presque fini !</h2>
+        <SitFinderLogo className="mx-auto" /><h2 className="text-3xl font-black italic uppercase tracking-tighter leading-none">Profil & Photo</h2>
+        
+        {/* ZONE PHOTO OBLIGATOIRE */}
+        <div className="flex justify-center">
+            <label className="cursor-pointer group relative">
+                <div className={`w-32 h-32 rounded-[2rem] border-4 ${photo ? 'border-[#E64545]' : 'border-slate-200 border-dashed'} overflow-hidden flex items-center justify-center bg-slate-50 shadow-inner group-hover:bg-slate-100 transition-colors`}>
+                    {photo ? <img src={photo} className="w-full h-full object-cover" /> : <div className="text-center text-slate-400"><Camera size={32} className="mx-auto mb-1"/><span className="text-[10px] font-black uppercase">Ajouter Photo</span></div>}
+                </div>
+                <input type="file" hidden onChange={handlePhotoSelect} accept="image/*" />
+                {!photo && <div className="absolute -bottom-6 left-0 w-full text-[10px] text-red-500 font-black uppercase animate-pulse">Obligatoire</div>}
+            </label>
+        </div>
+
         <input placeholder="Ton Prénom" className="w-full p-6 bg-slate-50 rounded-3xl outline-none font-bold shadow-inner" value={name} onChange={(e) => setName(e.target.value)} />
         <div className="grid grid-cols-2 gap-2 p-1 bg-slate-100 rounded-2xl shadow-sm">
           <button onClick={() => setRole("parent")} className={`py-4 rounded-xl font-black text-[10px] ${role === "parent" ? "bg-white shadow text-[#E64545]" : "text-slate-400"}`}>PARENT</button>
@@ -580,7 +613,7 @@ const CompleteProfileScreen = ({ uid }) => {
                 <button type="button" onClick={() => setLevel("3")} className={`py-2 rounded-lg text-[10px] font-black uppercase transition-all ${level === "3" ? "bg-slate-900 text-white" : "bg-slate-200 text-slate-500"}`}>NIV 3 👑</button>
               </div>
         )}
-        <button onClick={finish} disabled={loading} className="w-full bg-[#E64545] text-white py-6 rounded-[2rem] font-black shadow-lg uppercase transition-all active:scale-95 hover:brightness-110">VALIDER</button>
+        <button onClick={finish} disabled={loading || !photo} className={`w-full py-6 rounded-[2rem] font-black shadow-lg uppercase transition-all active:scale-95 ${!photo ? 'bg-slate-300 text-slate-500 cursor-not-allowed' : 'bg-[#E64545] text-white hover:brightness-110'}`}>VALIDER</button>
       </div>
     </div>
   );
@@ -718,8 +751,6 @@ const ParentDashboard = ({ profile, user }) => {
   if (activeTab === "settings") return <SettingsView user={user} profile={profile} onBack={() => setActiveTab("search")} isDark={isDark} toggleDark={() => setIsDark(!isDark)} />;
   if (activeTab === "premium") return <PremiumView onBack={() => setActiveTab("search")} isDark={isDark} />;
 
-  const getSPhoto = (s) => (s.useCustomPhoto && s.photoURL) ? s.photoURL : `https://api.dicebear.com/7.x/${s.avatarStyle || 'avataaars'}/svg?seed=${s.name}`;
-
   return (
     <div className={`min-h-screen font-sans pb-32 ${isDark ? 'bg-slate-950 text-white' : 'bg-slate-50 text-slate-800'}`}>
       <nav className={`p-6 flex justify-between items-center sticky top-0 z-40 border-b shadow-sm ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-100'}`}>
@@ -773,7 +804,9 @@ const ParentDashboard = ({ profile, user }) => {
                     {(s.hasCV) && <div className="flex items-center gap-2 bg-[#E64545] text-white px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest w-fit"><ShieldCheck size={10}/> VÉRIFIÉ</div>}
                     {s.level && <div className="flex items-center gap-2 bg-[#E0720F] text-white px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest w-fit mt-1">NIV {s.level} 👑</div>}
                   </div>
-                  <div className={`w-28 h-28 rounded-[2.5rem] mb-6 overflow-hidden border-4 shadow-xl ring-4 group-hover/card:scale-110 transition-transform duration-500 ${isDark ? 'bg-slate-800 border-slate-700 ring-slate-900' : 'bg-slate-50 border-white ring-slate-50/50'}`}><img src={getSPhoto(s)} alt="profile" className="w-full h-full object-cover" /></div>
+                  <div className={`w-28 h-28 rounded-[2.5rem] mb-6 overflow-hidden border-4 shadow-xl ring-4 group-hover/card:scale-110 transition-transform duration-500 ${isDark ? 'bg-slate-800 border-slate-700 ring-slate-900' : 'bg-slate-50 border-white ring-slate-50/50'}`}>
+                      <UserAvatar photoURL={s.photoURL} />
+                  </div>
                   <h4 className={`font-black text-4xl font-sans mb-1 leading-none tracking-tighter text-left ${isDark ? 'text-white' : 'text-slate-800'}`}>{s.name}</h4>
                   <div className="flex items-center gap-3 text-slate-400 mb-6"><RatingStars rating={s.rating || 5} size={18}/><span className={`text-[10px] font-black uppercase px-2 py-0.5 rounded-lg border ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-slate-50 border-slate-100'}`}>{s.city}</span></div>
                   <p className={`italic mb-8 leading-relaxed text-sm flex-1 line-clamp-3 text-left ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>"{s.bio || "..."}"</p>
@@ -794,7 +827,10 @@ const ParentDashboard = ({ profile, user }) => {
               : offers.sort((a,b) => (b.lastMsgAt?.seconds || 0) - (a.lastMsgAt?.seconds || 0)).map(o => (
                   <div key={o.id} onClick={() => markAsRead(o)} className={`p-10 rounded-[3.5rem] shadow-xl border flex items-center justify-between hover:border-[#E0720F]/30 cursor-pointer transition-all active:scale-[0.99] shadow-md ${isDark ? 'bg-slate-900 border-slate-800 text-white shadow-slate-950' : 'bg-white border-slate-100 text-slate-900 shadow-slate-100'} ${o.hasUnread && o.lastSenderId !== user.uid ? 'ring-2 ring-[#E64545]' : ''}`}>
                     <div className="flex items-center gap-6 text-left">
-                        <div className={`w-20 h-20 rounded-3xl overflow-hidden shadow-sm border ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-[#E0720F]/10 border-[#E0720F]/20'}`}><img src={getSPhoto(sitters.find(x => x.id === o.sitterId) || {})} alt="avatar" className="w-full h-full object-cover" /></div>
+                        <div className={`w-20 h-20 rounded-3xl overflow-hidden shadow-sm border ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-[#E0720F]/10 border-[#E0720F]/20'}`}>
+                            {/* Récupération de l'image du Sitter */}
+                            <UserAvatar photoURL={sitters.find(x => x.id === o.sitterId)?.photoURL} />
+                        </div>
                         <div className="text-left"><h4 className="font-black text-2xl font-sans leading-tight">{o.sitterName}</h4>
                         <p className={`text-[11px] font-bold truncate max-w-[150px] mt-1 ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>{o.lastMsg}</p>
                          {/* BADGE PAIEMENT */}
@@ -820,7 +856,9 @@ const ParentDashboard = ({ profile, user }) => {
           <div className="bg-white w-full max-w-xl rounded-[4rem] overflow-hidden shadow-2xl animate-in slide-in-from-bottom-10 duration-500 p-10 space-y-10">
             <div className="flex justify-between items-start">
               <div className="flex gap-8 items-center text-left">
-                 <div className="w-28 h-28 rounded-[2.5rem] overflow-hidden border-4 shadow-2xl border-white shadow-slate-200"><img src={getSPhoto(selectedSitter)} alt="profile" className="w-full h-full object-cover" /></div>
+                 <div className="w-28 h-28 rounded-[2.5rem] overflow-hidden border-4 shadow-2xl border-white shadow-slate-200">
+                     <UserAvatar photoURL={selectedSitter.photoURL} />
+                 </div>
                  <div className="space-y-1"><h3 className="text-4xl font-black tracking-tighter font-sans leading-none">{selectedSitter.name}</h3><RatingStars rating={selectedSitter.rating || 5} size={20}/></div>
               </div>
               <button onClick={() => setSelectedSitter(null)} className="p-4 rounded-full transition-all bg-slate-50 text-slate-800 hover:bg-red-50"><X size={24}/></button>
@@ -938,7 +976,7 @@ const SitterDashboard = ({ user, profile }) => {
     setLoading(true);
     try {
       await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'sitters', user.uid), {
-        name: profile.name, avatarStyle: profile.avatarStyle || 'avataaars', photoURL: profile.photoURL || "", useCustomPhoto: !!profile.useCustomPhoto, views,
+        name: profile.name, photoURL: profile.photoURL || "", views,
         phone: profile.phone || "", bio: bio.trim(), price, birthDate, availability, cvName, hasCV: !!cvName, city, rating: 5, uid: user.uid, level, hasCar, updatedAt: new Date().toISOString()
       });
       setSaveStatus("PUBLIÉ ! ✨"); setTimeout(() => setSaveStatus(""), 4000);
@@ -954,8 +992,6 @@ const SitterDashboard = ({ user, profile }) => {
 
   if (activeChat) return <ChatRoom offer={activeChat} currentUser={user} onBack={() => setActiveChat(null)} isDark={isDark} />;
   if (activeTab === "settings") return <SettingsView user={user} profile={profile} onBack={() => setActiveTab("profile")} isDark={isDark} toggleDark={() => setIsDark(!isDark)} />;
-
-  const myP = (profile.useCustomPhoto && profile.photoURL) ? profile.photoURL : `https://api.dicebear.com/7.x/${profile.avatarStyle || 'avataaars'}/svg?seed=${profile.name}`;
 
   return (
     <div className={`min-h-screen font-sans pb-32 animate-in fade-in duration-500 ${isDark ? 'bg-slate-950 text-white' : 'bg-slate-50 text-slate-800'}`}>
@@ -976,7 +1012,9 @@ const SitterDashboard = ({ user, profile }) => {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className={`p-8 rounded-[3rem] shadow-xl border flex flex-col items-center text-center space-y-4 ${isDark ? 'bg-slate-900 border-slate-800 shadow-slate-950' : 'bg-white'}`}>
                     <div className="relative">
-                        <div className={`w-28 h-28 rounded-[2.5rem] border-4 shadow-2xl overflow-hidden ring-4 ${isDark ? 'bg-slate-800 border-slate-700 ring-slate-950' : 'bg-white'}`}><img src={myP} alt="profile" className="w-full h-full object-cover" /></div>
+                        <div className={`w-28 h-28 rounded-[2.5rem] border-4 shadow-2xl overflow-hidden ring-4 ${isDark ? 'bg-slate-800 border-slate-700 ring-slate-950' : 'bg-white'}`}>
+                            <UserAvatar photoURL={profile.photoURL} />
+                        </div>
                         <button onClick={() => setActiveTab("settings")} className="absolute -bottom-1 -right-1 p-3 bg-slate-900 text-white rounded-xl shadow-xl active:scale-95 transition-all"><Camera size={16}/></button>
                     </div>
                     <div><h2 className={`text-2xl font-black italic ${isDark ? 'text-white' : 'text-slate-800'}`}>{profile.name}</h2><p className="text-[9px] font-black text-white uppercase tracking-widest mt-1 bg-[#E64545] px-3 py-1 rounded-full inline-block">Sitter Pro ✨</p></div>
@@ -1033,7 +1071,9 @@ const SitterDashboard = ({ user, profile }) => {
                   {offers.sort((a,b) => (b.lastMsgAt?.seconds || 0) - (a.lastMsgAt?.seconds || 0)).map(o => (
                       <div key={o.id} onClick={() => markAsRead(o)} className={`p-10 rounded-[3.5rem] shadow-xl border flex items-center justify-between hover:border-[#E0720F]/30 cursor-pointer active:scale-[0.99] shadow-md ${isDark ? 'bg-slate-900 border-slate-800 shadow-slate-950' : 'bg-white border-slate-100 shadow-slate-50'}`}>
                           <div className="flex items-center gap-8 text-slate-800">
-                              <div className={`w-24 h-24 rounded-[2.5rem] overflow-hidden shadow-sm border ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-[#E64545] border-[#E64545]'}`}><img src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${o.parentName}`} alt="avatar" /></div>
+                              <div className={`w-24 h-24 rounded-[2.5rem] overflow-hidden shadow-sm border ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-[#E64545] border-[#E64545]'}`}>
+                                  <UserAvatar photoURL={profile.photoURL} />
+                              </div>
                               <div className="text-left"><h4 className={`font-black text-3xl italic leading-tight ${isDark ? 'text-white' : ''}`}>{o.parentName}</h4><p className={`text-[11px] font-black uppercase tracking-[0.3em] mt-1 ${isDark ? 'text-indigo-400' : 'text-[#E0720F]'}`}>{o.status === 'accepted' ? 'Validé ✨' : `Offre : ${o.price}€/H`}</p></div>
                           </div>
                           {o.hasUnread && o.lastSenderId !== user.uid && <div className="w-4 h-4 bg-[#E64545] rounded-full animate-pulse shadow-xl"></div>}
