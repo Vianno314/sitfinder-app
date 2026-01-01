@@ -213,7 +213,7 @@ const SettingsView = ({ user, profile, onBack, isDark, toggleDark }) => {
 
 const PremiumView = ({ onBack, isDark }) => {
   // ⚠️ REMPLACE CE LIEN PAR TON LIEN STRIPE :
-  const STRIPE_LINK = "https://buy.stripe.com/https://buy.stripe.com/test_8x2dRa29w7tj03KdAUbEA00"; 
+  const STRIPE_LINK = "https://buy.stripe.com/test_8x2dRa29w7tj03KdAUbEA00"; 
 
   return (
     <div className={`min-h-screen font-sans pb-32 flex flex-col ${isDark ? 'bg-slate-950 text-white' : 'bg-slate-50 text-slate-800'}`}>
