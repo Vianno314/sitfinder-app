@@ -197,7 +197,7 @@ const SettingsView = ({ user, profile, onBack, isDark, toggleDark }) => {
 };
 
 // ==========================================
-// 3 BIS. COMPOSANT PREMIUM (NOUVEAU)
+// 3 BIS. COMPOSANT PREMIUM (3€)
 // ==========================================
 
 const PremiumView = ({ onBack, isDark }) => {
@@ -220,12 +220,12 @@ const PremiumView = ({ onBack, isDark }) => {
              <p className="text-sm font-bold opacity-60 uppercase tracking-widest max-w-xs mx-auto">Vous avez déjà effectué une réservation cette semaine.</p>
          </div>
 
-         {/* CARTE PRIX */}
+         {/* CARTE PRIX (3€) */}
          <div className={`w-full max-w-sm rounded-[3rem] overflow-hidden shadow-2xl border ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-100'}`}>
              <div className="bg-[#E0720F] p-8 text-center text-white">
                  <span className="text-sm font-black uppercase tracking-widest bg-white/20 px-3 py-1 rounded-full">Passez en illimité</span>
                  <div className="mt-4 flex justify-center items-end gap-1">
-                     <span className="text-6xl font-black italic">9.99€</span>
+                     <span className="text-6xl font-black italic">3€</span>
                      <span className="text-xl font-bold opacity-80 mb-2">/mois</span>
                  </div>
              </div>
@@ -241,7 +241,7 @@ const PremiumView = ({ onBack, isDark }) => {
                     target="_blank"
                     className="block w-full py-5 bg-[#E64545] text-white text-center rounded-2xl font-black uppercase shadow-xl hover:scale-105 transition-transform"
                  >
-                     Je m'abonne
+                     Je m'abonne (3€)
                  </a>
                  <p className="text-[10px] text-center opacity-50 font-bold uppercase">Sans engagement • Annulable à tout moment</p>
              </div>
