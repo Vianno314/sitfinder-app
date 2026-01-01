@@ -99,7 +99,7 @@ const SplashScreen = ({ message = "La recherche en toute confiance" }) => (
   </div>
 );
 
-// Fonction helper pour afficher l'image ou un placeholder gris si erreur (pas de dessin)
+// Fonction helper pour afficher l'image ou un placeholder gris si erreur
 const UserAvatar = ({ photoURL, size = "w-full h-full", className = "" }) => {
     if (photoURL) {
         return <img src={photoURL} alt="User" className={`${size} object-cover ${className}`} />;
@@ -1044,7 +1044,7 @@ const SitterDashboard = ({ user, profile }) => {
                 </div>
 
                 <div className="space-y-8 pt-4">
-                   <div className="flex items-center gap-4 px-2"><div className="p-3 bg-blue-50 rounded-2xl text-blue-500 shadow-sm"><Calendar size={26}/></div><h3 className={`text-sm font-black uppercase tracking-widest italic font-sans leading-none ${isDark ? 'text-white' : 'text-slate-800'}`}>Mes Disponibilités Bento</h3></div>
+                   <div className="flex items-center gap-4 px-2"><div className="p-3 bg-blue-50 rounded-2xl text-blue-500 shadow-sm"><Calendar size={26}/></div><h3 className={`text-sm font-black uppercase tracking-widest italic font-sans leading-none ${isDark ? 'text-white' : 'text-slate-800'}`}>Mes Disponibilités Bientôt</h3></div>
                    <div className="grid gap-5">
                        {Object.entries(availability).map(([day, data]) => (
                            <div key={day} className={`flex flex-col md:flex-row items-center gap-6 p-8 rounded-[3rem] border transition-all duration-300 ${data.active ? (isDark ? 'bg-slate-800 border-indigo-500/30 shadow-2xl' : 'bg-white border-blue-100 shadow-xl') : 'bg-transparent border-transparent opacity-40'}`}>
