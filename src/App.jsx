@@ -26,7 +26,7 @@ import {
   orderBy,
   where
 } from "firebase/firestore";
-// Importations des icônes (J'ai ajouté Crown pour le premium)
+// Importations des icônes
 import { 
   Baby, LogOut, Save, Search, Loader2, AlertCircle, ShieldCheck, 
   Euro, User, Mail, Lock, ChevronRight, Sparkles, Heart, Filter, Calendar,
@@ -84,16 +84,6 @@ const RatingStars = ({ rating = 5, size = 14, interactive = false, onRate = null
   </div>
 );
 
-const calculateAge = (birth) => {
-  if (!birth) return null;
-  const today = new Date();
-  const birthDate = new Date(birth);
-  let age = today.getFullYear() - birthDate.getFullYear();
-  const m = today.getMonth() - birthDate.getMonth();
-  if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) age--;
-  return age;
-};
-
 const SplashScreen = ({ message = "La recherche en toute confiance" }) => (
   <div className="flex flex-col items-center justify-center h-screen bg-white font-sans overflow-hidden">
     <div className="relative mb-10 animate-in zoom-in duration-1000">
@@ -117,7 +107,6 @@ const SettingsView = ({ user, profile, onBack, isDark, toggleDark }) => {
   const [newName, setNewName] = useState(profile?.name || "");
   const [phone, setPhone] = useState(profile?.phone || "");
   const [customPhoto, setCustomPhoto] = useState(profile?.photoURL || "");
-  const [avatarStyle, setAvatarStyle] = useState(profile?.avatarStyle || "avataaars");
   const [useCustomPhoto, setUseCustomPhoto] = useState(profile?.useCustomPhoto || false);
   const [privateMode, setPrivateMode] = useState(profile?.privateMode || false);
   const [status, setStatus] = useState({ type: "", msg: "" });
@@ -212,7 +201,7 @@ const SettingsView = ({ user, profile, onBack, isDark, toggleDark }) => {
 // ==========================================
 
 const PremiumView = ({ onBack, isDark }) => {
-  // ⚠️ REMPLACE CE LIEN PAR TON LIEN STRIPE :
+  // ⚠️ TON LIEN STRIPE EST ICI :
   const STRIPE_LINK = "https://buy.stripe.com/test_8x2dRa29w7tj03KdAUbEA00"; 
 
   return (
@@ -227,14 +216,14 @@ const PremiumView = ({ onBack, isDark }) => {
              <div className="inline-block p-6 bg-yellow-100 rounded-full mb-4 shadow-xl">
                  <Crown size={48} className="text-[#E0720F]" />
              </div>
-             <h2 className="text-4xl font-black italic uppercase tracking-tighter">Devenez Parent VIP</h2>
-             <p className="text-sm font-bold opacity-60 uppercase tracking-widest">Débloquez toutes les fonctionnalités</p>
+             <h2 className="text-4xl font-black italic uppercase tracking-tighter">Limite Atteinte 🔒</h2>
+             <p className="text-sm font-bold opacity-60 uppercase tracking-widest max-w-xs mx-auto">Vous avez déjà effectué une réservation cette semaine.</p>
          </div>
 
          {/* CARTE PRIX */}
          <div className={`w-full max-w-sm rounded-[3rem] overflow-hidden shadow-2xl border ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-100'}`}>
              <div className="bg-[#E0720F] p-8 text-center text-white">
-                 <span className="text-sm font-black uppercase tracking-widest bg-white/20 px-3 py-1 rounded-full">Offre Limitée</span>
+                 <span className="text-sm font-black uppercase tracking-widest bg-white/20 px-3 py-1 rounded-full">Passez en illimité</span>
                  <div className="mt-4 flex justify-center items-end gap-1">
                      <span className="text-6xl font-black italic">9.99€</span>
                      <span className="text-xl font-bold opacity-80 mb-2">/mois</span>
@@ -242,9 +231,9 @@ const PremiumView = ({ onBack, isDark }) => {
              </div>
              <div className="p-8 space-y-6">
                  <ul className="space-y-4">
-                     <li className="flex items-center gap-3"><CheckCircle2 className="text-green-500" size={24}/><span className="font-bold text-sm">Accès illimité aux numéros</span></li>
+                     <li className="flex items-center gap-3"><CheckCircle2 className="text-green-500" size={24}/><span className="font-bold text-sm">Réservations ILLIMITÉES</span></li>
+                     <li className="flex items-center gap-3"><CheckCircle2 className="text-green-500" size={24}/><span className="font-bold text-sm">Accès aux numéros directs</span></li>
                      <li className="flex items-center gap-3"><CheckCircle2 className="text-green-500" size={24}/><span className="font-bold text-sm">Badge "Parent Vérifié" ✅</span></li>
-                     <li className="flex items-center gap-3"><CheckCircle2 className="text-green-500" size={24}/><span className="font-bold text-sm">Assurance Annulation</span></li>
                      <li className="flex items-center gap-3"><CheckCircle2 className="text-green-500" size={24}/><span className="font-bold text-sm">Support Prioritaire 24/7</span></li>
                  </ul>
                  <a 
@@ -262,9 +251,8 @@ const PremiumView = ({ onBack, isDark }) => {
   );
 };
 
-
 // ==========================================
-// 4. MESSAGERIE & CHAT (AVEC PAIEMENT SECURISE)
+// 4. MESSAGERIE & CHAT
 // ==========================================
 
 const ChatRoom = ({ offer, currentUser, onBack, isDark }) => {
@@ -347,7 +335,6 @@ const ChatRoom = ({ offer, currentUser, onBack, isDark }) => {
     } catch (e) { console.error(e); }
   };
 
-  // --- LOGIQUE PAIEMENT APPLE PAY SIMULE ---
   const handlePayment = async () => {
     if(window.confirm("Payer avec Apple Pay  ?\n(L'argent sera bloqué jusqu'à la fin de la garde)")) {
         await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'offers', offer.id), { 
@@ -395,16 +382,11 @@ const ChatRoom = ({ offer, currentUser, onBack, isDark }) => {
         </div>
         <div className="flex gap-2">
             <button onClick={handleReport} className="p-3 text-slate-300 hover:text-red-500 transition-colors"><Flag size={18}/></button>
-            {/* Bouton avis si fini */}
             {offer.status === 'completed' && currentUser.uid === offer.parentId && <button onClick={() => setShowReview(true)} className="p-3 bg-[#E0720F]/20 text-[#E0720F] rounded-xl"><Star size={18}/></button>}
-            {/* Téléphone seulement si payé/bloqué ou fini */}
             {(offer.status === 'paid_held' || offer.status === 'completed' || offer.status === 'reviewed') && otherUserPhone && <a href={`tel:${otherUserPhone}`} className="p-3 bg-[#E64545] text-white rounded-xl"><Phone size={18}/></a>}
         </div>
       </div>
 
-      {/* --- ZONE D'ACTIONS DE PAIEMENT (Parent) --- */}
-
-      {/* ETAPE 1 : Paiement pour bloquer les fonds */}
       {offer.status === 'accepted' && currentUser.uid === offer.parentId && (
           <div className="p-4 bg-gray-50 border-b flex flex-col gap-2 items-center text-center">
               <p className="text-xs font-bold text-slate-500">Le sitter a accepté ! Payez pour sécuriser.</p>
@@ -415,7 +397,6 @@ const ChatRoom = ({ offer, currentUser, onBack, isDark }) => {
           </div>
       )}
 
-      {/* ETAPE 2 : Validation pour libérer les fonds */}
       {offer.status === 'paid_held' && currentUser.uid === offer.parentId && (
           <div className="p-4 bg-green-50 border-b flex flex-col gap-2 items-center text-center">
               <p className="text-xs font-bold text-green-700">Garde payée (fonds bloqués).</p>
@@ -511,8 +492,6 @@ const AuthScreen = () => {
       if (isRegister) {
         if (password.length < 6) throw new Error("Mot de passe trop court.");
         const cred = await createUserWithEmailAndPassword(auth, email, password);
-        // --- CONFIGURATION FIREBASE (A REMPLIR PAR L'ACHETEUR) ---
-        // Pense à nettoyer ton fichier avant la vente
         await setDoc(doc(db, 'artifacts', appId, 'users', cred.user.uid, 'settings', 'profile'), {
           uid: cred.user.uid, name: name.trim() || "User", role, email, level: role === 'sitter' ? level : null, avatarStyle: "avataaars", favorites: [], createdAt: new Date().toISOString()
         });
@@ -608,7 +587,7 @@ const CompleteProfileScreen = ({ uid }) => {
 };
 
 // ==========================================
-// 6. DASHBOARD PARENT
+// 6. DASHBOARD PARENT (MODIFIÉ AVEC LOGIQUE PREMIUM)
 // ==========================================
 
 const ParentDashboard = ({ profile, user }) => {
@@ -673,10 +652,33 @@ const ParentDashboard = ({ profile, user }) => {
     });
   }, [sitters, search, locationFilter, maxPrice, onlyVerified, onlyFavorites, profile.favorites]);
 
+  // --- LOGIQUE LIMITATION 1/SEMAINE ---
   const handleBooking = async (s, p, h) => {
     try {
+      // 1. Vérification Premium
+      const isPremium = profile?.isPremium === true;
+
+      if (!isPremium) {
+          // 2. Calcul des offres de la semaine dernière
+          const oneWeekAgo = new Date();
+          oneWeekAgo.setDate(oneWeekAgo.getDate() - 7); 
+          
+          const recentOffers = offers.filter(o => {
+              const d = o.createdAt?.toDate ? o.createdAt.toDate() : new Date(o.createdAt);
+              return d > oneWeekAgo;
+          });
+
+          // 3. Si déjà 1 offre ou plus, on bloque
+          if (recentOffers.length >= 1) {
+              alert("🔒 Limite gratuite atteinte ! Vous avez déjà réservé cette semaine. Passez Premium pour continuer.");
+              setSelectedSitter(null); 
+              setActiveTab("premium"); // Redirection vers la page de paiement
+              return; 
+          }
+      }
+
+      // SI C'EST BON, ON CONTINUE...
       const offerText = `Offre : ${h}h à ${p}€/h`;
-      // CRUCIAL : On ajoute tous les marqueurs de messagerie dès la création de l'offre
       const newOffer = await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'offers'), {
         parentId: user.uid, 
         parentName: profile.name, 
@@ -692,12 +694,11 @@ const ParentDashboard = ({ profile, user }) => {
         lastSenderId: user.uid
       });
 
-      // CRUCIAL : On ajoute les ID de sécurité dans le premier message
       await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'offers', newOffer.id, 'messages'), {
         text: `Bonjour ${s.name}, je souhaiterais réserver une garde de ${h}H au prix de ${p}€/H.`, 
         senderId: user.uid, 
-        parentId: user.uid, // Indispensable pour la sécurité
-        sitterId: s.id,     // Indispensable pour la sécurité
+        parentId: user.uid, 
+        sitterId: s.id,    
         createdAt: Timestamp.now()
       });
 
