@@ -26,12 +26,12 @@ import {
   orderBy,
   where
 } from "firebase/firestore";
-// Importations des icônes
+// Importations des icônes (J'ai ajouté Crown pour le premium)
 import { 
   Baby, LogOut, Save, Search, Loader2, AlertCircle, ShieldCheck, 
   Euro, User, Mail, Lock, ChevronRight, Sparkles, Heart, Filter, Calendar,
   Clock, UserPlus, Cake, FileUp, FileText, CheckCircle2, MessageSquare, 
-  Send, X, Check, ArrowLeft, MessageCircle, PartyPopper, Star, MapPin, Camera, SlidersHorizontal, Settings, KeyRound, Phone, Trash2, Palette, Image as ImageIcon, Share2, Quote, TrendingUp, Zap, Trophy, Languages, EyeOff, Moon, Sun, Bell, Flag, Eye, Wallet, Car, CreditCard, LockKeyhole
+  Send, X, Check, ArrowLeft, MessageCircle, PartyPopper, Star, MapPin, Camera, SlidersHorizontal, Settings, KeyRound, Phone, Trash2, Palette, Image as ImageIcon, Share2, Quote, TrendingUp, Zap, Trophy, Languages, EyeOff, Moon, Sun, Bell, Flag, Eye, Wallet, Car, CreditCard, LockKeyhole, Crown
 } from "lucide-react";
 
 // ==========================================
@@ -208,6 +208,62 @@ const SettingsView = ({ user, profile, onBack, isDark, toggleDark }) => {
 };
 
 // ==========================================
+// 3 BIS. COMPOSANT PREMIUM (NOUVEAU)
+// ==========================================
+
+const PremiumView = ({ onBack, isDark }) => {
+  // ⚠️ REMPLACE CE LIEN PAR TON LIEN STRIPE :
+  const STRIPE_LINK = "https://buy.stripe.com/TON_LIEN_ICI"; 
+
+  return (
+    <div className={`min-h-screen font-sans pb-32 flex flex-col ${isDark ? 'bg-slate-950 text-white' : 'bg-slate-50 text-slate-800'}`}>
+      <div className={`p-6 border-b flex items-center gap-4 sticky top-0 z-50 ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-100'}`}>
+        <button onClick={onBack}><ArrowLeft size={20}/></button>
+        <h2 className="font-black text-xl italic uppercase text-[#E0720F]">Offre Premium</h2>
+      </div>
+
+      <div className="flex-1 flex flex-col items-center justify-center p-6 space-y-8 animate-in fade-in slide-in-from-bottom-8 duration-700">
+         <div className="text-center space-y-4">
+             <div className="inline-block p-6 bg-yellow-100 rounded-full mb-4 shadow-xl">
+                 <Crown size={48} className="text-[#E0720F]" />
+             </div>
+             <h2 className="text-4xl font-black italic uppercase tracking-tighter">Devenez Parent VIP</h2>
+             <p className="text-sm font-bold opacity-60 uppercase tracking-widest">Débloquez toutes les fonctionnalités</p>
+         </div>
+
+         {/* CARTE PRIX */}
+         <div className={`w-full max-w-sm rounded-[3rem] overflow-hidden shadow-2xl border ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-100'}`}>
+             <div className="bg-[#E0720F] p-8 text-center text-white">
+                 <span className="text-sm font-black uppercase tracking-widest bg-white/20 px-3 py-1 rounded-full">Offre Limitée</span>
+                 <div className="mt-4 flex justify-center items-end gap-1">
+                     <span className="text-6xl font-black italic">9.99€</span>
+                     <span className="text-xl font-bold opacity-80 mb-2">/mois</span>
+                 </div>
+             </div>
+             <div className="p-8 space-y-6">
+                 <ul className="space-y-4">
+                     <li className="flex items-center gap-3"><CheckCircle2 className="text-green-500" size={24}/><span className="font-bold text-sm">Accès illimité aux numéros</span></li>
+                     <li className="flex items-center gap-3"><CheckCircle2 className="text-green-500" size={24}/><span className="font-bold text-sm">Badge "Parent Vérifié" ✅</span></li>
+                     <li className="flex items-center gap-3"><CheckCircle2 className="text-green-500" size={24}/><span className="font-bold text-sm">Assurance Annulation</span></li>
+                     <li className="flex items-center gap-3"><CheckCircle2 className="text-green-500" size={24}/><span className="font-bold text-sm">Support Prioritaire 24/7</span></li>
+                 </ul>
+                 <a 
+                    href={STRIPE_LINK}
+                    target="_blank"
+                    className="block w-full py-5 bg-[#E64545] text-white text-center rounded-2xl font-black uppercase shadow-xl hover:scale-105 transition-transform"
+                 >
+                     Je m'abonne
+                 </a>
+                 <p className="text-[10px] text-center opacity-50 font-bold uppercase">Sans engagement • Annulable à tout moment</p>
+             </div>
+         </div>
+      </div>
+    </div>
+  );
+};
+
+
+// ==========================================
 // 4. MESSAGERIE & CHAT (AVEC PAIEMENT SECURISE)
 // ==========================================
 
@@ -353,7 +409,7 @@ const ChatRoom = ({ offer, currentUser, onBack, isDark }) => {
           <div className="p-4 bg-gray-50 border-b flex flex-col gap-2 items-center text-center">
               <p className="text-xs font-bold text-slate-500">Le sitter a accepté ! Payez pour sécuriser.</p>
               <button onClick={handlePayment} className="w-full bg-black text-white py-3 rounded-xl font-bold flex items-center justify-center gap-2">
-                    Payer avec Apple Pay
+                     Payer avec Apple Pay
               </button>
               <div className="flex items-center gap-1 text-[10px] text-slate-400"><LockKeyhole size={10}/> Argent bloqué jusqu'à la fin</div>
           </div>
@@ -364,7 +420,7 @@ const ChatRoom = ({ offer, currentUser, onBack, isDark }) => {
           <div className="p-4 bg-green-50 border-b flex flex-col gap-2 items-center text-center">
               <p className="text-xs font-bold text-green-700">Garde payée (fonds bloqués).</p>
               <button onClick={confirmService} className="w-full bg-green-600 text-white py-3 rounded-xl font-bold flex items-center justify-center gap-2">
-                   ✅ Valider la fin & Libérer les fonds
+                    ✅ Valider la fin & Libérer les fonds
               </button>
               <p className="text-[10px] text-green-600/70">À faire une fois le sitter parti.</p>
           </div>
@@ -455,6 +511,8 @@ const AuthScreen = () => {
       if (isRegister) {
         if (password.length < 6) throw new Error("Mot de passe trop court.");
         const cred = await createUserWithEmailAndPassword(auth, email, password);
+        // --- CONFIGURATION FIREBASE (A REMPLIR PAR L'ACHETEUR) ---
+        // Pense à nettoyer ton fichier avant la vente
         await setDoc(doc(db, 'artifacts', appId, 'users', cred.user.uid, 'settings', 'profile'), {
           uid: cred.user.uid, name: name.trim() || "User", role, email, level: role === 'sitter' ? level : null, avatarStyle: "avataaars", favorites: [], createdAt: new Date().toISOString()
         });
@@ -475,7 +533,7 @@ const AuthScreen = () => {
           {isRegister && <input required placeholder="Ton Prénom" className="w-full p-5 bg-slate-50 rounded-2xl outline-none font-bold shadow-inner" value={name} onChange={(e) => setName(e.target.value)} />}
           <input required type="email" placeholder="Email" className="w-full p-5 bg-slate-50 rounded-2xl outline-none font-bold shadow-inner" value={email} onChange={(e) => setEmail(e.target.value)} />
           <input required type="password" placeholder="Mot de passe" className="w-full p-5 bg-slate-50 rounded-2xl outline-none font-bold shadow-inner" value={password} onChange={(e) => setPassword(e.target.value)} />
-          
+           
           {!isRegister && (
              <div className="flex items-center gap-2 pl-2">
                  <input type="checkbox" id="rem" checked={remember} onChange={(e) => setRemember(e.target.checked)} className="w-5 h-5 accent-[#E64545] rounded-lg"/>
@@ -657,6 +715,7 @@ const ParentDashboard = ({ profile, user }) => {
 
   if (activeChat) return <ChatRoom offer={activeChat} currentUser={user} onBack={() => setActiveChat(null)} isDark={isDark} />;
   if (activeTab === "settings") return <SettingsView user={user} profile={profile} onBack={() => setActiveTab("search")} isDark={isDark} toggleDark={() => setIsDark(!isDark)} />;
+  if (activeTab === "premium") return <PremiumView onBack={() => setActiveTab("search")} isDark={isDark} />;
 
   const getSPhoto = (s) => (s.useCustomPhoto && s.photoURL) ? s.photoURL : `https://api.dicebear.com/7.x/${s.avatarStyle || 'avataaars'}/svg?seed=${s.name}`;
 
@@ -665,6 +724,11 @@ const ParentDashboard = ({ profile, user }) => {
       <nav className={`p-6 flex justify-between items-center sticky top-0 z-40 border-b shadow-sm ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-100'}`}>
         <div className="flex items-center gap-3"><SitFinderLogo className="w-10 h-10" glow={false} /><span className="font-black italic text-2xl uppercase tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-[#E64545] to-[#E0720F]">BABYKEEPER</span></div>
         <div className="flex items-center gap-2">
+          {/* BOUTON PREMIUM DANS LE MENU */}
+          <button onClick={() => setActiveTab("premium")} className={`p-3 rounded-2xl transition-all shadow-md bg-gradient-to-br from-yellow-400 to-orange-500 text-white animate-pulse`}>
+              <Crown size={22} fill="white" />
+          </button>
+          
           <div className="relative p-2 text-slate-400">
               <Bell size={22}/>
               {unreadCount > 0 && <span className="absolute top-1 right-1 w-4 h-4 bg-[#E64545] text-white text-[8px] font-black rounded-full flex items-center justify-center border-2 border-white animate-bounce">{unreadCount}</span>}
@@ -749,7 +813,7 @@ const ParentDashboard = ({ profile, user }) => {
       <div className={`fixed bottom-10 left-1/2 -translate-x-1/2 w-[90%] max-w-md backdrop-blur-xl p-2.5 rounded-[3rem] shadow-2xl flex items-center justify-between z-50 border ${isDark ? 'bg-slate-900/95 border-slate-800' : 'bg-slate-900/95 border-white/10'}`}>
         <button onClick={() => setActiveTab("search")} className={`flex-1 flex flex-col items-center py-4 rounded-[2.5rem] transition-all duration-300 ${activeTab === "search" ? (isDark ? "bg-[#E64545] text-white" : "bg-[#E64545] text-white") : "text-slate-400 hover:text-white"}`}><Search size={22}/><span className="text-[9px] font-black uppercase mt-1.5 tracking-widest">Trouver</span></button>
         <button onClick={() => setActiveTab("messages")} className={`flex-1 flex flex-col items-center py-4 rounded-[2.5rem] transition-all duration-300 relative ${activeTab === "messages" ? (isDark ? "bg-[#E64545] text-white" : "bg-[#E64545] text-white") : "text-slate-400 hover:text-white"}`}><MessageSquare size={22}/><span className="text-[9px] font-black uppercase mt-1.5 font-sans tracking-widest">Offres</span>{unreadCount > 0 && <div className="absolute top-3 right-1/3 w-2.5 h-2.5 bg-[#E0720F] rounded-full border-2 border-slate-900 animate-pulse"></div>}</button></div>
-    
+     
       {selectedSitter && (
         <div className="fixed inset-0 bg-slate-900/90 backdrop-blur-md z-[100] flex items-center justify-center p-6 text-slate-900">
           <div className="bg-white w-full max-w-xl rounded-[4rem] overflow-hidden shadow-2xl animate-in slide-in-from-bottom-10 duration-500 p-10 space-y-10">
@@ -948,9 +1012,9 @@ const SitterDashboard = ({ user, profile }) => {
                                <button onClick={() => setAvailability(p => ({...p, [day]: {...p[day], active: !p[day].active}}))} className={`w-full md:w-40 py-5 rounded-2xl font-black text-[10px] uppercase tracking-widest ${data.active ? 'bg-[#E64545] text-white shadow-lg' : 'bg-slate-200 text-slate-400 hover:bg-slate-300'}`}>{day}</button>
                                {data.active && (
                                    <div className="flex items-center gap-5 animate-in slide-in-from-left-4 duration-300 flex-1">
-                                       <div className={`flex items-center gap-4 px-8 py-4 rounded-3xl text-[11px] font-black border shadow-inner ${isDark ? 'bg-slate-900 border-slate-700 text-slate-300' : 'bg-blue-50/50 border-blue-50 text-slate-600'}`}>
-                                           <Clock size={18} className="text-[#E0720F]" /><input type="time" className="bg-transparent border-none outline-none" value={data.start} onChange={(e) => setAvailability(p => ({...p, [day]: {...p[day], start: e.target.value}}))} /><span className="text-slate-300 mx-3 text-sm">à</span><input type="time" className="bg-transparent border-none outline-none" value={data.end} onChange={(e) => setAvailability(p => ({...p, [day]: {...p[day], end: e.target.value}}))} />
-                                       </div>
+                                           <div className={`flex items-center gap-4 px-8 py-4 rounded-3xl text-[11px] font-black border shadow-inner ${isDark ? 'bg-slate-900 border-slate-700 text-slate-300' : 'bg-blue-50/50 border-blue-50 text-slate-600'}`}>
+                                               <Clock size={18} className="text-[#E0720F]" /><input type="time" className="bg-transparent border-none outline-none" value={data.start} onChange={(e) => setAvailability(p => ({...p, [day]: {...p[day], start: e.target.value}}))} /><span className="text-slate-300 mx-3 text-sm">à</span><input type="time" className="bg-transparent border-none outline-none" value={data.end} onChange={(e) => setAvailability(p => ({...p, [day]: {...p[day], end: e.target.value}}))} />
+                                           </div>
                                    </div>
                                )}
                            </div>
