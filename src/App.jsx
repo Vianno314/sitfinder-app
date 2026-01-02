@@ -31,7 +31,7 @@ import {
   Baby, LogOut, Save, Search, Loader2, AlertCircle, ShieldCheck, 
   Euro, User, Mail, Lock, ChevronRight, Sparkles, Heart, Filter, Calendar,
   Clock, UserPlus, Cake, FileUp, FileText, CheckCircle2, MessageSquare, 
-  Send, X, Check, ArrowLeft, MessageCircle, PartyPopper, Star, MapPin, Camera, SlidersHorizontal, Settings, KeyRound, Phone, Trash2, Palette, Image as ImageIcon, Share2, Quote, TrendingUp, Zap, Trophy, Languages, EyeOff, Moon, Sun, Bell, Flag, Eye, Wallet, Car, CreditCard, LockKeyhole, Crown
+  Send, X, Check, ArrowLeft, MessageCircle, PartyPopper, Star, MapPin, Camera, SlidersHorizontal, Settings, KeyRound, Phone, Trash2, Palette, Image as ImageIcon, Share2, Quote, TrendingUp, Zap, Trophy, Languages, EyeOff, Moon, Sun, Bell, Flag, Eye, Wallet, Car, CreditCard, LockKeyhole, Crown, Info
 } from "lucide-react";
 
 // ==========================================
@@ -99,7 +99,6 @@ const SplashScreen = ({ message = "La recherche en toute confiance" }) => (
   </div>
 );
 
-// Fonction helper pour afficher l'image ou un placeholder gris si erreur
 const UserAvatar = ({ photoURL, size = "w-full h-full", className = "" }) => {
     if (photoURL) {
         return <img src={photoURL} alt="User" className={`${size} object-cover ${className}`} />;
@@ -258,7 +257,7 @@ const PremiumView = ({ onBack, isDark }) => {
 };
 
 // ==========================================
-// 4. MESSAGERIE & CHAT
+// 4. MESSAGERIE & CHAT (DIRECT PAIEMENT)
 // ==========================================
 
 const ChatRoom = ({ offer, currentUser, onBack, isDark }) => {
@@ -334,34 +333,21 @@ const ChatRoom = ({ offer, currentUser, onBack, isDark }) => {
     try {
       await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'offers', offer.id), { status });
       let text = "";
-      if (status === 'accepted') text = "✨ Offre acceptée ! En attente du paiement sécurisé.";
+      if (status === 'accepted') text = "🤝 Offre acceptée ! Vous pouvez échanger vos coordonnées. Rappel : Le paiement se fait en direct.";
       else if (status === 'declined') text = "L'offre a été refusée.";
       
       await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'offers', offer.id, 'messages'), { text, senderId: 'system', parentId: offer.parentId, sitterId: offer.sitterId, createdAt: Timestamp.now() });
     } catch (e) { console.error(e); }
   };
 
-  const handlePayment = async () => {
-    if(window.confirm("Payer avec Apple Pay  ?\n(L'argent sera bloqué jusqu'à la fin de la garde)")) {
-        await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'offers', offer.id), { 
-            status: 'paid_held', 
-            isPaid: true 
-        });
-        await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'offers', offer.id, 'messages'), { 
-            text: "💰 Paiement Apple Pay effectué. L'argent est sécurisé et bloqué en attendant la fin de la garde.", 
-            senderId: 'system', parentId: offer.parentId, sitterId: offer.sitterId, createdAt: Timestamp.now() 
-        });
-    }
-  };
-
+  // NOUVEAU : JUSTE CONFIRMER LA FIN (PAS DE PAIEMENT IN-APP)
   const confirmService = async () => {
-    if(window.confirm("Confirmez-vous la fin de la garde ?\n(Cela débloquera l'argent pour le Sitter)")) {
+    if(window.confirm("La garde est terminée ? En validant, vous pourrez noter le Baby-sitter.")) {
         await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'offers', offer.id), { 
             status: 'completed', 
-            fundsReleased: true 
         });
         await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'offers', offer.id, 'messages'), { 
-            text: "✅ Prestation validée ! L'argent a été libéré vers le compte du Sitter.", 
+            text: "✅ Garde terminée ! Merci d'avoir utilisé BabyKeeper.", 
             senderId: 'system', parentId: offer.parentId, sitterId: offer.sitterId, createdAt: Timestamp.now() 
         });
         setShowReview(true);
@@ -388,28 +374,27 @@ const ChatRoom = ({ offer, currentUser, onBack, isDark }) => {
         </div>
         <div className="flex gap-2">
             <button onClick={handleReport} className="p-3 text-slate-300 hover:text-red-500 transition-colors"><Flag size={18}/></button>
+            {/* Bouton avis si fini */}
             {offer.status === 'completed' && currentUser.uid === offer.parentId && <button onClick={() => setShowReview(true)} className="p-3 bg-[#E0720F]/20 text-[#E0720F] rounded-xl"><Star size={18}/></button>}
-            {(offer.status === 'paid_held' || offer.status === 'completed' || offer.status === 'reviewed') && otherUserPhone && <a href={`tel:${otherUserPhone}`} className="p-3 bg-[#E64545] text-white rounded-xl"><Phone size={18}/></a>}
+            {/* Téléphone seulement si accepté ou fini */}
+            {(offer.status === 'accepted' || offer.status === 'completed' || offer.status === 'reviewed') && otherUserPhone && <a href={`tel:${otherUserPhone}`} className="p-3 bg-[#E64545] text-white rounded-xl"><Phone size={18}/></a>}
         </div>
       </div>
 
-      {offer.status === 'accepted' && currentUser.uid === offer.parentId && (
-          <div className="p-4 bg-gray-50 border-b flex flex-col gap-2 items-center text-center">
-              <p className="text-xs font-bold text-slate-500">Le sitter a accepté ! Payez pour sécuriser.</p>
-              <button onClick={handlePayment} className="w-full bg-black text-white py-3 rounded-xl font-bold flex items-center justify-center gap-2">
-                     Payer avec Apple Pay
-              </button>
-              <div className="flex items-center gap-1 text-[10px] text-slate-400"><LockKeyhole size={10}/> Argent bloqué jusqu'à la fin</div>
-          </div>
-      )}
-
-      {offer.status === 'paid_held' && currentUser.uid === offer.parentId && (
-          <div className="p-4 bg-green-50 border-b flex flex-col gap-2 items-center text-center">
-              <p className="text-xs font-bold text-green-700">Garde payée (fonds bloqués).</p>
-              <button onClick={confirmService} className="w-full bg-green-600 text-white py-3 rounded-xl font-bold flex items-center justify-center gap-2">
-                    ✅ Valider la fin & Libérer les fonds
-              </button>
-              <p className="text-[10px] text-green-600/70">À faire une fois le sitter parti.</p>
+      {/* --- BANDEAU INFORMATION PAIEMENT DIRECT --- */}
+      {offer.status === 'accepted' && (
+          <div className="p-4 bg-blue-50 border-b border-blue-100 flex flex-col gap-2 items-center text-center">
+              <div className="flex items-center gap-2 text-blue-600 font-black text-xs uppercase tracking-widest">
+                  <Info size={16} /> Paiement en direct
+              </div>
+              <p className="text-xs font-bold text-blue-900/70 max-w-xs">
+                  BabyKeeper ne prend aucune commission. Réglez votre sitter directement (Espèces, Lydia, Paylib ou CESU).
+              </p>
+              {currentUser.uid === offer.parentId && (
+                  <button onClick={confirmService} className="mt-2 w-full bg-blue-600 text-white py-3 rounded-xl font-bold flex items-center justify-center gap-2 text-xs uppercase tracking-widest shadow-lg shadow-blue-200">
+                        Confirmer la fin de la garde
+                  </button>
+              )}
           </div>
       )}
 
