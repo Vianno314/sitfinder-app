@@ -31,7 +31,7 @@ import {
   Baby, LogOut, Save, Search, Loader2, AlertCircle, ShieldCheck, 
   Euro, User, Mail, Lock, ChevronRight, Sparkles, Heart, Filter, Calendar,
   Clock, UserPlus, Cake, FileUp, FileText, CheckCircle2, MessageSquare, 
-  Send, X, Check, ArrowLeft, MessageCircle, PartyPopper, Star, MapPin, Camera, SlidersHorizontal, Settings, KeyRound, Phone, Trash2, Palette, Image as ImageIcon, Share2, Quote, TrendingUp, Zap, Trophy, Languages, EyeOff, Moon, Sun, Bell, Flag, Eye, Wallet, Car, CreditCard, LockKeyhole, Crown, Info
+  Send, X, Check, ArrowLeft, MessageCircle, PartyPopper, Star, MapPin, Camera, SlidersHorizontal, Settings, KeyRound, Phone, Trash2, Palette, Image as ImageIcon, Share2, Quote, TrendingUp, Zap, Trophy, Languages, EyeOff, Moon, Sun, Bell, Flag, Eye, Wallet, Car, CreditCard, LockKeyhole, Crown, Info, Dog, Cat, Bone, PawPrint
 } from "lucide-react";
 
 // ==========================================
@@ -83,6 +83,16 @@ const RatingStars = ({ rating = 5, size = 14, interactive = false, onRate = null
     ))}
   </div>
 );
+
+const calculateAge = (birth) => {
+  if (!birth) return null;
+  const today = new Date();
+  const birthDate = new Date(birth);
+  let age = today.getFullYear() - birthDate.getFullYear();
+  const m = today.getMonth() - birthDate.getMonth();
+  if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) age--;
+  return age;
+};
 
 const SplashScreen = ({ message = "La recherche en toute confiance" }) => (
   <div className="flex flex-col items-center justify-center h-screen bg-white font-sans overflow-hidden">
@@ -163,7 +173,7 @@ const SettingsView = ({ user, profile, onBack, isDark, toggleDark }) => {
     <div className={`min-h-screen font-sans pb-32 ${isDark ? 'bg-slate-950 text-white' : 'bg-slate-50 text-slate-800'}`}>
       <div className={`p-6 border-b flex items-center gap-4 sticky top-0 z-50 ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-100'}`}>
         <button onClick={onBack}><ArrowLeft size={20}/></button>
-        <h2 className="font-black text-xl italic uppercase text-[#E64545]">Réglages BABYKEEPER</h2>
+        <h2 className="font-black text-xl italic uppercase text-[#E64545]">Réglages</h2>
       </div>
 
       <div className="max-w-2xl mx-auto p-6 space-y-8">
@@ -469,6 +479,9 @@ const AuthScreen = () => {
   const [password, setPassword] = useState("");
   const [name, setName] = useState("");
   const [role, setRole] = useState("parent");
+  // NOUVEAU : Service Type (baby ou pet)
+  const [serviceType, setServiceType] = useState("baby");
+  
   const [level, setLevel] = useState("1");
   const [remember, setRemember] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -500,7 +513,7 @@ const AuthScreen = () => {
         if (password.length < 6) throw new Error("Mot de passe trop court.");
         const cred = await createUserWithEmailAndPassword(auth, email, password);
         await setDoc(doc(db, 'artifacts', appId, 'users', cred.user.uid, 'settings', 'profile'), {
-          uid: cred.user.uid, name: name.trim() || "User", role, email, level: role === 'sitter' ? level : null, favorites: [], createdAt: new Date().toISOString()
+          uid: cred.user.uid, name: name.trim() || "User", role, serviceType, email, level: role === 'sitter' ? level : null, favorites: [], createdAt: new Date().toISOString()
         });
       } else { await signInWithEmailAndPassword(auth, email, password); }
     } catch (err) { alert("Email ou mot de passe invalide."); } finally { setLoading(false); }
@@ -515,6 +528,19 @@ const AuthScreen = () => {
           <h2 className="text-4xl font-black italic uppercase tracking-tighter leading-none text-transparent bg-clip-text bg-gradient-to-r from-[#E64545] to-[#E0720F]">BABYKEEPER</h2>
           <p className="text-[#E64545] text-sm font-bold uppercase tracking-widest mt-2">La recherche en toute confiance</p>
         </div>
+        
+        {/* SELECTEUR D'UNIVERS */}
+        {isRegister && (
+            <div className="flex gap-4 mb-6">
+                <button type="button" onClick={() => setServiceType("baby")} className={`flex-1 py-4 rounded-2xl font-black text-xs uppercase flex flex-col items-center gap-2 border-2 transition-all ${serviceType === "baby" ? "border-[#E64545] bg-[#E64545]/5 text-[#E64545]" : "border-slate-100 text-slate-400"}`}>
+                    <Baby size={24} /> Enfants
+                </button>
+                <button type="button" onClick={() => setServiceType("pet")} className={`flex-1 py-4 rounded-2xl font-black text-xs uppercase flex flex-col items-center gap-2 border-2 transition-all ${serviceType === "pet" ? "border-[#E0720F] bg-[#E0720F]/5 text-[#E0720F]" : "border-slate-100 text-slate-400"}`}>
+                    <Dog size={24} /> Animaux
+                </button>
+            </div>
+        )}
+
         <form onSubmit={handleAuth} className="space-y-4">
           {isRegister && <input required placeholder="Ton Prénom" className="w-full p-5 bg-slate-50 rounded-2xl outline-none font-bold shadow-inner" value={name} onChange={(e) => setName(e.target.value)} />}
           <input required type="email" placeholder="Email" className="w-full p-5 bg-slate-50 rounded-2xl outline-none font-bold shadow-inner" value={email} onChange={(e) => setEmail(e.target.value)} />
@@ -530,14 +556,23 @@ const AuthScreen = () => {
           {isRegister && (
             <>
             <div className="grid grid-cols-2 gap-3 p-1 bg-slate-100 rounded-2xl mt-4">
-              <button type="button" onClick={() => setRole("parent")} className={`py-3 rounded-xl font-black text-[10px] ${role === "parent" ? "bg-white shadow text-[#E64545]" : "text-slate-400"}`}>PARENT</button>
+              <button type="button" onClick={() => setRole("parent")} className={`py-3 rounded-xl font-black text-[10px] ${role === "parent" ? "bg-white shadow text-[#E64545]" : "text-slate-400"}`}>{serviceType === 'baby' ? 'PARENT' : 'MAÎTRE'}</button>
               <button type="button" onClick={() => setRole("sitter")} className={`py-3 rounded-xl font-black text-[10px] ${role === "sitter" ? "bg-white shadow text-[#E0720F]" : "text-slate-400"}`}>SITTER</button>
             </div>
-            {role === "sitter" && (
+            {/* NIVEAUX POUR BABY SITTER */}
+            {role === "sitter" && serviceType === "baby" && (
               <div className="grid grid-cols-3 gap-1 mt-2">
                 <button type="button" onClick={() => setLevel("1")} className={`py-2 rounded-lg text-[10px] font-black uppercase transition-all ${level === "1" ? "bg-slate-900 text-white" : "bg-slate-200 text-slate-500"}`}>NIV 1 🍼<br/><span className="text-[8px] opacity-70 font-normal">Garde+Repas</span></button>
                 <button type="button" onClick={() => setLevel("2")} className={`py-2 rounded-lg text-[10px] font-black uppercase transition-all ${level === "2" ? "bg-slate-900 text-white" : "bg-slate-200 text-slate-500"}`}>NIV 2 🧸<br/><span className="text-[8px] opacity-70 font-normal">+ Change</span></button>
                 <button type="button" onClick={() => setLevel("3")} className={`py-2 rounded-lg text-[10px] font-black uppercase transition-all ${level === "3" ? "bg-slate-900 text-white" : "bg-slate-200 text-slate-500"}`}>NIV 3 👑<br/><span className="text-[8px] opacity-70 font-normal">+ Bain/Soins</span></button>
+              </div>
+            )}
+            {/* NIVEAUX POUR PET SITTER */}
+            {role === "sitter" && serviceType === "pet" && (
+              <div className="grid grid-cols-3 gap-1 mt-2">
+                <button type="button" onClick={() => setLevel("1")} className={`py-2 rounded-lg text-[10px] font-black uppercase transition-all ${level === "1" ? "bg-slate-900 text-white" : "bg-slate-200 text-slate-500"}`}>NIV 1 🐕<br/><span className="text-[8px] opacity-70 font-normal">Promenade</span></button>
+                <button type="button" onClick={() => setLevel("2")} className={`py-2 rounded-lg text-[10px] font-black uppercase transition-all ${level === "2" ? "bg-slate-900 text-white" : "bg-slate-200 text-slate-500"}`}>NIV 2 🥘<br/><span className="text-[8px] opacity-70 font-normal">Visite/Repas</span></button>
+                <button type="button" onClick={() => setLevel("3")} className={`py-2 rounded-lg text-[10px] font-black uppercase transition-all ${level === "3" ? "bg-slate-900 text-white" : "bg-slate-200 text-slate-500"}`}>NIV 3 🏠<br/><span className="text-[8px] opacity-70 font-normal">Hébergement</span></button>
               </div>
             )}
             </>
@@ -556,8 +591,7 @@ const AuthScreen = () => {
   );
 };
 
-// --- ECRAN COMPLÉTION PROFIL AVEC PHOTO OBLIGATOIRE ---
-const CompleteProfileScreen = ({ uid }) => {
+const CompleteProfileScreen = ({ uid, serviceType }) => {
   const [name, setName] = useState("");
   const [role, setRole] = useState("parent");
   const [level, setLevel] = useState("1");
@@ -580,7 +614,7 @@ const CompleteProfileScreen = ({ uid }) => {
     setLoading(true);
     try {
         await setDoc(doc(db, 'artifacts', appId, 'users', uid, 'settings', 'profile'), {
-            uid, name: name.trim(), role, level: role === 'sitter' ? level : null, photoURL: photo, favorites: [], createdAt: new Date().toISOString()
+            uid, name: name.trim(), role, serviceType, level: role === 'sitter' ? level : null, photoURL: photo, favorites: [], createdAt: new Date().toISOString()
         });
     } catch(e) { console.error(e); }
     setLoading(false);
@@ -604,14 +638,21 @@ const CompleteProfileScreen = ({ uid }) => {
 
         <input placeholder="Ton Prénom" className="w-full p-6 bg-slate-50 rounded-3xl outline-none font-bold shadow-inner" value={name} onChange={(e) => setName(e.target.value)} />
         <div className="grid grid-cols-2 gap-2 p-1 bg-slate-100 rounded-2xl shadow-sm">
-          <button onClick={() => setRole("parent")} className={`py-4 rounded-xl font-black text-[10px] ${role === "parent" ? "bg-white shadow text-[#E64545]" : "text-slate-400"}`}>PARENT</button>
+          <button onClick={() => setRole("parent")} className={`py-4 rounded-xl font-black text-[10px] ${role === "parent" ? "bg-white shadow text-[#E64545]" : "text-slate-400"}`}>{serviceType === 'baby' ? 'PARENT' : 'MAÎTRE'}</button>
           <button onClick={() => setRole("sitter")} className={`py-4 rounded-xl font-black text-[10px] ${role === "sitter" ? "bg-white shadow text-[#E0720F]" : "text-slate-400"}`}>SITTER</button>
         </div>
-        {role === "sitter" && (
+        {role === "sitter" && serviceType === "baby" && (
               <div className="grid grid-cols-3 gap-1 mt-2">
                 <button type="button" onClick={() => setLevel("1")} className={`py-2 rounded-lg text-[10px] font-black uppercase transition-all ${level === "1" ? "bg-slate-900 text-white" : "bg-slate-200 text-slate-500"}`}>NIV 1 🍼</button>
                 <button type="button" onClick={() => setLevel("2")} className={`py-2 rounded-lg text-[10px] font-black uppercase transition-all ${level === "2" ? "bg-slate-900 text-white" : "bg-slate-200 text-slate-500"}`}>NIV 2 🧸</button>
                 <button type="button" onClick={() => setLevel("3")} className={`py-2 rounded-lg text-[10px] font-black uppercase transition-all ${level === "3" ? "bg-slate-900 text-white" : "bg-slate-200 text-slate-500"}`}>NIV 3 👑</button>
+              </div>
+        )}
+        {role === "sitter" && serviceType === "pet" && (
+              <div className="grid grid-cols-3 gap-1 mt-2">
+                <button type="button" onClick={() => setLevel("1")} className={`py-2 rounded-lg text-[10px] font-black uppercase transition-all ${level === "1" ? "bg-slate-900 text-white" : "bg-slate-200 text-slate-500"}`}>NIV 1 🐕</button>
+                <button type="button" onClick={() => setLevel("2")} className={`py-2 rounded-lg text-[10px] font-black uppercase transition-all ${level === "2" ? "bg-slate-900 text-white" : "bg-slate-200 text-slate-500"}`}>NIV 2 🥘</button>
+                <button type="button" onClick={() => setLevel("3")} className={`py-2 rounded-lg text-[10px] font-black uppercase transition-all ${level === "3" ? "bg-slate-900 text-white" : "bg-slate-200 text-slate-500"}`}>NIV 3 🏠</button>
               </div>
         )}
         <button onClick={finish} disabled={loading || !photo} className={`w-full py-6 rounded-[2rem] font-black shadow-lg uppercase transition-all active:scale-95 ${!photo ? 'bg-slate-300 text-slate-500 cursor-not-allowed' : 'bg-[#E64545] text-white hover:brightness-110'}`}>VALIDER</button>
@@ -621,7 +662,7 @@ const CompleteProfileScreen = ({ uid }) => {
 };
 
 // ==========================================
-// 6. DASHBOARD PARENT (MODIFIÉ AVEC LOGIQUE PREMIUM & AUTO-ACTIVATION)
+// 6. DASHBOARD PARENT (MULTI-UNIVERS)
 // ==========================================
 
 const ParentDashboard = ({ profile, user }) => {
@@ -640,29 +681,23 @@ const ParentDashboard = ({ profile, user }) => {
   const [sitterReviews, setSitterReviews] = useState([]);
   const [isDark, setIsDark] = useState(localStorage.getItem('dark') === 'true');
 
-  // --- AUTO-ACTIVATION PREMIUM VIA URL ---
+  const isPet = profile.serviceType === 'pet';
+
   useEffect(() => {
-    // Vérifie si l'URL contient ?success=true (retour de Stripe)
     const params = new URLSearchParams(window.location.search);
     if (params.get('success') === 'true') {
-        // Active le premium dans la base de données
-        updateDoc(doc(db, 'artifacts', appId, 'users', user.uid, 'settings', 'profile'), {
-            isPremium: true
-        }).then(() => {
-            alert("Félicitations ! Votre abonnement Premium est activé 🌟");
-            // Nettoie l'URL pour ne pas réactiver en boucle
-            window.history.replaceState({}, document.title, window.location.pathname);
-        });
+        updateDoc(doc(db, 'artifacts', appId, 'users', user.uid, 'settings', 'profile'), { isPremium: true })
+        .then(() => { alert("Premium activé 🌟"); window.history.replaceState({}, document.title, window.location.pathname); });
     }
-  }, [user.uid]); // Se déclenche une fois quand l'user est chargé
+  }, [user.uid]);
 
   useEffect(() => {
     localStorage.setItem('dark', isDark);
     const unsubSitters = onSnapshot(collection(db, 'artifacts', appId, 'public', 'data', 'sitters'), (snap) => {
-      setSitters(snap.docs.map(d => ({ id: d.id, ...d.data() })));
+      // FILTRE PAR UNIVERS (Baby ou Pet)
+      setSitters(snap.docs.map(d => ({ id: d.id, ...d.data() })).filter(s => s.serviceType === profile.serviceType));
       setLoading(false);
     });
-    // FILTRE SÉCURISÉ POUR PARENT
     const qOffers = query(
       collection(db, 'artifacts', appId, 'public', 'data', 'offers'), 
       where("parentId", "==", user.uid)
@@ -671,7 +706,7 @@ const ParentDashboard = ({ profile, user }) => {
       setOffers(snap.docs.map(d => ({ id: d.id, ...d.data() })));
     });
     return () => { unsubSitters(); unsubOffers(); };
-  }, [user.uid, isDark]);
+  }, [user.uid, isDark, profile.serviceType]);
 
   useEffect(() => {
       if (selectedSitter) {
@@ -702,32 +737,23 @@ const ParentDashboard = ({ profile, user }) => {
     });
   }, [sitters, search, locationFilter, maxPrice, onlyVerified, onlyFavorites, profile.favorites]);
 
-  // --- LOGIQUE LIMITATION 1/SEMAINE ---
   const handleBooking = async (s, p, h) => {
     try {
-      // 1. Vérification Premium
       const isPremium = profile?.isPremium === true;
-
       if (!isPremium) {
-          // 2. Calcul des offres de la semaine dernière
           const oneWeekAgo = new Date();
           oneWeekAgo.setDate(oneWeekAgo.getDate() - 7); 
-          
           const recentOffers = offers.filter(o => {
               const d = o.createdAt?.toDate ? o.createdAt.toDate() : new Date(o.createdAt);
               return d > oneWeekAgo;
           });
-
-          // 3. Si déjà 1 offre ou plus, on bloque
           if (recentOffers.length >= 1) {
-              alert("🔒 Limite gratuite atteinte ! Vous avez déjà réservé cette semaine. Passez Premium pour continuer.");
+              alert("🔒 Limite atteinte ! Passez Premium.");
               setSelectedSitter(null); 
-              setActiveTab("premium"); // Redirection vers la page de paiement
+              setActiveTab("premium"); 
               return; 
           }
       }
-
-      // SI C'EST BON, ON CONTINUE...
       const offerText = `Offre : ${h}h à ${p}€/h`;
       const newOffer = await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'offers'), {
         parentId: user.uid, 
@@ -743,15 +769,13 @@ const ParentDashboard = ({ profile, user }) => {
         hasUnread: true,
         lastSenderId: user.uid
       });
-
       await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'offers', newOffer.id, 'messages'), {
-        text: `Bonjour ${s.name}, je souhaiterais réserver une garde de ${h}H au prix de ${p}€/H.`, 
+        text: `Bonjour ${s.name}, je souhaiterais réserver.`, 
         senderId: user.uid, 
         parentId: user.uid, 
         sitterId: s.id,    
         createdAt: Timestamp.now()
       });
-
       setSelectedSitter(null); 
       setActiveTab("messages");
     } catch (e) { console.error(e); }
@@ -773,11 +797,9 @@ const ParentDashboard = ({ profile, user }) => {
       <nav className={`p-4 flex justify-between items-center sticky top-0 z-40 border-b shadow-sm ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-100'}`}>
         <div className="flex items-center gap-2"><SitFinderLogo className="w-8 h-8" glow={false} /><span className="font-black italic text-lg md:text-2xl uppercase tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-[#E64545] to-[#E0720F]">BABYKEEPER</span></div>
         <div className="flex items-center gap-1.5">
-          {/* BOUTON PREMIUM DANS LE MENU */}
           <button onClick={() => setActiveTab("premium")} className={`p-2 rounded-2xl transition-all shadow-md bg-gradient-to-br from-yellow-400 to-orange-500 text-white animate-pulse`}>
               <Crown size={20} fill="white" />
           </button>
-          
           <div className="relative p-2 text-slate-400">
               <Bell size={20}/>
               {unreadCount > 0 && <span className="absolute top-1 right-1 w-4 h-4 bg-[#E64545] text-white text-[8px] font-black rounded-full flex items-center justify-center border-2 border-white animate-bounce">{unreadCount}</span>}
@@ -791,8 +813,13 @@ const ParentDashboard = ({ profile, user }) => {
         {activeTab === "search" ? (
           <>
             <div className={`p-10 md:p-14 rounded-[3.5rem] shadow-2xl relative overflow-hidden group transition-all duration-700 ${isDark ? 'bg-gradient-to-br from-[#E64545] to-slate-900' : 'bg-gradient-to-br from-[#E64545] to-[#E0720F]'}`}>
-              <div className="relative z-10 text-white"><h2 className="text-4xl font-black italic tracking-tighter font-sans leading-tight animate-in slide-in-from-left duration-700">Bonjour {profile.name} ! 👋</h2><p className="opacity-90 font-bold uppercase tracking-widest text-[10px] mt-2">Trouvez l'aide idéale aujourd'hui</p></div>
-              <Baby size={400} className="absolute -right-20 -bottom-20 opacity-10 rotate-12 transition-transform group-hover:rotate-0 duration-1000 text-white" />
+              <div className="relative z-10 text-white">
+                  <h2 className="text-4xl font-black italic tracking-tighter font-sans leading-tight animate-in slide-in-from-left duration-700">Bonjour {profile.name} ! 👋</h2>
+                  <p className="opacity-90 font-bold uppercase tracking-widest text-[10px] mt-2">
+                      {isPet ? "Trouvez le gardien idéal 🐾" : "Trouvez l'aide idéale aujourd'hui"}
+                  </p>
+              </div>
+              {isPet ? <Dog size={400} className="absolute -right-20 -bottom-20 opacity-10 rotate-12 text-white" /> : <Baby size={400} className="absolute -right-20 -bottom-20 opacity-10 rotate-12 text-white" />}
             </div>
 
             <div className="space-y-4">
@@ -819,7 +846,8 @@ const ParentDashboard = ({ profile, user }) => {
                   <button onClick={() => toggleFavorite(s.id)} className={`absolute top-8 right-8 p-3 rounded-2xl transition-all ${profile.favorites?.includes(s.id) ? 'bg-red-50 text-red-500' : (isDark ? 'bg-slate-800 text-slate-600' : 'bg-slate-50 text-slate-300')} shadow-md`}><Heart size={20} fill={profile.favorites?.includes(s.id) ? "currentColor" : "none"}/></button>
                   <div className="flex flex-col gap-2.5 mb-8">
                     {(s.hasCV) && <div className="flex items-center gap-2 bg-[#E64545] text-white px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest w-fit"><ShieldCheck size={10}/> VÉRIFIÉ</div>}
-                    {s.level && <div className="flex items-center gap-2 bg-[#E0720F] text-white px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest w-fit mt-1">NIV {s.level} 👑</div>}
+                    {s.level && !isPet && <div className="flex items-center gap-2 bg-[#E0720F] text-white px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest w-fit mt-1">NIV {s.level} 👑</div>}
+                    {s.level && isPet && <div className="flex items-center gap-2 bg-[#E0720F] text-white px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest w-fit mt-1">NIV {s.level} 🐾</div>}
                   </div>
                   <div className={`w-28 h-28 rounded-[2.5rem] mb-6 overflow-hidden border-4 shadow-xl ring-4 group-hover/card:scale-110 transition-transform duration-500 ${isDark ? 'bg-slate-800 border-slate-700 ring-slate-900' : 'bg-slate-50 border-white ring-slate-50/50'}`}>
                       <UserAvatar photoURL={s.photoURL} />
@@ -884,7 +912,8 @@ const ParentDashboard = ({ profile, user }) => {
                 <div className="p-10 rounded-[3.5rem] space-y-6 shadow-inner border bg-slate-50 border-slate-100/50 shadow-slate-100">
                     <div className="flex justify-between items-center"><span className="font-black text-slate-500 text-[11px] uppercase tracking-widest italic">Lieu</span><span className="font-black uppercase">{selectedSitter.city || "France"}</span></div>
                     <div className="flex justify-between items-center"><span className="font-black text-slate-500 text-[11px] uppercase tracking-widest italic">Visites</span><span className="font-black uppercase">{selectedSitter.views || 0} 👀</span></div>
-                    {selectedSitter.level && <div className="flex justify-between items-center"><span className="font-black text-slate-500 text-[11px] uppercase tracking-widest italic">Niveau</span><span className="font-black uppercase text-[#E0720F]">NIV {selectedSitter.level} 👑</span></div>}
+                    {selectedSitter.level && !isPet && <div className="flex justify-between items-center"><span className="font-black text-slate-500 text-[11px] uppercase tracking-widest italic">Niveau</span><span className="font-black uppercase text-[#E0720F]">NIV {selectedSitter.level} 👑</span></div>}
+                    {selectedSitter.level && isPet && <div className="flex justify-between items-center"><span className="font-black text-slate-500 text-[11px] uppercase tracking-widest italic">Niveau</span><span className="font-black uppercase text-[#E0720F]">NIV {selectedSitter.level} 🐾</span></div>}
                 </div>
                 {sitterReviews.length > 0 && (
                     <div className="space-y-4">
@@ -929,7 +958,7 @@ const ParentDashboard = ({ profile, user }) => {
 };
 
 // ==========================================
-// 7. DASHBOARD SITTER
+// 7. DASHBOARD SITTER (MULTI-UNIVERS)
 // ==========================================
 
 const SitterDashboard = ({ user, profile }) => {
@@ -948,6 +977,8 @@ const SitterDashboard = ({ user, profile }) => {
   const [reviews, setReviews] = useState([]);
   const [isDark, setIsDark] = useState(localStorage.getItem('dark') === 'true');
   const [views, setViews] = useState(0);
+
+  const isPet = profile.serviceType === 'pet';
 
   useEffect(() => {
     localStorage.setItem('dark', isDark);
@@ -998,7 +1029,7 @@ const SitterDashboard = ({ user, profile }) => {
     setLoading(true);
     try {
       await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'sitters', user.uid), {
-        name: profile.name, photoURL: profile.photoURL || "", views,
+        name: profile.name, serviceType: profile.serviceType, photoURL: profile.photoURL || "", views,
         phone: profile.phone || "", bio: bio.trim(), price, birthDate, availability, cvName, hasCV: !!cvName, city, rating: 5, uid: user.uid, level, hasCar, updatedAt: new Date().toISOString()
       });
       setSaveStatus("PUBLIÉ ! ✨"); setTimeout(() => setSaveStatus(""), 4000);
@@ -1014,8 +1045,6 @@ const SitterDashboard = ({ user, profile }) => {
 
   if (activeChat) return <ChatRoom offer={activeChat} currentUser={user} onBack={() => setActiveChat(null)} isDark={isDark} />;
   if (activeTab === "settings") return <SettingsView user={user} profile={profile} onBack={() => setActiveTab("profile")} isDark={isDark} toggleDark={() => setIsDark(!isDark)} />;
-
-  const myP = (profile.useCustomPhoto && profile.photoURL) ? profile.photoURL : `https://api.dicebear.com/7.x/${profile.avatarStyle || 'avataaars'}/svg?seed=${profile.name}`;
 
   return (
     <div className={`min-h-screen font-sans pb-32 animate-in fade-in duration-500 ${isDark ? 'bg-slate-950 text-white' : 'bg-slate-50 text-slate-800'}`}>
@@ -1041,7 +1070,7 @@ const SitterDashboard = ({ user, profile }) => {
                         </div>
                         <button onClick={() => setActiveTab("settings")} className="absolute -bottom-1 -right-1 p-3 bg-slate-900 text-white rounded-xl shadow-xl active:scale-95 transition-all"><Camera size={16}/></button>
                     </div>
-                    <div><h2 className={`text-2xl font-black italic ${isDark ? 'text-white' : 'text-slate-800'}`}>{profile.name}</h2><p className="text-[9px] font-black text-white uppercase tracking-widest mt-1 bg-[#E64545] px-3 py-1 rounded-full inline-block">Sitter Pro ✨</p></div>
+                    <div><h2 className={`text-2xl font-black italic ${isDark ? 'text-white' : 'text-slate-800'}`}>{profile.name}</h2><p className="text-[9px] font-black text-white uppercase tracking-widest mt-1 bg-[#E64545] px-3 py-1 rounded-full inline-block">{isPet ? "Pet Sitter 🐾" : "Sitter Pro ✨"}</p></div>
                 </div>
                 <div className={`p-8 rounded-[3rem] shadow-xl text-white flex flex-col justify-center space-y-2 transition-all ${isDark ? 'bg-indigo-600' : 'bg-gradient-to-br from-[#E64545] to-[#E0720F]'}`}>
                     <Wallet className="mb-1" size={24}/><p className="text-[10px] font-black uppercase tracking-widest opacity-70">Mon Revenu</p>
@@ -1113,7 +1142,7 @@ const SitterDashboard = ({ user, profile }) => {
 };
 
 // ==========================================
-// 8. LOGIQUE RACINE (CORRECTION BUG CONNEXION)
+// 8. LOGIQUE RACINE
 // ==========================================
 
 export default function App() {
@@ -1123,43 +1152,31 @@ export default function App() {
 
   useEffect(() => {
     let unsubP = null;
-    
-    // Timer minimum pour le splash screen (pour l'effet visuel)
     const minSplashTimer = new Promise(resolve => setTimeout(resolve, 800));
-    
-    // DECONNEXION SYSTEMATIQUE AU LANCEMENT POUR FORCER L'ECRAN DE CONNEXION
     signOut(auth);
     
     const unsubA = onAuthStateChanged(auth, async (u) => {
       setUser(u);
-      
       if (u) {
-        // Si utilisateur connecté, on attend son profil avant d'enlever le splash
         unsubP = onSnapshot(doc(db, 'artifacts', appId, 'users', u.uid, 'settings', 'profile'), async (snap) => {
-          if (snap.exists()) {
-              setProfile(snap.data());
-          } else {
-              setProfile(null);
-          }
-          // On attend la fin du timer visuel avant d'afficher l'app
+          if (snap.exists()) { setProfile(snap.data()); } else { setProfile(null); }
           await minSplashTimer;
           setInit(true);
         });
       } else {
-        // Si pas d'utilisateur, on attend juste le timer visuel
         setProfile(null);
         if (unsubP) unsubP();
         await minSplashTimer;
         setInit(true);
       }
     });
-
     return () => { unsubA(); if (unsubP) unsubP(); };
   }, []);
 
   if (!init) return <SplashScreen />;
   if (!user) return <AuthScreen />;
-  // On n'arrive ici que si init=true, donc le profil a été chargé (ou confirmé inexistant)
-  if (user && !profile) return <CompleteProfileScreen uid={user.uid} />;
+  if (user && !profile) return <CompleteProfileScreen uid={user.uid} serviceType={profile?.serviceType} />; // Pass serviceType here to keep consistency
+  
+  // Redirection en fonction du ROLE et de l'UNIVERS (Enfant ou Animaux)
   return profile.role === "parent" ? <ParentDashboard profile={profile} user={user} /> : <SitterDashboard user={user} profile={profile} />;
 }
