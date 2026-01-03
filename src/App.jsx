@@ -168,7 +168,7 @@ const ModeSwitcher = ({ currentRole, currentService, uid }) => {
 };
 
 // ==========================================
-// 4. COMPOSANT PARAMÈTRES (AVEC LIENS LÉGAUX)
+// 4. COMPOSANT PARAMÈTRES
 // ==========================================
 
 const SettingsView = ({ user, profile, onBack, isDark, toggleDark }) => {
@@ -258,7 +258,6 @@ const SettingsView = ({ user, profile, onBack, isDark, toggleDark }) => {
         <div className="space-y-4">
           <a href="mailto:babykeeper.bordais@gmail.com" className="w-full p-5 border-2 border-[#E0720F]/20 text-[#E0720F] rounded-2xl font-black text-xs uppercase flex justify-center gap-2 hover:bg-[#E0720F]/5">Support Technique</a>
           
-          {/* --- MENTIONS LÉGALES AJOUTÉES ICI --- */}
           <div className="flex justify-center gap-4 text-[10px] text-slate-400 font-bold uppercase tracking-widest pt-4 border-t border-slate-100/50">
              <button onClick={() => alert("Mentions Légales : \nBabyKeeper est une plateforme de mise en relation.\nNous ne sommes pas l'employeur des baby-sitters.")} className="hover:text-[#E64545]">CGU</button>
              <span>•</span>
@@ -313,7 +312,7 @@ const PremiumView = ({ onBack, isDark }) => {
                  </ul>
                  <a 
                     href={STRIPE_LINK}
-                    target="_blank"
+                    target="_self" 
                     className="block w-full py-5 bg-[#E64545] text-white text-center rounded-2xl font-black uppercase shadow-xl hover:scale-105 transition-transform"
                  >
                      Je m'abonne (3€)
@@ -376,9 +375,9 @@ const ChatRoom = ({ offer, currentUser, onBack, isDark }) => {
     };
   }, [offer.id]);
 
-  // --- EMAIL NOTIF : Fonction d'envoi ---
+  // --- EMAIL NOTIF ---
   const sendEmailNotification = async (msgText) => {
-      if (!window.emailjs) return; // Sécurité si le script n'est pas chargé
+      if (!window.emailjs) return; 
       
       const otherId = currentUser.uid === offer.sitterId ? offer.parentId : offer.sitterId;
       try {
@@ -387,10 +386,9 @@ const ChatRoom = ({ offer, currentUser, onBack, isDark }) => {
               const targetEmail = userDoc.data().email;
               const targetName = userDoc.data().name;
               
-              // ⚠️ CLÉS EMAILJS INTÉGRÉES ⚠️
               await window.emailjs.send(
-                  "service_hjonpe3", // TON SERVICE ID
-                  "template_b2gl0lh", // TON TEMPLATE ID
+                  "service_hjonpe3", // SERVICE ID
+                  "template_b2gl0lh", // TEMPLATE ID
                   {
                       to_email: targetEmail,
                       to_name: targetName,
@@ -398,7 +396,6 @@ const ChatRoom = ({ offer, currentUser, onBack, isDark }) => {
                       message: msgText
                   }
               );
-              console.log("Notif envoyée");
           }
       } catch (error) {
           console.error("Erreur envoi mail:", error);
@@ -425,8 +422,6 @@ const ChatRoom = ({ offer, currentUser, onBack, isDark }) => {
     e.preventDefault();
     const txt = newMessage.trim();
     if (!txt) return;
-    
-    // Optimistic UI update
     setNewMessage("");
 
     try {
@@ -436,10 +431,7 @@ const ChatRoom = ({ offer, currentUser, onBack, isDark }) => {
       await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'offers', offer.id), {
           lastMsg: txt, lastMsgAt: Timestamp.now(), hasUnread: true, lastSenderId: currentUser.uid
       });
-      
-      // --- EMAIL NOTIF : Appel ---
       sendEmailNotification(txt);
-
     } catch (e) { console.error(e); }
   };
 
@@ -456,9 +448,7 @@ const ChatRoom = ({ offer, currentUser, onBack, isDark }) => {
       
       await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'offers', offer.id, 'messages'), { text, senderId: 'system', parentId: offer.parentId, sitterId: offer.sitterId, createdAt: Timestamp.now() });
 
-      // --- EMAIL NOTIF : Appel lors de l'acceptation ---
       if(status === 'accepted') sendEmailNotification("Votre offre a été acceptée !");
-
     } catch (e) { console.error(e); }
   };
 
@@ -562,7 +552,7 @@ const ChatRoom = ({ offer, currentUser, onBack, isDark }) => {
 };
 
 // ==========================================
-// 7. AUTH SCREEN (MODIFIÉ : SELECTEUR D'UNIVERS & GESTION ERREUR EMAIL)
+// 7. AUTH SCREEN (MODIFIÉ)
 // ==========================================
 
 const AuthScreen = () => {
@@ -571,9 +561,7 @@ const AuthScreen = () => {
   const [password, setPassword] = useState("");
   const [name, setName] = useState("");
   const [role, setRole] = useState("parent");
-  // NOUVEAU : Service Type
   const [serviceType, setServiceType] = useState("baby");
-  
   const [level, setLevel] = useState("1");
   const [remember, setRemember] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -628,7 +616,6 @@ const AuthScreen = () => {
           <p className="text-[#E64545] text-sm font-bold uppercase tracking-widest mt-2">La recherche en toute confiance</p>
         </div>
         
-        {/* SELECTEUR D'UNIVERS */}
         {isRegister && (
             <div className="flex gap-4 mb-6">
                 <button type="button" onClick={() => setServiceType("baby")} className={`flex-1 py-4 rounded-2xl font-black text-xs uppercase flex flex-col items-center gap-2 border-2 transition-all ${serviceType === "baby" ? "border-[#E64545] bg-[#E64545]/5 text-[#E64545]" : "border-slate-100 text-slate-400"}`}>
@@ -659,7 +646,6 @@ const AuthScreen = () => {
               <button type="button" onClick={() => setRole("sitter")} className={`py-3 rounded-xl font-black text-[10px] ${role === "sitter" ? "bg-white shadow text-[#E0720F]" : "text-slate-400"}`}>SITTER</button>
             </div>
             
-            {/* NIVEAUX POUR BABY SITTER */}
             {role === "sitter" && serviceType === "baby" && (
               <div className="grid grid-cols-3 gap-1 mt-2">
                 <button type="button" onClick={() => setLevel("1")} className={`py-2 rounded-lg text-[10px] font-black uppercase transition-all ${level === "1" ? "bg-slate-900 text-white" : "bg-slate-200 text-slate-500"}`}>NIV 1 🍼<br/><span className="text-[8px] opacity-70 font-normal">Garde+Repas</span></button>
@@ -668,7 +654,6 @@ const AuthScreen = () => {
               </div>
             )}
 
-            {/* NOUVEAU : NIVEAUX POUR PET SITTER */}
             {role === "sitter" && serviceType === "pet" && (
               <div className="grid grid-cols-3 gap-1 mt-2">
                 <button type="button" onClick={() => setLevel("1")} className={`py-2 rounded-lg text-[10px] font-black uppercase transition-all ${level === "1" ? "bg-slate-900 text-white" : "bg-slate-200 text-slate-500"}`}>NIV 1 🐕<br/><span className="text-[8px] opacity-70 font-normal">Promenade</span></button>
@@ -764,7 +749,7 @@ const CompleteProfileScreen = ({ uid, serviceType }) => {
 };
 
 // ==========================================
-// 8. DASHBOARD PARENT (MODIFIÉ AVEC LOGIQUE PREMIUM & AUTO-ACTIVATION & SWITCH)
+// 8. DASHBOARD PARENT (MULTI-UNIVERS & FILTRE JOUR & BADGES)
 // ==========================================
 
 const ParentDashboard = ({ profile, user }) => {
@@ -776,7 +761,6 @@ const ParentDashboard = ({ profile, user }) => {
   const [maxPrice, setMaxPrice] = useState(100);
   const [onlyVerified, setOnlyVerified] = useState(false);
   const [onlyFavorites, setOnlyFavorites] = useState(false);
-  // NOUVEAU : Filtre par jour
   const [dayFilter, setDayFilter] = useState(""); 
   
   const [activeTab, setActiveTab] = useState("search");
@@ -789,7 +773,6 @@ const ParentDashboard = ({ profile, user }) => {
   const isPet = profile.serviceType === 'pet';
   const days = ["Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi", "Samedi", "Dimanche"];
 
-  // --- AUTO-ACTIVATION PREMIUM VIA URL ---
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     if (params.get('success') === 'true') {
@@ -801,26 +784,14 @@ const ParentDashboard = ({ profile, user }) => {
     }
   }, [user.uid]); 
 
-  // FONCTION POUR BASCULER ENTRE ENFANT ET ANIMAL
-  const toggleServiceType = async () => {
-      const newType = isPet ? 'baby' : 'pet';
-      await updateDoc(doc(db, 'artifacts', appId, 'users', user.uid, 'settings', 'profile'), { serviceType: newType });
-  };
-
   useEffect(() => {
     localStorage.setItem('dark', isDark);
     const unsubSitters = onSnapshot(collection(db, 'artifacts', appId, 'public', 'data', 'sitters'), (snap) => {
-      // FILTRE PAR UNIVERS (Baby ou Pet)
       setSitters(snap.docs.map(d => ({ id: d.id, ...d.data() })).filter(s => s.serviceType === profile.serviceType));
       setLoading(false);
     });
-    const qOffers = query(
-      collection(db, 'artifacts', appId, 'public', 'data', 'offers'), 
-      where("parentId", "==", user.uid)
-    );
-    const unsubOffers = onSnapshot(qOffers, (snap) => {
-      setOffers(snap.docs.map(d => ({ id: d.id, ...d.data() })));
-    });
+    const qOffers = query(collection(db, 'artifacts', appId, 'public', 'data', 'offers'), where("parentId", "==", user.uid));
+    const unsubOffers = onSnapshot(qOffers, (snap) => { setOffers(snap.docs.map(d => ({ id: d.id, ...d.data() }))); });
     return () => { unsubSitters(); unsubOffers(); };
   }, [user.uid, isDark, profile.serviceType]); 
 
@@ -837,9 +808,7 @@ const ParentDashboard = ({ profile, user }) => {
 
   const toggleFavorite = async (sitterId) => {
       const isFav = profile.favorites?.includes(sitterId);
-      await updateDoc(doc(db, 'artifacts', appId, 'users', user.uid, 'settings', 'profile'), {
-          favorites: isFav ? arrayRemove(sitterId) : arrayUnion(sitterId)
-      });
+      await updateDoc(doc(db, 'artifacts', appId, 'users', user.uid, 'settings', 'profile'), { favorites: isFav ? arrayRemove(sitterId) : arrayUnion(sitterId) });
   };
 
   const filteredSitters = useMemo(() => {
@@ -849,10 +818,7 @@ const ParentDashboard = ({ profile, user }) => {
       const matchPrice = (parseInt(s.price) || 0) <= maxPrice;
       const matchVerified = !onlyVerified || s.hasCV;
       const matchFav = !onlyFavorites || profile.favorites?.includes(s.id);
-      
-      // NOUVEAU : Filtre par disponibilité (si un jour est sélectionné)
       const matchDay = !dayFilter || (s.availability && s.availability[dayFilter]?.active);
-
       return matchName && matchLocation && matchPrice && matchVerified && matchFav && matchDay;
     });
   }, [sitters, search, locationFilter, maxPrice, onlyVerified, onlyFavorites, profile.favorites, dayFilter]);
@@ -861,35 +827,21 @@ const ParentDashboard = ({ profile, user }) => {
     try {
       const isPremium = profile?.isPremium === true;
       if (!isPremium) {
-          const oneWeekAgo = new Date();
-          oneWeekAgo.setDate(oneWeekAgo.getDate() - 7); 
-          const recentOffers = offers.filter(o => {
-              const d = o.createdAt?.toDate ? o.createdAt.toDate() : new Date(o.createdAt);
-              return d > oneWeekAgo;
-          });
-          if (recentOffers.length >= 1) {
-              alert("🔒 Limite atteinte ! Passez Premium.");
-              setSelectedSitter(null); 
-              setActiveTab("premium"); 
-              return; 
-          }
+          const oneWeekAgo = new Date(); oneWeekAgo.setDate(oneWeekAgo.getDate() - 7); 
+          const recentOffers = offers.filter(o => { const d = o.createdAt?.toDate ? o.createdAt.toDate() : new Date(o.createdAt); return d > oneWeekAgo; });
+          if (recentOffers.length >= 1) { alert("🔒 Limite atteinte ! Passez Premium."); setSelectedSitter(null); setActiveTab("premium"); return; }
       }
       const offerText = `Offre : ${h}h à ${p}€/h`;
       const newOffer = await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'offers'), {
         parentId: user.uid, parentName: profile.name, sitterId: s.id, sitterName: s.name, price: p, hours: h, status: 'pending', createdAt: Timestamp.now(), lastMsg: offerText, lastMsgAt: Timestamp.now(), hasUnread: true, lastSenderId: user.uid
       });
-      await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'offers', newOffer.id, 'messages'), {
-        text: `Bonjour ${s.name}, je souhaiterais réserver une garde de ${h}H au prix de ${p}€/H.`, senderId: user.uid, parentId: user.uid, sitterId: s.id, createdAt: Timestamp.now()
-      });
-      setSelectedSitter(null); 
-      setActiveTab("messages");
+      await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'offers', newOffer.id, 'messages'), { text: `Bonjour ${s.name}, je souhaiterais réserver.`, senderId: user.uid, parentId: user.uid, sitterId: s.id, createdAt: Timestamp.now() });
+      setSelectedSitter(null); setActiveTab("messages");
     } catch (e) { console.error(e); }
   };
 
   const markAsRead = async (offer) => {
-    if (offer.hasUnread && offer.lastSenderId !== user.uid) {
-        await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'offers', offer.id), { hasUnread: false });
-    }
+    if (offer.hasUnread && offer.lastSenderId !== user.uid) { await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'offers', offer.id), { hasUnread: false }); }
     setActiveChat(offer);
   };
 
@@ -904,17 +856,9 @@ const ParentDashboard = ({ profile, user }) => {
       <nav className={`p-4 flex justify-between items-center sticky top-0 z-40 border-b shadow-sm ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-100'}`}>
         <div className="flex items-center gap-2"><SitFinderLogo className="w-8 h-8" glow={false} /><span className="font-black italic text-lg md:text-2xl uppercase tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-[#E64545] to-[#E0720F]">BABYKEEPER</span></div>
         <div className="flex items-center gap-1.5">
-          {/* BOUTON SWITCHER D'UNIVERS */}
           <ModeSwitcher currentRole={profile.role} currentService={profile.serviceType || 'baby'} uid={user.uid} />
-
-          <button onClick={() => setActiveTab("premium")} className={`p-2 rounded-2xl transition-all shadow-md bg-gradient-to-br from-yellow-400 to-orange-500 text-white animate-pulse`}>
-              <Crown size={20} fill="white" />
-          </button>
-          
-          <div className="relative p-2 text-slate-400">
-              <Bell size={20}/>
-              {unreadCount > 0 && <span className="absolute top-1 right-1 w-4 h-4 bg-[#E64545] text-white text-[8px] font-black rounded-full flex items-center justify-center border-2 border-white animate-bounce">{unreadCount}</span>}
-          </div>
+          <button onClick={() => setActiveTab("premium")} className={`p-2 rounded-2xl transition-all shadow-md bg-gradient-to-br from-yellow-400 to-orange-500 text-white animate-pulse`}><Crown size={20} fill="white" /></button>
+          <div className="relative p-2 text-slate-400"><Bell size={20}/>{unreadCount > 0 && <span className="absolute top-1 right-1 w-4 h-4 bg-[#E64545] text-white text-[8px] font-black rounded-full flex items-center justify-center border-2 border-white animate-bounce">{unreadCount}</span>}</div>
           <button onClick={() => setActiveTab("settings")} className={`p-2 rounded-2xl transition-all ${isDark ? 'bg-slate-800 text-[#E0720F]' : 'bg-slate-50 text-slate-300'}`}><Settings size={20} /></button>
           <button onClick={() => signOut(auth)} className={`p-2 rounded-2xl transition-all ${isDark ? 'bg-slate-800 text-slate-400' : 'bg-slate-50 text-slate-300'}`}><LogOut size={20} /></button>
         </div>
@@ -976,225 +920,6 @@ const ParentDashboard = ({ profile, user }) => {
                   <h4 className={`font-black text-4xl font-sans mb-1 leading-none tracking-tighter text-left ${isDark ? 'text-white' : 'text-slate-800'}`}>{s.name}</h4>
                   <div className="flex items-center gap-3 text-slate-400 mb-6"><RatingStars rating={s.rating || 5} size={18}/><span className={`text-[10px] font-black uppercase px-2 py-0.5 rounded-lg border ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-slate-50 border-slate-100'}`}>{s.city}</span></div>
                   
-                  {s.skills && (
-                     <div className="flex flex-wrap gap-1 mb-4">
-                        {s.skills.map((skill, i) => (
-                           <span key={i} className="text-[8px] font-bold uppercase bg-slate-100 text-slate-500 px-2 py-1 rounded-lg border">{skill}</span>
-                        ))}
-                     </div>
-                  )}
-
-                  <p className={`italic mb-8 leading-relaxed text-sm flex-1 line-clamp-3 text-left ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>"{s.bio || "..."}"</p>
-                  <div className={`flex justify-between items-center pt-8 border-t mt-auto ${isDark ? 'border-slate-800' : 'border-slate-50'}`}>
-                    <span className="text-3xl font-black text-[#E64545] font-sans">{s.price || 0}€<span className="text-[10px] text-slate-400 ml-1">/H</span></span>
-                    <button onClick={() => setSelectedSitter(s)} className={`px-10 py-5 rounded-[2.5rem] font-black text-[10px] uppercase shadow-lg active:scale-95 transition-all hover:bg-[#E64545] tracking-widest ${isDark ? 'bg-[#E64545] text-white' : 'bg-slate-900 text-white'}`}>VOIR PROFIL</button>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </>
-        ) : (
-          <div className="space-y-8 animate-in fade-in duration-500">
-            <h2 className={`text-4xl font-black italic uppercase font-sans tracking-tight leading-none text-left ${isDark ? 'text-white' : 'text-slate-800'}`}>Discussions</h2>
-            <div className="grid gap-6">
-              {offers.length === 0 ? <div className={`py-24 text-center rounded-[4rem] border-2 border-dashed italic text-xl shadow-inner ${isDark ? 'bg-slate-900 border-slate-800 text-slate-500' : 'bg-white border-slate-100 text-slate-400'}`}>Aucune offre active...</div>
-              : offers.sort((a,b) => (b.lastMsgAt?.seconds || 0) - (a.lastMsgAt?.seconds || 0)).map(o => (
-                  <div key={o.id} onClick={() => markAsRead(o)} className={`p-10 rounded-[3.5rem] shadow-xl border flex items-center justify-between hover:border-[#E0720F]/30 cursor-pointer transition-all active:scale-[0.99] shadow-md ${isDark ? 'bg-slate-900 border-slate-800 text-white shadow-slate-950' : 'bg-white border-slate-100 text-slate-900 shadow-slate-100'} ${o.hasUnread && o.lastSenderId !== user.uid ? 'ring-2 ring-[#E64545]' : ''}`}>
-                    <div className="flex items-center gap-6 text-left">
-                        <div className={`w-20 h-20 rounded-3xl overflow-hidden shadow-sm border ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-[#E0720F]/10 border-[#E0720F]/20'}`}>
-                            {/* Récupération de l'image du Sitter */}
-                            <UserAvatar photoURL={sitters.find(x => x.id === o.sitterId)?.photoURL} />
-                        </div>
-                        <div className="text-left"><h4 className="font-black text-2xl font-sans leading-tight">{o.sitterName}</h4>
-                        <p className={`text-[11px] font-bold truncate max-w-[150px] mt-1 ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>{o.lastMsg}</p>
-                         {/* BADGE PAIEMENT */}
-                        {o.status === 'paid_held' && <span className="text-[9px] bg-yellow-100 text-yellow-600 px-2 rounded-full mt-1 inline-block font-bold">Payé (En attente)</span>}
-                        {o.status === 'completed' && <span className="text-[9px] bg-green-100 text-green-600 px-2 rounded-full mt-1 inline-block font-bold">Terminé</span>}
-                        </div>
-                    </div>
-                    {o.hasUnread && o.lastSenderId !== user.uid && <div className="w-3 h-3 bg-[#E64545] rounded-full animate-pulse shadow-[#E64545]/20"></div>}
-                    <ChevronRight className="text-slate-200" size={24}/>
-                  </div>
-              ))}
-            </div>
-          </div>
-        )}
-      </main>
-
-      <div className={`fixed bottom-10 left-1/2 -translate-x-1/2 w-[90%] max-w-md backdrop-blur-xl p-2.5 rounded-[3rem] shadow-2xl flex items-center justify-between z-50 border ${isDark ? 'bg-slate-900/95 border-slate-800' : 'bg-slate-900/95 border-white/10'}`}>
-        <button onClick={() => setActiveTab("search")} className={`flex-1 flex flex-col items-center py-4 rounded-[2.5rem] transition-all duration-300 ${activeTab === "search" ? (isDark ? "bg-[#E64545] text-white" : "bg-[#E64545] text-white") : "text-slate-400 hover:text-white"}`}><Search size={22}/><span className="text-[9px] font-black uppercase mt-1.5 tracking-widest">Trouver</span></button>
-        <button onClick={() => setActiveTab("messages")} className={`flex-1 flex flex-col items-center py-4 rounded-[2.5rem] transition-all duration-300 relative ${activeTab === "messages" ? (isDark ? "bg-[#E64545] text-white" : "bg-[#E64545] text-white") : "text-slate-400 hover:text-white"}`}><MessageSquare size={22}/><span className="text-[9px] font-black uppercase mt-1.5 font-sans tracking-widest">Offres</span>{unreadCount > 0 && <div className="absolute top-3 right-1/3 w-2.5 h-2.5 bg-[#E0720F] rounded-full border-2 border-slate-900 animate-pulse"></div>}</button></div>
-    </div>
-  );
-};
-
-  // --- AUTO-ACTIVATION PREMIUM VIA URL ---
-  useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    if (params.get('success') === 'true') {
-        updateDoc(doc(db, 'artifacts', appId, 'users', user.uid, 'settings', 'profile'), { isPremium: true })
-        .then(() => {
-            alert("Félicitations ! Votre abonnement Premium est activé 🌟");
-            window.history.replaceState({}, document.title, window.location.pathname);
-        });
-    }
-  }, [user.uid]); 
-
-  useEffect(() => {
-    localStorage.setItem('dark', isDark);
-    const unsubSitters = onSnapshot(collection(db, 'artifacts', appId, 'public', 'data', 'sitters'), (snap) => {
-      // FILTRE PAR UNIVERS (Baby ou Pet)
-      setSitters(snap.docs.map(d => ({ id: d.id, ...d.data() })).filter(s => s.serviceType === profile.serviceType));
-      setLoading(false);
-    });
-    const qOffers = query(
-      collection(db, 'artifacts', appId, 'public', 'data', 'offers'), 
-      where("parentId", "==", user.uid)
-    );
-    const unsubOffers = onSnapshot(qOffers, (snap) => {
-      setOffers(snap.docs.map(d => ({ id: d.id, ...d.data() })));
-    });
-    return () => { unsubSitters(); unsubOffers(); };
-  }, [user.uid, isDark, profile.serviceType]); // Ajout de profile.serviceType pour recharger au switch
-
-  useEffect(() => {
-      if (selectedSitter) {
-          updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'sitters', selectedSitter.id), { views: (selectedSitter.views || 0) + 1 });
-          onSnapshot(collection(db, 'artifacts', appId, 'public', 'data', 'sitters', selectedSitter.id, 'reviews'), (snap) => {
-              setSitterReviews(snap.docs.map(d => d.data()));
-          });
-      }
-  }, [selectedSitter]);
-
-  const unreadCount = offers.filter(o => o.hasUnread && o.lastSenderId !== user.uid).length;
-
-  const toggleFavorite = async (sitterId) => {
-      const isFav = profile.favorites?.includes(sitterId);
-      await updateDoc(doc(db, 'artifacts', appId, 'users', user.uid, 'settings', 'profile'), {
-          favorites: isFav ? arrayRemove(sitterId) : arrayUnion(sitterId)
-      });
-  };
-
-  const filteredSitters = useMemo(() => {
-    return sitters.filter(s => {
-      const matchName = s.name?.toLowerCase().includes(search.toLowerCase());
-      const matchLocation = !locationFilter || s.city?.toLowerCase().includes(locationFilter.toLowerCase());
-      const matchPrice = (parseInt(s.price) || 0) <= maxPrice;
-      const matchVerified = !onlyVerified || s.hasCV;
-      const matchFav = !onlyFavorites || profile.favorites?.includes(s.id);
-      return matchName && matchLocation && matchPrice && matchVerified && matchFav;
-    });
-  }, [sitters, search, locationFilter, maxPrice, onlyVerified, onlyFavorites, profile.favorites]);
-
-  const handleBooking = async (s, p, h) => {
-    try {
-      const isPremium = profile?.isPremium === true;
-      if (!isPremium) {
-          const oneWeekAgo = new Date();
-          oneWeekAgo.setDate(oneWeekAgo.getDate() - 7); 
-          const recentOffers = offers.filter(o => {
-              const d = o.createdAt?.toDate ? o.createdAt.toDate() : new Date(o.createdAt);
-              return d > oneWeekAgo;
-          });
-          if (recentOffers.length >= 1) {
-              alert("🔒 Limite gratuite atteinte ! Vous avez déjà réservé cette semaine. Passez Premium pour continuer.");
-              setSelectedSitter(null); 
-              setActiveTab("premium"); 
-              return; 
-          }
-      }
-      const offerText = `Offre : ${h}h à ${p}€/h`;
-      const newOffer = await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'offers'), {
-        parentId: user.uid, parentName: profile.name, sitterId: s.id, sitterName: s.name, price: p, hours: h, status: 'pending', createdAt: Timestamp.now(), lastMsg: offerText, lastMsgAt: Timestamp.now(), hasUnread: true, lastSenderId: user.uid
-      });
-      await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'offers', newOffer.id, 'messages'), {
-        text: `Bonjour ${s.name}, je souhaiterais réserver une garde de ${h}H au prix de ${p}€/H.`, senderId: user.uid, parentId: user.uid, sitterId: s.id, createdAt: Timestamp.now()
-      });
-      setSelectedSitter(null); 
-      setActiveTab("messages");
-    } catch (e) { console.error(e); }
-  };
-
-  const markAsRead = async (offer) => {
-    if (offer.hasUnread && offer.lastSenderId !== user.uid) {
-        await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'offers', offer.id), { hasUnread: false });
-    }
-    setActiveChat(offer);
-  };
-
-  if (activeChat) return <ChatRoom offer={activeChat} currentUser={user} onBack={() => setActiveChat(null)} isDark={isDark} />;
-  if (activeTab === "settings") return <SettingsView user={user} profile={profile} onBack={() => setActiveTab("search")} isDark={isDark} toggleDark={() => setIsDark(!isDark)} />;
-  if (activeTab === "premium") return <PremiumView onBack={() => setActiveTab("search")} isDark={isDark} />;
-
-  const getSPhoto = (s) => (s.useCustomPhoto && s.photoURL) ? s.photoURL : `https://api.dicebear.com/7.x/${s.avatarStyle || 'avataaars'}/svg?seed=${s.name}`;
-
-  return (
-    <div className={`min-h-screen font-sans pb-32 ${isDark ? 'bg-slate-950 text-white' : 'bg-slate-50 text-slate-800'}`}>
-      <nav className={`p-4 flex justify-between items-center sticky top-0 z-40 border-b shadow-sm ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-100'}`}>
-        <div className="flex items-center gap-2"><SitFinderLogo className="w-8 h-8" glow={false} /><span className="font-black italic text-lg md:text-2xl uppercase tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-[#E64545] to-[#E0720F]">BABYKEEPER</span></div>
-        <div className="flex items-center gap-1.5">
-          {/* BOUTON SWITCHER D'UNIVERS */}
-          <ModeSwitcher currentRole={profile.role} currentService={profile.serviceType || 'baby'} uid={user.uid} />
-
-          <button onClick={() => setActiveTab("premium")} className={`p-2 rounded-2xl transition-all shadow-md bg-gradient-to-br from-yellow-400 to-orange-500 text-white animate-pulse`}>
-              <Crown size={20} fill="white" />
-          </button>
-          
-          <div className="relative p-2 text-slate-400">
-              <Bell size={20}/>
-              {unreadCount > 0 && <span className="absolute top-1 right-1 w-4 h-4 bg-[#E64545] text-white text-[8px] font-black rounded-full flex items-center justify-center border-2 border-white animate-bounce">{unreadCount}</span>}
-          </div>
-          <button onClick={() => setActiveTab("settings")} className={`p-2 rounded-2xl transition-all ${isDark ? 'bg-slate-800 text-[#E0720F]' : 'bg-slate-50 text-slate-300'}`}><Settings size={20} /></button>
-          <button onClick={() => signOut(auth)} className={`p-2 rounded-2xl transition-all ${isDark ? 'bg-slate-800 text-slate-400' : 'bg-slate-50 text-slate-300'}`}><LogOut size={20} /></button>
-        </div>
-      </nav>
-
-      <main className="p-6 max-w-7xl mx-auto space-y-8 animate-in fade-in duration-500">
-        {activeTab === "search" ? (
-          <>
-            <div className={`p-10 md:p-14 rounded-[3.5rem] shadow-2xl relative overflow-hidden group transition-all duration-700 ${isDark ? 'bg-gradient-to-br from-[#E64545] to-slate-900' : 'bg-gradient-to-br from-[#E64545] to-[#E0720F]'}`}>
-              <div className="relative z-10 text-white">
-                  <h2 className="text-4xl font-black italic tracking-tighter font-sans leading-tight animate-in slide-in-from-left duration-700">Bonjour {profile.name} ! 👋</h2>
-                  <p className="opacity-90 font-bold uppercase tracking-widest text-[10px] mt-2">
-                      {isPet ? "Trouvez le gardien idéal 🐾" : "Trouvez l'aide idéale aujourd'hui"}
-                  </p>
-              </div>
-              {isPet ? <Dog size={400} className="absolute -right-20 -bottom-20 opacity-10 rotate-12 text-white" /> : <Baby size={400} className="absolute -right-20 -bottom-20 opacity-10 rotate-12 text-white" />}
-            </div>
-
-            <div className="space-y-4">
-              <div className="flex gap-4">
-                <div className="relative flex-1 group">
-                  <Search className={`absolute left-6 top-1/2 -translate-y-1/2 transition-colors ${isDark ? 'text-slate-600' : 'text-slate-300'}`} size={24} />
-                  <input type="text" placeholder="Rechercher par prénom..." className={`w-full pl-16 pr-8 py-6 border-none rounded-[2.5rem] shadow-sm outline-none focus:ring-4 font-bold ${isDark ? 'bg-slate-900 text-white focus:ring-[#E64545]/20' : 'bg-white text-slate-900 focus:ring-[#E64545]/10'}`} value={search} onChange={(e) => setSearch(e.target.value)} />
-                </div>
-                <button onClick={() => setShowFilters(!showFilters)} className={`p-6 rounded-[2.5rem] shadow-sm transition-all flex items-center gap-3 ${showFilters ? 'bg-[#E0720F] text-white shadow-orange-200' : (isDark ? 'bg-slate-900 text-slate-400' : 'bg-white text-slate-400')}`}><SlidersHorizontal size={24}/></button>
-              </div>
-              {showFilters && (
-                <div className={`p-10 rounded-[3.5rem] shadow-2xl border grid grid-cols-1 md:grid-cols-3 gap-12 animate-in slide-in-from-top-4 duration-300 relative z-30 ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-100'}`}>
-                   <div className="space-y-4 text-left"><label className="text-[11px] font-black text-slate-400 uppercase italic">Ville</label><input type="text" placeholder="Paris, Lyon..." className={`w-full p-5 rounded-2xl outline-none font-bold ${isDark ? 'bg-slate-800' : 'bg-slate-50'}`} value={locationFilter} onChange={(e) => setLocationFilter(e.target.value)} /></div>
-                   <div className="space-y-4 text-left"><div className="flex justify-between items-center text-slate-800"><label className="text-[10px] font-black text-slate-400 uppercase italic">Budget ({maxPrice}€)</label><span className="text-xl font-black text-[#E64545] font-sans">{maxPrice}€/H</span></div><input type="range" min="10" max="100" step="5" className="w-full accent-[#E64545]" value={maxPrice} onChange={(e) => setMaxPrice(e.target.value)} /></div>
-                   <div className="flex gap-3 pt-6"><button onClick={() => setOnlyVerified(!onlyVerified)} className={`flex-1 py-4 rounded-2xl text-[10px] font-black uppercase transition-all ${onlyVerified ? 'bg-[#E64545]/10 text-[#E64545]' : (isDark ? 'bg-slate-800' : 'bg-slate-50')}`}>Sitter Pro ✨</button><button onClick={() => setOnlyFavorites(!onlyFavorites)} className={`flex-1 py-4 rounded-2xl text-[10px] font-black uppercase transition-all ${onlyFavorites ? 'bg-red-50 text-red-600' : (isDark ? 'bg-slate-800' : 'bg-slate-50')}`}>❤️</button></div>
-                </div>
-              )}
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-10">
-              {loading ? <div className="col-span-full py-20 flex justify-center animate-pulse"><Loader2 className="animate-spin text-[#E64545]" size={64} /></div> 
-              : filteredSitters.sort((a,b) => (b.views || 0) - (a.views || 0)).map((s) => (
-                <div key={s.id} className={`p-10 rounded-[3.5rem] shadow-xl border hover:shadow-2xl transition-all flex flex-col min-h-[520px] group/card relative ${isDark ? 'bg-slate-900 border-slate-800 shadow-slate-950' : 'bg-white border-slate-50 shadow-slate-200'}`}>
-                  <button onClick={() => toggleFavorite(s.id)} className={`absolute top-8 right-8 p-3 rounded-2xl transition-all ${profile.favorites?.includes(s.id) ? 'bg-red-50 text-red-500' : (isDark ? 'bg-slate-800 text-slate-600' : 'bg-slate-50 text-slate-300')} shadow-md`}><Heart size={20} fill={profile.favorites?.includes(s.id) ? "currentColor" : "none"}/></button>
-                  <div className="flex flex-col gap-2.5 mb-8">
-                    {(s.hasCV) && <div className="flex items-center gap-2 bg-[#E64545] text-white px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest w-fit"><ShieldCheck size={10}/> VÉRIFIÉ</div>}
-                    {s.level && !isPet && <div className="flex items-center gap-2 bg-[#E0720F] text-white px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest w-fit mt-1">NIV {s.level} 👑</div>}
-                    {s.level && isPet && <div className="flex items-center gap-2 bg-[#E0720F] text-white px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest w-fit mt-1">NIV {s.level} 🐾</div>}
-                  </div>
-                  <div className={`w-28 h-28 rounded-[2.5rem] mb-6 overflow-hidden border-4 shadow-xl ring-4 group-hover/card:scale-110 transition-transform duration-500 ${isDark ? 'bg-slate-800 border-slate-700 ring-slate-900' : 'bg-slate-50 border-white ring-slate-50/50'}`}>
-                      <UserAvatar photoURL={getSPhoto(s)} />
-                  </div>
-                  <h4 className={`font-black text-4xl font-sans mb-1 leading-none tracking-tighter text-left ${isDark ? 'text-white' : 'text-slate-800'}`}>{s.name}</h4>
-                  <div className="flex items-center gap-3 text-slate-400 mb-6"><RatingStars rating={s.rating || 5} size={18}/><span className={`text-[10px] font-black uppercase px-2 py-0.5 rounded-lg border ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-slate-50 border-slate-100'}`}>{s.city}</span></div>
-                  
                   {/* --- BADGES DE COMPÉTENCES PARENT VIEW --- */}
                   {s.skills && (
                      <div className="flex flex-wrap gap-1 mb-4">
@@ -1207,7 +932,6 @@ const ParentDashboard = ({ profile, user }) => {
                   <p className={`italic mb-8 leading-relaxed text-sm flex-1 line-clamp-3 text-left ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>"{s.bio || "..."}"</p>
                   <div className={`flex justify-between items-center pt-8 border-t mt-auto ${isDark ? 'border-slate-800' : 'border-slate-50'}`}>
                     <span className="text-3xl font-black text-[#E64545] font-sans">{s.price || 0}€<span className="text-[10px] text-slate-400 ml-1">/H</span></span>
-                    {/* BOUTON PROFIL : ROUGE */}
                     <button onClick={() => setSelectedSitter(s)} className={`px-10 py-5 rounded-[2.5rem] font-black text-[10px] uppercase shadow-lg active:scale-95 transition-all hover:bg-[#E64545] tracking-widest ${isDark ? 'bg-[#E64545] text-white' : 'bg-slate-900 text-white'}`}>VOIR PROFIL</button>
                   </div>
                 </div>
