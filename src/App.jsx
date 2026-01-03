@@ -84,6 +84,17 @@ const RatingStars = ({ rating = 5, size = 14, interactive = false, onRate = null
   </div>
 );
 
+// Fonction helper pour calculer l'âge
+const calculateAge = (birth) => {
+  if (!birth) return null;
+  const today = new Date();
+  const birthDate = new Date(birth);
+  let age = today.getFullYear() - birthDate.getFullYear();
+  const m = today.getMonth() - birthDate.getMonth();
+  if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) age--;
+  return age;
+};
+
 const SplashScreen = ({ message = "La recherche en toute confiance" }) => (
   <div className="flex flex-col items-center justify-center h-screen bg-white font-sans overflow-hidden">
     <div className="relative mb-10 animate-in zoom-in duration-1000">
@@ -974,6 +985,11 @@ const SitterDashboard = ({ user, profile }) => {
 
   const handleSave = async () => {
     if (!bio || !price || !city || !birthDate) return alert("Champs requis : Bio, Tarif, Ville, Naissance.");
+    
+    // VERIFICATION AGE < 16 ANS
+    const age = calculateAge(birthDate);
+    if (age < 16) return alert("Désolé, vous devez avoir au moins 16 ans pour vous inscrire comme Baby-sitter.");
+
     setLoading(true);
     try {
       await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'sitters', user.uid), {
@@ -993,6 +1009,8 @@ const SitterDashboard = ({ user, profile }) => {
 
   if (activeChat) return <ChatRoom offer={activeChat} currentUser={user} onBack={() => setActiveChat(null)} isDark={isDark} />;
   if (activeTab === "settings") return <SettingsView user={user} profile={profile} onBack={() => setActiveTab("profile")} isDark={isDark} toggleDark={() => setIsDark(!isDark)} />;
+
+  const myP = (profile.useCustomPhoto && profile.photoURL) ? profile.photoURL : `https://api.dicebear.com/7.x/${profile.avatarStyle || 'avataaars'}/svg?seed=${profile.name}`;
 
   return (
     <div className={`min-h-screen font-sans pb-32 animate-in fade-in duration-500 ${isDark ? 'bg-slate-950 text-white' : 'bg-slate-50 text-slate-800'}`}>
@@ -1102,7 +1120,7 @@ export default function App() {
     let unsubP = null;
     
     // Timer minimum pour le splash screen (pour l'effet visuel)
-    const minSplashTimer = new Promise(resolve => setTimeout(resolve, 2000));
+    const minSplashTimer = new Promise(resolve => setTimeout(resolve, 800));
     
     // DECONNEXION SYSTEMATIQUE AU LANCEMENT POUR FORCER L'ECRAN DE CONNEXION
     signOut(auth);
