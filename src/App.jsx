@@ -31,7 +31,7 @@ import {
   Baby, LogOut, Save, Search, Loader2, AlertCircle, ShieldCheck, 
   Euro, User, Mail, Lock, ChevronRight, Sparkles, Heart, Filter, Calendar,
   Clock, UserPlus, Cake, FileUp, FileText, CheckCircle2, MessageSquare, 
-  Send, X, Check, ArrowLeft, MessageCircle, PartyPopper, Star, MapPin, Camera, SlidersHorizontal, Settings, KeyRound, Phone, Trash2, Palette, Image as ImageIcon, Share2, Quote, TrendingUp, Zap, Trophy, Languages, EyeOff, Moon, Sun, Bell, Flag, Eye, Wallet, Car, CreditCard, LockKeyhole, Crown, Info, Dog, Cat, Bone, PawPrint, RefreshCw
+  Send, X, Check, ArrowLeft, MessageCircle, PartyPopper, Star, MapPin, Camera, SlidersHorizontal, Settings, KeyRound, Phone, Trash2, Palette, Image as ImageIcon, Share2, Quote, TrendingUp, Zap, Trophy, Languages, EyeOff, Moon, Sun, Bell, Flag, Eye, Wallet, Car, CreditCard, LockKeyhole, Crown, Info, Dog, Cat, Bone, PawPrint, RefreshCw, GraduationCap
 } from "lucide-react";
 
 // ==========================================
@@ -168,7 +168,7 @@ const ModeSwitcher = ({ currentRole, currentService, uid }) => {
 };
 
 // ==========================================
-// 4. COMPOSANT PARAMÈTRES (AVEC SUPPORT)
+// 4. COMPOSANT PARAMÈTRES
 // ==========================================
 
 const SettingsView = ({ user, profile, onBack, isDark, toggleDark }) => {
@@ -874,6 +874,8 @@ const ParentDashboard = ({ profile, user }) => {
   if (activeTab === "settings") return <SettingsView user={user} profile={profile} onBack={() => setActiveTab("search")} isDark={isDark} toggleDark={() => setIsDark(!isDark)} />;
   if (activeTab === "premium") return <PremiumView onBack={() => setActiveTab("search")} isDark={isDark} />;
 
+  const getSPhoto = (s) => (s.useCustomPhoto && s.photoURL) ? s.photoURL : `https://api.dicebear.com/7.x/${s.avatarStyle || 'avataaars'}/svg?seed=${s.name}`;
+
   return (
     <div className={`min-h-screen font-sans pb-32 ${isDark ? 'bg-slate-950 text-white' : 'bg-slate-50 text-slate-800'}`}>
       <nav className={`p-4 flex justify-between items-center sticky top-0 z-40 border-b shadow-sm ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-100'}`}>
@@ -936,10 +938,20 @@ const ParentDashboard = ({ profile, user }) => {
                     {s.level && isPet && <div className="flex items-center gap-2 bg-[#E0720F] text-white px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest w-fit mt-1">NIV {s.level} 🐾</div>}
                   </div>
                   <div className={`w-28 h-28 rounded-[2.5rem] mb-6 overflow-hidden border-4 shadow-xl ring-4 group-hover/card:scale-110 transition-transform duration-500 ${isDark ? 'bg-slate-800 border-slate-700 ring-slate-900' : 'bg-slate-50 border-white ring-slate-50/50'}`}>
-                      <UserAvatar photoURL={s.photoURL} />
+                      <UserAvatar photoURL={getSPhoto(s)} />
                   </div>
                   <h4 className={`font-black text-4xl font-sans mb-1 leading-none tracking-tighter text-left ${isDark ? 'text-white' : 'text-slate-800'}`}>{s.name}</h4>
                   <div className="flex items-center gap-3 text-slate-400 mb-6"><RatingStars rating={s.rating || 5} size={18}/><span className={`text-[10px] font-black uppercase px-2 py-0.5 rounded-lg border ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-slate-50 border-slate-100'}`}>{s.city}</span></div>
+                  
+                  {/* --- AJOUT BADGES DE COMPÉTENCES ICI --- */}
+                  {s.skills && (
+                     <div className="flex flex-wrap gap-1 mb-4">
+                        {s.skills.map((skill, i) => (
+                           <span key={i} className="text-[8px] font-bold uppercase bg-slate-100 text-slate-500 px-2 py-1 rounded-lg border">{skill}</span>
+                        ))}
+                     </div>
+                  )}
+
                   <p className={`italic mb-8 leading-relaxed text-sm flex-1 line-clamp-3 text-left ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>"{s.bio || "..."}"</p>
                   <div className={`flex justify-between items-center pt-8 border-t mt-auto ${isDark ? 'border-slate-800' : 'border-slate-50'}`}>
                     <span className="text-3xl font-black text-[#E64545] font-sans">{s.price || 0}€<span className="text-[10px] text-slate-400 ml-1">/H</span></span>
@@ -988,7 +1000,7 @@ const ParentDashboard = ({ profile, user }) => {
             <div className="flex justify-between items-start">
               <div className="flex gap-8 items-center text-left">
                  <div className="w-28 h-28 rounded-[2.5rem] overflow-hidden border-4 shadow-2xl border-white shadow-slate-200">
-                     <UserAvatar photoURL={selectedSitter.photoURL} />
+                     <UserAvatar photoURL={getSPhoto(selectedSitter)} />
                  </div>
                  <div className="space-y-1"><h3 className="text-4xl font-black tracking-tighter font-sans leading-none">{selectedSitter.name}</h3><RatingStars rating={selectedSitter.rating || 5} size={20}/></div>
               </div>
@@ -1000,6 +1012,15 @@ const ParentDashboard = ({ profile, user }) => {
                     <div className="flex justify-between items-center"><span className="font-black text-slate-500 text-[11px] uppercase tracking-widest italic">Visites</span><span className="font-black uppercase">{selectedSitter.views || 0} 👀</span></div>
                     {selectedSitter.level && !isPet && <div className="flex justify-between items-center"><span className="font-black text-slate-500 text-[11px] uppercase tracking-widest italic">Niveau</span><span className="font-black uppercase text-[#E0720F]">NIV {selectedSitter.level} 👑</span></div>}
                     {selectedSitter.level && isPet && <div className="flex justify-between items-center"><span className="font-black text-slate-500 text-[11px] uppercase tracking-widest italic">Niveau</span><span className="font-black uppercase text-[#E0720F]">NIV {selectedSitter.level} 🐾</span></div>}
+                    
+                    {/* LISTE COMPETENCES DANS PROFIL COMPLET */}
+                    {selectedSitter.skills && (
+                        <div className="flex flex-wrap gap-2 mt-4 pt-4 border-t border-slate-100">
+                            {selectedSitter.skills.map((skill, i) => (
+                                <span key={i} className="text-[10px] font-bold uppercase bg-slate-100 text-slate-600 px-3 py-1.5 rounded-xl border flex items-center gap-1">✨ {skill}</span>
+                            ))}
+                        </div>
+                    )}
                 </div>
                 {sitterReviews.length > 0 && (
                     <div className="space-y-4">
@@ -1055,6 +1076,10 @@ const SitterDashboard = ({ user, profile }) => {
   const [city, setCity] = useState("");
   const [level, setLevel] = useState(profile?.level || "1");
   const [hasCar, setHasCar] = useState(false);
+  
+  // --- NOUVEAU : GESTION DES COMPETENCES ---
+  const [skills, setSkills] = useState([]); // Tableau des compétences sélectionnées
+
   const [loading, setLoading] = useState(false);
   const [activeTab, setActiveTab] = useState("profile");
   const [offers, setOffers] = useState([]);
@@ -1066,7 +1091,11 @@ const SitterDashboard = ({ user, profile }) => {
 
   const isPet = profile.serviceType === 'pet';
 
-  // FONCTION POUR BASCULER ENTRE ENFANT ET ANIMAL
+  // LISTE DES COMPÉTENCES DISPONIBLES (Selon Mode)
+  const AVAILABLE_SKILLS = isPet 
+    ? ["🚗 Véhiculé", "💊 Soins", "🏃 Sportif", "🏠 Jardin Clos", "✂️ Toilettage", "🎓 Éducation"]
+    : ["🚗 Permis B", "⛑️ PSC1", "🇬🇧 Anglais", "📚 Devoirs", "🎨 Créatif", "🍳 Cuisine"];
+
   const toggleServiceType = async () => {
       const newType = isPet ? 'baby' : 'pet';
       await updateDoc(doc(db, 'artifacts', appId, 'users', user.uid, 'settings', 'profile'), { serviceType: newType });
@@ -1078,6 +1107,7 @@ const SitterDashboard = ({ user, profile }) => {
       if (snap.exists()) {
         const d = snap.data(); setBio(d.bio || ""); setPrice(d.price || ""); setBirthDate(d.birthDate || ""); setCity(d.city || ""); setCvName(d.cvName || ""); setViews(d.views || 0); setHasCar(d.hasCar || false);
         if (d.level) setLevel(d.level);
+        if (d.skills) setSkills(d.skills); // Chargement des compétences
         if (d.availability) setAvailability(d.availability);
       }
     });
@@ -1096,7 +1126,6 @@ const SitterDashboard = ({ user, profile }) => {
   }, [user.uid, isDark]);
 
   const totalEarnings = useMemo(() => {
-      // On calcule tout ce qui n'est pas "en attente" ou "refusé"
       return offers
         .filter(o => ['accepted', 'paid_held', 'completed', 'reviewed'].includes(o.status))
         .reduce((acc, o) => acc + ((parseFloat(o.price) || 0) * (parseFloat(o.hours) || 0)), 0);
@@ -1111,10 +1140,14 @@ const SitterDashboard = ({ user, profile }) => {
 
   const unreadCount = offers.filter(o => o.hasUnread && o.lastSenderId !== user.uid).length;
 
+  const toggleSkill = (skill) => {
+     if (skills.includes(skill)) setSkills(skills.filter(s => s !== skill));
+     else setSkills([...skills, skill]);
+  };
+
   const handleSave = async () => {
     if (!bio || !price || !city || !birthDate) return alert("Champs requis : Bio, Tarif, Ville, Naissance.");
     
-    // VERIFICATION AGE < 16 ANS
     const age = calculateAge(birthDate);
     if (age < 16) return alert("Désolé, vous devez avoir au moins 16 ans pour vous inscrire comme Baby-sitter.");
 
@@ -1122,7 +1155,7 @@ const SitterDashboard = ({ user, profile }) => {
     try {
       await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'sitters', user.uid), {
         name: profile.name, serviceType: profile.serviceType, photoURL: profile.photoURL || "", views,
-        phone: profile.phone || "", bio: bio.trim(), price, birthDate, availability, cvName, hasCV: !!cvName, city, rating: 5, uid: user.uid, level, hasCar, updatedAt: new Date().toISOString()
+        phone: profile.phone || "", bio: bio.trim(), price, birthDate, availability, cvName, hasCV: !!cvName, city, rating: 5, uid: user.uid, level, hasCar, skills, updatedAt: new Date().toISOString()
       });
       setSaveStatus("PUBLIÉ ! ✨"); setTimeout(() => setSaveStatus(""), 4000);
     } catch(e) { console.error(e); } finally { setLoading(false); }
@@ -1138,22 +1171,16 @@ const SitterDashboard = ({ user, profile }) => {
   if (activeChat) return <ChatRoom offer={activeChat} currentUser={user} onBack={() => setActiveChat(null)} isDark={isDark} />;
   if (activeTab === "settings") return <SettingsView user={user} profile={profile} onBack={() => setActiveTab("profile")} isDark={isDark} toggleDark={() => setIsDark(!isDark)} />;
 
+  const myP = (profile.useCustomPhoto && profile.photoURL) ? profile.photoURL : `https://api.dicebear.com/7.x/${profile.avatarStyle || 'avataaars'}/svg?seed=${profile.name}`;
+
   return (
     <div className={`min-h-screen font-sans pb-32 animate-in fade-in duration-500 ${isDark ? 'bg-slate-950 text-white' : 'bg-slate-50 text-slate-800'}`}>
       <nav className={`p-4 flex justify-between items-center sticky top-0 z-40 border-b shadow-sm ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-100'}`}>
         <div className="flex items-center gap-2"><SitFinderLogo className="w-8 h-8" glow={false} /><span className="font-black italic text-lg md:text-2xl uppercase tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-[#E64545] to-[#E0720F]">BABYKEEPER</span></div>
         <div className="flex items-center gap-1.5">
-          {/* BOUTON SWITCHER D'UNIVERS */}
           <ModeSwitcher currentRole={profile.role} currentService={profile.serviceType || 'baby'} uid={user.uid} />
-
-          <button onClick={() => setActiveTab("premium")} className={`p-2 rounded-2xl transition-all shadow-md bg-gradient-to-br from-yellow-400 to-orange-500 text-white animate-pulse`}>
-              <Crown size={20} fill="white" />
-          </button>
-          
-          <div className="relative p-2 text-slate-400">
-              <Bell size={20}/>
-              {unreadCount > 0 && <span className="absolute top-1 right-1 w-4 h-4 bg-[#E64545] text-white text-[8px] font-black rounded-full flex items-center justify-center border-2 border-white animate-bounce">{unreadCount}</span>}
-          </div>
+          <button onClick={() => setActiveTab("premium")} className={`p-2 rounded-2xl transition-all shadow-md bg-gradient-to-br from-yellow-400 to-orange-500 text-white animate-pulse`}><Crown size={20} fill="white" /></button>
+          <div className="relative p-2 text-slate-400"><Bell size={20}/>{unreadCount > 0 && <span className="absolute top-1 right-1 w-4 h-4 bg-[#E64545] text-white text-[8px] font-black rounded-full flex items-center justify-center border-2 border-white animate-bounce">{unreadCount}</span>}</div>
           <button onClick={() => setActiveTab("settings")} className={`p-2 rounded-2xl transition-all ${isDark ? 'bg-slate-800 text-[#E0720F]' : 'bg-slate-50 text-slate-300'}`}><Settings size={20} /></button>
           <button onClick={() => signOut(auth)} className={`p-2 rounded-2xl transition-all ${isDark ? 'bg-slate-800 text-slate-400' : 'bg-slate-50 text-slate-300'}`}><LogOut size={20} /></button>
         </div>
@@ -1186,6 +1213,23 @@ const SitterDashboard = ({ user, profile }) => {
                 </div>
                 <div className="space-y-3 text-left"><label className="text-[11px] font-black text-blue-300 uppercase tracking-widest ml-4 font-sans italic">Naissance</label><input type="date" className={`w-full p-8 rounded-[2.5rem] font-bold outline-none shadow-inner border border-transparent ${isDark ? 'bg-slate-800 text-white' : 'bg-slate-50 text-slate-800'}`} value={birthDate} onChange={(e) => setBirthDate(e.target.value)} /></div>
                 <div className="space-y-3 text-left"><label className="text-[11px] font-black text-blue-300 uppercase tracking-widest ml-4 font-sans italic">Ma Bio Professionnelle</label><textarea placeholder="Expériences..." className={`w-full p-10 rounded-[3.5rem] h-64 font-bold outline-none shadow-inner resize-none leading-relaxed ${isDark ? 'bg-slate-800 text-white' : 'bg-slate-50 text-slate-800'}`} value={bio} onChange={(e) => setBio(e.target.value)} /></div>
+                
+                {/* --- SELECTION DES BADGES DE COMPETENCES --- */}
+                <div className="space-y-3 text-left">
+                    <label className="text-[11px] font-black text-blue-300 uppercase tracking-widest ml-4 font-sans italic">Mes Compétences & Atouts</label>
+                    <div className="flex flex-wrap gap-2">
+                        {AVAILABLE_SKILLS.map((skill, index) => (
+                            <button 
+                                key={index}
+                                onClick={() => toggleSkill(skill)}
+                                className={`px-4 py-3 rounded-2xl font-black text-[10px] uppercase transition-all border-2 ${skills.includes(skill) ? 'bg-[#E64545] text-white border-[#E64545] shadow-lg scale-105' : 'bg-transparent text-slate-400 border-slate-100 hover:border-slate-300'}`}
+                            >
+                                {skill}
+                            </button>
+                        ))}
+                    </div>
+                </div>
+
                 <div className="space-y-3 text-left"><label className="text-[11px] font-black text-blue-300 uppercase tracking-widest ml-4 font-sans italic">Mon CV</label><input type="file" id="cv-f" className="hidden" onChange={(e) => setCvName(e.target.files[0]?.name || "")} accept=".pdf,image/*" /><label htmlFor="cv-f" className={`w-full flex items-center justify-between p-8 border-2 border-dashed rounded-[2.5rem] cursor-pointer hover:bg-emerald-500/5 transition-all shadow-inner ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-slate-50 border-slate-200'}`}><div className="flex items-center gap-6"><div className="p-5 bg-white rounded-3xl text-blue-400 shadow-md transition-transform group-hover:scale-110"><FileUp size={32}/></div><p className={`text-sm font-black ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>{cvName || "Joindre CV"}</p></div>{cvName && <CheckCircle2 className="text-emerald-500" size={32}/>}</label></div>
                 
                 <div className="space-y-3 text-left">
