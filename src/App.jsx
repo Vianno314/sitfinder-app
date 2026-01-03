@@ -31,7 +31,7 @@ import {
   Baby, LogOut, Save, Search, Loader2, AlertCircle, ShieldCheck, 
   Euro, User, Mail, Lock, ChevronRight, Sparkles, Heart, Filter, Calendar,
   Clock, UserPlus, Cake, FileUp, FileText, CheckCircle2, MessageSquare, 
-  Send, X, Check, ArrowLeft, MessageCircle, PartyPopper, Star, MapPin, Camera, SlidersHorizontal, Settings, KeyRound, Phone, Trash2, Palette, Image as ImageIcon, Share2, Quote, TrendingUp, Zap, Trophy, Languages, EyeOff, Moon, Sun, Bell, Flag, Eye, Wallet, Car, CreditCard, LockKeyhole, Crown, Info, Dog, Cat, Bone, PawPrint
+  Send, X, Check, ArrowLeft, MessageCircle, PartyPopper, Star, MapPin, Camera, SlidersHorizontal, Settings, KeyRound, Phone, Trash2, Palette, Image as ImageIcon, Share2, Quote, TrendingUp, Zap, Trophy, Languages, EyeOff, Moon, Sun, Bell, Flag, Eye, Wallet, Car, CreditCard, LockKeyhole, Crown, Info, Dog, Cat, Bone, PawPrint, Repeat, RefreshCw
 } from "lucide-react";
 
 // ==========================================
@@ -121,7 +121,56 @@ const UserAvatar = ({ photoURL, size = "w-full h-full", className = "" }) => {
 };
 
 // ==========================================
-// 3. COMPOSANT PARAMÈTRES
+// 3. COMPOSANTS GLOBAUX (SWITCHER)
+// ==========================================
+
+// --- NOUVEAU : LE BOUTON MAGIQUE POUR CHANGER DE MODE ---
+const ModeSwitcher = ({ currentRole, currentService, uid }) => {
+    const [isOpen, setIsOpen] = useState(false);
+
+    const switchMode = async (role, service) => {
+        setIsOpen(false);
+        // On met à jour le profil dans Firebase, l'appli se rechargera toute seule grâce aux listeners
+        await updateDoc(doc(db, 'artifacts', appId, 'users', uid, 'settings', 'profile'), { 
+            role: role, 
+            serviceType: service 
+        });
+    };
+
+    return (
+        <div className="relative z-50">
+            <button onClick={() => setIsOpen(!isOpen)} className="p-2 rounded-2xl bg-slate-100 text-slate-600 border border-slate-200 shadow-sm flex items-center gap-2 active:scale-95 transition-all">
+                <RefreshCw size={18} className={isOpen ? "animate-spin" : ""} />
+                <span className="text-[10px] font-black uppercase hidden md:inline">Mode</span>
+            </button>
+            
+            {isOpen && (
+                <div className="absolute top-12 right-0 w-48 bg-white rounded-2xl shadow-2xl border border-slate-100 p-2 flex flex-col gap-1 animate-in fade-in slide-in-from-top-2">
+                    <div className="text-[9px] font-black uppercase text-slate-300 px-2 py-1">Enfants</div>
+                    <button onClick={() => switchMode('parent', 'baby')} className={`flex items-center gap-3 p-3 rounded-xl text-left transition-colors ${currentRole === 'parent' && currentService === 'baby' ? 'bg-[#E64545] text-white' : 'hover:bg-slate-50 text-slate-600'}`}>
+                        <Baby size={16} /> <span className="text-xs font-bold">Parent</span>
+                    </button>
+                    <button onClick={() => switchMode('sitter', 'baby')} className={`flex items-center gap-3 p-3 rounded-xl text-left transition-colors ${currentRole === 'sitter' && currentService === 'baby' ? 'bg-[#E0720F] text-white' : 'hover:bg-slate-50 text-slate-600'}`}>
+                        <User size={16} /> <span className="text-xs font-bold">Baby-Sitter</span>
+                    </button>
+                    
+                    <div className="h-px bg-slate-100 my-1"></div>
+                    
+                    <div className="text-[9px] font-black uppercase text-slate-300 px-2 py-1">Animaux</div>
+                    <button onClick={() => switchMode('parent', 'pet')} className={`flex items-center gap-3 p-3 rounded-xl text-left transition-colors ${currentRole === 'parent' && currentService === 'pet' ? 'bg-[#E64545] text-white' : 'hover:bg-slate-50 text-slate-600'}`}>
+                        <Dog size={16} /> <span className="text-xs font-bold">Maître</span>
+                    </button>
+                    <button onClick={() => switchMode('sitter', 'pet')} className={`flex items-center gap-3 p-3 rounded-xl text-left transition-colors ${currentRole === 'sitter' && currentService === 'pet' ? 'bg-[#E0720F] text-white' : 'hover:bg-slate-50 text-slate-600'}`}>
+                        <PawPrint size={16} /> <span className="text-xs font-bold">Pet-Sitter</span>
+                    </button>
+                </div>
+            )}
+        </div>
+    );
+};
+
+// ==========================================
+// 4. COMPOSANT PARAMÈTRES
 // ==========================================
 
 const SettingsView = ({ user, profile, onBack, isDark, toggleDark }) => {
@@ -137,9 +186,8 @@ const SettingsView = ({ user, profile, onBack, isDark, toggleDark }) => {
       setLoading(true);
       try {
         await deleteDoc(doc(db, 'artifacts', appId, 'users', user.uid, 'settings', 'profile'));
-        if (profile.role === 'sitter') {
-          await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'sitters', user.uid));
-        }
+        // Nettoyage des deux types de profils potentiels
+        await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'sitters', user.uid));
         await deleteUser(auth.currentUser);
         alert("Compte supprimé.");
       } catch (err) { alert("Erreur suppression."); } finally { setLoading(false); }
@@ -161,8 +209,14 @@ const SettingsView = ({ user, profile, onBack, isDark, toggleDark }) => {
     try {
       const updateData = { name: newName, phone, photoURL: customPhoto, privateMode };
       await updateDoc(doc(db, 'artifacts', appId, 'users', user.uid, 'settings', 'profile'), updateData);
+      // Mise à jour du profil public si le user est sitter (peu importe le mode)
       if (profile.role === 'sitter') {
-        await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'sitters', user.uid), { name: newName, photoURL: customPhoto, phone });
+        await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'sitters', user.uid), { 
+            name: newName, 
+            photoURL: customPhoto, 
+            phone,
+            serviceType: profile.serviceType // On garde le type de service actuel
+        }, { merge: true });
       }
       setStatus({ type: "success", msg: "Enregistré !" });
     } catch (err) { setStatus({ type: "error", msg: "Erreur..." }); }
@@ -207,7 +261,7 @@ const SettingsView = ({ user, profile, onBack, isDark, toggleDark }) => {
 };
 
 // ==========================================
-// 3 BIS. COMPOSANT PREMIUM (3€)
+// 5. COMPOSANT PREMIUM (3€)
 // ==========================================
 
 const PremiumView = ({ onBack, isDark }) => {
@@ -238,12 +292,6 @@ const PremiumView = ({ onBack, isDark }) => {
                  </div>
              </div>
              <div className="p-8 space-y-6">
-                 <ul className="space-y-4">
-                     <li className="flex items-center gap-3"><CheckCircle2 className="text-green-500" size={24}/><span className="font-bold text-sm">Réservations ILLIMITÉES</span></li>
-                     <li className="flex items-center gap-3"><CheckCircle2 className="text-green-500" size={24}/><span className="font-bold text-sm">Accès aux numéros directs</span></li>
-                     <li className="flex items-center gap-3"><CheckCircle2 className="text-green-500" size={24}/><span className="font-bold text-sm">Badge "Parent Vérifié" ✅</span></li>
-                     <li className="flex items-center gap-3"><CheckCircle2 className="text-green-500" size={24}/><span className="font-bold text-sm">Support Prioritaire 24/7</span></li>
-                 </ul>
                  <a 
                     href={STRIPE_LINK}
                     target="_self" 
@@ -260,7 +308,7 @@ const PremiumView = ({ onBack, isDark }) => {
 };
 
 // ==========================================
-// 4. MESSAGERIE & CHAT (DIRECT PAIEMENT)
+// 6. MESSAGERIE & CHAT
 // ==========================================
 
 const ChatRoom = ({ offer, currentUser, onBack, isDark }) => {
@@ -270,31 +318,24 @@ const ChatRoom = ({ offer, currentUser, onBack, isDark }) => {
   const [showReview, setShowReview] = useState(false);
   const [reviewRating, setReviewRating] = useState(5);
   const [reviewText, setReviewText] = useState("");
-  const [translations, setTranslations] = useState({});
+  const [liveOffer, setLiveOffer] = useState(offer);
   const chatEndRef = useRef(null);
   
-  // State local pour l'offre en temps réel
-  const [liveOffer, setLiveOffer] = useState(offer);
-
   const scrollToBottom = () => chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
 
   useEffect(() => {
-    // 1. Écouteur des messages
-    const q = collection(db, 'artifacts', appId, 'public', 'data', 'offers', offer.id, 'messages');
-    const unsubMsg = onSnapshot(q, (snap) => {
+    const unsubMsg = onSnapshot(collection(db, 'artifacts', appId, 'public', 'data', 'offers', offer.id, 'messages'), (snap) => {
       const msgs = snap.docs.map(d => ({ id: d.id, ...d.data() })).sort((a, b) => (a.createdAt?.seconds || 0) - (b.createdAt?.seconds || 0));
       setMessages(msgs);
       setTimeout(() => chatEndRef.current?.scrollIntoView({ behavior: "smooth" }), 100);
     });
 
-    // 2. Écouteur du statut de l'offre
     const unsubOffer = onSnapshot(doc(db, 'artifacts', appId, 'public', 'data', 'offers', offer.id), (docSnap) => {
         if (docSnap.exists()) {
             setLiveOffer({ id: docSnap.id, ...docSnap.data() });
         }
     });
     
-    // 3. Récupération contact
     const getContact = async () => {
         const otherId = currentUser.uid === offer.sitterId ? offer.parentId : offer.sitterId;
         try {
@@ -344,10 +385,6 @@ const ChatRoom = ({ offer, currentUser, onBack, isDark }) => {
     } catch (e) { console.error(e); }
   };
 
-  const translateMsg = (id, text) => {
-    setTranslations(prev => ({ ...prev, [id]: "Traduction (FR) : " + text }));
-  };
-
   const updateOfferStatus = async (status) => {
     try {
       await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'offers', offer.id), { status });
@@ -359,7 +396,6 @@ const ChatRoom = ({ offer, currentUser, onBack, isDark }) => {
     } catch (e) { console.error(e); }
   };
 
-  // CONFIRMER LA FIN (PAS DE PAIEMENT IN-APP)
   const confirmService = async () => {
     if(window.confirm("La garde est terminée ? En validant, vous pourrez noter le Baby-sitter.")) {
         await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'offers', offer.id), { 
@@ -393,14 +429,11 @@ const ChatRoom = ({ offer, currentUser, onBack, isDark }) => {
         </div>
         <div className="flex gap-2">
             <button onClick={handleReport} className="p-3 text-slate-300 hover:text-red-500 transition-colors"><Flag size={18}/></button>
-            {/* Bouton avis si fini */}
             {liveOffer.status === 'completed' && currentUser.uid === liveOffer.parentId && <button onClick={() => setShowReview(true)} className="p-3 bg-[#E0720F]/20 text-[#E0720F] rounded-xl"><Star size={18}/></button>}
-            {/* Téléphone seulement si accepté ou fini */}
             {(liveOffer.status === 'accepted' || liveOffer.status === 'completed' || liveOffer.status === 'reviewed') && otherUserPhone && <a href={`tel:${otherUserPhone}`} className="p-3 bg-[#E64545] text-white rounded-xl"><Phone size={18}/></a>}
         </div>
       </div>
 
-      {/* --- BANDEAU INFORMATION PAIEMENT DIRECT --- */}
       {liveOffer.status === 'accepted' && (
           <div className="p-4 bg-blue-50 border-b border-blue-100 flex flex-col gap-2 items-center text-center">
               <div className="flex items-center gap-2 text-blue-600 font-black text-xs uppercase tracking-widest">
@@ -463,7 +496,7 @@ const ChatRoom = ({ offer, currentUser, onBack, isDark }) => {
 };
 
 // ==========================================
-// 5. AUTH (MODIFIÉ : SELECTEUR D'UNIVERS)
+// 7. AUTH SCREEN
 // ==========================================
 
 const AuthScreen = () => {
@@ -472,9 +505,7 @@ const AuthScreen = () => {
   const [password, setPassword] = useState("");
   const [name, setName] = useState("");
   const [role, setRole] = useState("parent");
-  // NOUVEAU : Service Type (baby ou pet)
   const [serviceType, setServiceType] = useState("baby");
-  
   const [level, setLevel] = useState("1");
   const [remember, setRemember] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -511,7 +542,7 @@ const AuthScreen = () => {
       } else { await signInWithEmailAndPassword(auth, email, password); }
     } catch (err) { 
         if(err.code === 'auth/email-already-in-use') {
-            alert("Compte existant ! Connectez-vous, puis changez de mode (Enfant/Animal) dans l'appli.");
+            alert("Ce compte existe déjà. Connectez-vous et changez de mode dans l'application avec le bouton 'Mode' 🔄.");
             setIsRegister(false);
         } else {
             alert("Email ou mot de passe invalide."); 
@@ -528,8 +559,7 @@ const AuthScreen = () => {
           <h2 className="text-4xl font-black italic uppercase tracking-tighter leading-none text-transparent bg-clip-text bg-gradient-to-r from-[#E64545] to-[#E0720F]">BABYKEEPER</h2>
           <p className="text-[#E64545] text-sm font-bold uppercase tracking-widest mt-2">La recherche en toute confiance</p>
         </div>
-        
-        {/* SELECTEUR D'UNIVERS */}
+
         {isRegister && (
             <div className="flex gap-4 mb-6">
                 <button type="button" onClick={() => setServiceType("baby")} className={`flex-1 py-4 rounded-2xl font-black text-xs uppercase flex flex-col items-center gap-2 border-2 transition-all ${serviceType === "baby" ? "border-[#E64545] bg-[#E64545]/5 text-[#E64545]" : "border-slate-100 text-slate-400"}`}>
@@ -559,16 +589,14 @@ const AuthScreen = () => {
               <button type="button" onClick={() => setRole("parent")} className={`py-3 rounded-xl font-black text-[10px] ${role === "parent" ? "bg-white shadow text-[#E64545]" : "text-slate-400"}`}>{serviceType === 'baby' ? 'PARENT' : 'MAÎTRE'}</button>
               <button type="button" onClick={() => setRole("sitter")} className={`py-3 rounded-xl font-black text-[10px] ${role === "sitter" ? "bg-white shadow text-[#E0720F]" : "text-slate-400"}`}>SITTER</button>
             </div>
-            {/* NIVEAUX POUR BABY SITTER */}
-            {role === "sitter" && serviceType === "baby" && (
+            {role === "sitter" && serviceType === 'baby' && (
               <div className="grid grid-cols-3 gap-1 mt-2">
                 <button type="button" onClick={() => setLevel("1")} className={`py-2 rounded-lg text-[10px] font-black uppercase transition-all ${level === "1" ? "bg-slate-900 text-white" : "bg-slate-200 text-slate-500"}`}>NIV 1 🍼<br/><span className="text-[8px] opacity-70 font-normal">Garde+Repas</span></button>
                 <button type="button" onClick={() => setLevel("2")} className={`py-2 rounded-lg text-[10px] font-black uppercase transition-all ${level === "2" ? "bg-slate-900 text-white" : "bg-slate-200 text-slate-500"}`}>NIV 2 🧸<br/><span className="text-[8px] opacity-70 font-normal">+ Change</span></button>
                 <button type="button" onClick={() => setLevel("3")} className={`py-2 rounded-lg text-[10px] font-black uppercase transition-all ${level === "3" ? "bg-slate-900 text-white" : "bg-slate-200 text-slate-500"}`}>NIV 3 👑<br/><span className="text-[8px] opacity-70 font-normal">+ Bain/Soins</span></button>
               </div>
             )}
-            {/* NIVEAUX POUR PET SITTER */}
-            {role === "sitter" && serviceType === "pet" && (
+             {role === "sitter" && serviceType === 'pet' && (
               <div className="grid grid-cols-3 gap-1 mt-2">
                 <button type="button" onClick={() => setLevel("1")} className={`py-2 rounded-lg text-[10px] font-black uppercase transition-all ${level === "1" ? "bg-slate-900 text-white" : "bg-slate-200 text-slate-500"}`}>NIV 1 🐕<br/><span className="text-[8px] opacity-70 font-normal">Promenade</span></button>
                 <button type="button" onClick={() => setLevel("2")} className={`py-2 rounded-lg text-[10px] font-black uppercase transition-all ${level === "2" ? "bg-slate-900 text-white" : "bg-slate-200 text-slate-500"}`}>NIV 2 🥘<br/><span className="text-[8px] opacity-70 font-normal">Visite/Repas</span></button>
@@ -591,7 +619,7 @@ const AuthScreen = () => {
   );
 };
 
-const CompleteProfileScreen = ({ uid, serviceType }) => {
+const CompleteProfileScreen = ({ uid }) => {
   const [name, setName] = useState("");
   const [role, setRole] = useState("parent");
   const [level, setLevel] = useState("1");
@@ -614,7 +642,7 @@ const CompleteProfileScreen = ({ uid, serviceType }) => {
     setLoading(true);
     try {
         await setDoc(doc(db, 'artifacts', appId, 'users', uid, 'settings', 'profile'), {
-            uid, name: name.trim(), role, serviceType, level: role === 'sitter' ? level : null, photoURL: photo, favorites: [], createdAt: new Date().toISOString()
+            uid, name: name.trim(), role, level: role === 'sitter' ? level : null, photoURL: photo, favorites: [], createdAt: new Date().toISOString()
         });
     } catch(e) { console.error(e); }
     setLoading(false);
@@ -638,21 +666,14 @@ const CompleteProfileScreen = ({ uid, serviceType }) => {
 
         <input placeholder="Ton Prénom" className="w-full p-6 bg-slate-50 rounded-3xl outline-none font-bold shadow-inner" value={name} onChange={(e) => setName(e.target.value)} />
         <div className="grid grid-cols-2 gap-2 p-1 bg-slate-100 rounded-2xl shadow-sm">
-          <button onClick={() => setRole("parent")} className={`py-4 rounded-xl font-black text-[10px] ${role === "parent" ? "bg-white shadow text-[#E64545]" : "text-slate-400"}`}>{serviceType === 'baby' ? 'PARENT' : 'MAÎTRE'}</button>
+          <button onClick={() => setRole("parent")} className={`py-4 rounded-xl font-black text-[10px] ${role === "parent" ? "bg-white shadow text-[#E64545]" : "text-slate-400"}`}>PARENT</button>
           <button onClick={() => setRole("sitter")} className={`py-4 rounded-xl font-black text-[10px] ${role === "sitter" ? "bg-white shadow text-[#E0720F]" : "text-slate-400"}`}>SITTER</button>
         </div>
-        {role === "sitter" && serviceType === "baby" && (
+        {role === "sitter" && (
               <div className="grid grid-cols-3 gap-1 mt-2">
                 <button type="button" onClick={() => setLevel("1")} className={`py-2 rounded-lg text-[10px] font-black uppercase transition-all ${level === "1" ? "bg-slate-900 text-white" : "bg-slate-200 text-slate-500"}`}>NIV 1 🍼</button>
                 <button type="button" onClick={() => setLevel("2")} className={`py-2 rounded-lg text-[10px] font-black uppercase transition-all ${level === "2" ? "bg-slate-900 text-white" : "bg-slate-200 text-slate-500"}`}>NIV 2 🧸</button>
                 <button type="button" onClick={() => setLevel("3")} className={`py-2 rounded-lg text-[10px] font-black uppercase transition-all ${level === "3" ? "bg-slate-900 text-white" : "bg-slate-200 text-slate-500"}`}>NIV 3 👑</button>
-              </div>
-        )}
-        {role === "sitter" && serviceType === "pet" && (
-              <div className="grid grid-cols-3 gap-1 mt-2">
-                <button type="button" onClick={() => setLevel("1")} className={`py-2 rounded-lg text-[10px] font-black uppercase transition-all ${level === "1" ? "bg-slate-900 text-white" : "bg-slate-200 text-slate-500"}`}>NIV 1 🐕</button>
-                <button type="button" onClick={() => setLevel("2")} className={`py-2 rounded-lg text-[10px] font-black uppercase transition-all ${level === "2" ? "bg-slate-900 text-white" : "bg-slate-200 text-slate-500"}`}>NIV 2 🥘</button>
-                <button type="button" onClick={() => setLevel("3")} className={`py-2 rounded-lg text-[10px] font-black uppercase transition-all ${level === "3" ? "bg-slate-900 text-white" : "bg-slate-200 text-slate-500"}`}>NIV 3 🏠</button>
               </div>
         )}
         <button onClick={finish} disabled={loading || !photo} className={`w-full py-6 rounded-[2rem] font-black shadow-lg uppercase transition-all active:scale-95 ${!photo ? 'bg-slate-300 text-slate-500 cursor-not-allowed' : 'bg-[#E64545] text-white hover:brightness-110'}`}>VALIDER</button>
@@ -662,7 +683,7 @@ const CompleteProfileScreen = ({ uid, serviceType }) => {
 };
 
 // ==========================================
-// 6. DASHBOARD PARENT (MULTI-UNIVERS & SWITCH)
+// 8. DASHBOARD PARENT (MODIFIÉ AVEC LOGIQUE PREMIUM & AUTO-ACTIVATION & SWITCH)
 // ==========================================
 
 const ParentDashboard = ({ profile, user }) => {
@@ -680,27 +701,26 @@ const ParentDashboard = ({ profile, user }) => {
   const [showFilters, setShowFilters] = useState(false);
   const [sitterReviews, setSitterReviews] = useState([]);
   const [isDark, setIsDark] = useState(localStorage.getItem('dark') === 'true');
-
+  
+  // DÉTECTION DU MODE ACTUEL (ENFANT OU ANIMAL)
   const isPet = profile.serviceType === 'pet';
 
-  // FONCTION POUR BASCULER ENTRE ENFANT ET ANIMAL
-  const toggleServiceType = async () => {
-      const newType = isPet ? 'baby' : 'pet';
-      await updateDoc(doc(db, 'artifacts', appId, 'users', user.uid, 'settings', 'profile'), { serviceType: newType });
-  };
-
+  // --- AUTO-ACTIVATION PREMIUM VIA URL ---
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     if (params.get('success') === 'true') {
         updateDoc(doc(db, 'artifacts', appId, 'users', user.uid, 'settings', 'profile'), { isPremium: true })
-        .then(() => { alert("Premium activé 🌟"); window.history.replaceState({}, document.title, window.location.pathname); });
+        .then(() => {
+            alert("Félicitations ! Votre abonnement Premium est activé 🌟");
+            window.history.replaceState({}, document.title, window.location.pathname);
+        });
     }
-  }, [user.uid]);
+  }, [user.uid]); 
 
   useEffect(() => {
     localStorage.setItem('dark', isDark);
     const unsubSitters = onSnapshot(collection(db, 'artifacts', appId, 'public', 'data', 'sitters'), (snap) => {
-      // FILTRE PAR UNIVERS (Baby ou Pet)
+      // ON FILTRE LES SITTERS SELON LE MODE ACTUEL (Enfant ou Animal)
       setSitters(snap.docs.map(d => ({ id: d.id, ...d.data() })).filter(s => s.serviceType === profile.serviceType));
       setLoading(false);
     });
@@ -712,7 +732,7 @@ const ParentDashboard = ({ profile, user }) => {
       setOffers(snap.docs.map(d => ({ id: d.id, ...d.data() })));
     });
     return () => { unsubSitters(); unsubOffers(); };
-  }, [user.uid, isDark, profile.serviceType]);
+  }, [user.uid, isDark, profile.serviceType]); // On recharge quand le serviceType change
 
   useEffect(() => {
       if (selectedSitter) {
@@ -754,7 +774,7 @@ const ParentDashboard = ({ profile, user }) => {
               return d > oneWeekAgo;
           });
           if (recentOffers.length >= 1) {
-              alert("🔒 Limite atteinte ! Passez Premium.");
+              alert("🔒 Limite gratuite atteinte ! Vous avez déjà réservé cette semaine. Passez Premium pour continuer.");
               setSelectedSitter(null); 
               setActiveTab("premium"); 
               return; 
@@ -765,11 +785,7 @@ const ParentDashboard = ({ profile, user }) => {
         parentId: user.uid, parentName: profile.name, sitterId: s.id, sitterName: s.name, price: p, hours: h, status: 'pending', createdAt: Timestamp.now(), lastMsg: offerText, lastMsgAt: Timestamp.now(), hasUnread: true, lastSenderId: user.uid
       });
       await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'offers', newOffer.id, 'messages'), {
-        text: `Bonjour ${s.name}, je souhaiterais réserver.`, 
-        senderId: user.uid, 
-        parentId: user.uid, 
-        sitterId: s.id,    
-        createdAt: Timestamp.now()
+        text: `Bonjour ${s.name}, je souhaiterais réserver une garde de ${h}H au prix de ${p}€/H.`, senderId: user.uid, parentId: user.uid, sitterId: s.id, createdAt: Timestamp.now()
       });
       setSelectedSitter(null); 
       setActiveTab("messages");
@@ -792,11 +808,9 @@ const ParentDashboard = ({ profile, user }) => {
       <nav className={`p-4 flex justify-between items-center sticky top-0 z-40 border-b shadow-sm ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-100'}`}>
         <div className="flex items-center gap-2"><SitFinderLogo className="w-8 h-8" glow={false} /><span className="font-black italic text-lg md:text-2xl uppercase tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-[#E64545] to-[#E0720F]">BABYKEEPER</span></div>
         <div className="flex items-center gap-1.5">
-          {/* BOUTON SWITCH UNIVERS */}
-          <button onClick={toggleServiceType} className={`p-2 rounded-2xl transition-all border shadow-sm flex items-center justify-center ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-100'}`}>
-              {isPet ? <Baby size={20} className="text-[#E64545]" /> : <Dog size={20} className="text-[#E0720F]" />}
-          </button>
-          
+          {/* BOUTON SWITCHER D'UNIVERS */}
+          <ModeSwitcher currentRole={profile.role} currentService={profile.serviceType || 'baby'} uid={user.uid} />
+
           <button onClick={() => setActiveTab("premium")} className={`p-2 rounded-2xl transition-all shadow-md bg-gradient-to-br from-yellow-400 to-orange-500 text-white animate-pulse`}>
               <Crown size={20} fill="white" />
           </button>
@@ -1000,15 +1014,9 @@ const SitterDashboard = ({ user, profile }) => {
       <nav className={`p-4 flex justify-between items-center sticky top-0 z-40 border-b shadow-sm ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-100'}`}>
         <div className="flex items-center gap-2"><SitFinderLogo className="w-8 h-8" glow={false} /><span className="font-black italic text-lg md:text-2xl uppercase tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-[#E64545] to-[#E0720F]">BABYKEEPER</span></div>
         <div className="flex items-center gap-1.5">
-          {/* BOUTON SWITCH UNIVERS */}
-          <button onClick={toggleServiceType} className={`p-2 rounded-2xl transition-all border shadow-sm flex items-center justify-center ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-100'}`}>
-              {isPet ? <Baby size={20} className="text-[#E64545]" /> : <Dog size={20} className="text-[#E0720F]" />}
-          </button>
+          {/* BOUTON SWITCHER D'UNIVERS */}
+          <ModeSwitcher currentRole={profile.role} currentService={profile.serviceType || 'baby'} uid={user.uid} />
 
-          <div className="relative p-2 text-slate-400">
-              <Bell size={20}/>
-              {unreadCount > 0 && <span className="absolute top-1 right-1 w-4 h-4 bg-[#E64545] text-white text-[8px] font-black rounded-full flex items-center justify-center border-2 border-white animate-bounce">{unreadCount}</span>}
-          </div>
           <button onClick={() => setActiveTab("settings")} className={`p-2 rounded-2xl transition-all ${isDark ? 'bg-slate-800 text-[#E0720F]' : 'bg-slate-50 text-slate-300'}`}><Settings size={20} /></button>
           <button onClick={() => signOut(auth)} className={`p-2 rounded-2xl transition-all ${isDark ? 'bg-slate-800 text-slate-400' : 'bg-slate-50 text-slate-300'}`}><LogOut size={20} /></button>
         </div>
