@@ -31,7 +31,7 @@ import {
   Baby, LogOut, Save, Search, Loader2, AlertCircle, ShieldCheck, 
   Euro, User, Mail, Lock, ChevronRight, Sparkles, Heart, Filter, Calendar,
   Clock, UserPlus, Cake, FileUp, FileText, CheckCircle2, MessageSquare, 
-  Send, X, Check, ArrowLeft, MessageCircle, PartyPopper, Star, MapPin, Camera, SlidersHorizontal, Settings, KeyRound, Phone, Trash2, Palette, Image as ImageIcon, Share2, Quote, TrendingUp, Zap, Trophy, Languages, EyeOff, Moon, Sun, Bell, Flag, Eye, Wallet, Car, CreditCard, LockKeyhole, Crown, Info, Dog, Cat, Bone, PawPrint, Repeat, RefreshCw
+  Send, X, Check, ArrowLeft, MessageCircle, PartyPopper, Star, MapPin, Camera, SlidersHorizontal, Settings, KeyRound, Phone, Trash2, Palette, Image as ImageIcon, Share2, Quote, TrendingUp, Zap, Trophy, Languages, EyeOff, Moon, Sun, Bell, Flag, Eye, Wallet, Car, CreditCard, LockKeyhole, Crown, Info, Dog, Cat, Bone, PawPrint, RefreshCw
 } from "lucide-react";
 
 // ==========================================
@@ -124,13 +124,12 @@ const UserAvatar = ({ photoURL, size = "w-full h-full", className = "" }) => {
 // 3. COMPOSANTS GLOBAUX (SWITCHER)
 // ==========================================
 
-// --- NOUVEAU : LE BOUTON MAGIQUE POUR CHANGER DE MODE ---
 const ModeSwitcher = ({ currentRole, currentService, uid }) => {
     const [isOpen, setIsOpen] = useState(false);
 
     const switchMode = async (role, service) => {
         setIsOpen(false);
-        // On met à jour le profil dans Firebase, l'appli se rechargera toute seule grâce aux listeners
+        // On met à jour le profil, l'appli se rechargera toute seule
         await updateDoc(doc(db, 'artifacts', appId, 'users', uid, 'settings', 'profile'), { 
             role: role, 
             serviceType: service 
@@ -146,22 +145,22 @@ const ModeSwitcher = ({ currentRole, currentService, uid }) => {
             
             {isOpen && (
                 <div className="absolute top-12 right-0 w-48 bg-white rounded-2xl shadow-2xl border border-slate-100 p-2 flex flex-col gap-1 animate-in fade-in slide-in-from-top-2">
-                    <div className="text-[9px] font-black uppercase text-slate-300 px-2 py-1">Enfants</div>
+                    <div className="text-[9px] font-black uppercase text-slate-300 px-2 py-1">Univers Enfants 👶</div>
                     <button onClick={() => switchMode('parent', 'baby')} className={`flex items-center gap-3 p-3 rounded-xl text-left transition-colors ${currentRole === 'parent' && currentService === 'baby' ? 'bg-[#E64545] text-white' : 'hover:bg-slate-50 text-slate-600'}`}>
-                        <Baby size={16} /> <span className="text-xs font-bold">Parent</span>
+                        <Baby size={16} /> <span className="text-xs font-bold">Je suis Parent</span>
                     </button>
                     <button onClick={() => switchMode('sitter', 'baby')} className={`flex items-center gap-3 p-3 rounded-xl text-left transition-colors ${currentRole === 'sitter' && currentService === 'baby' ? 'bg-[#E0720F] text-white' : 'hover:bg-slate-50 text-slate-600'}`}>
-                        <User size={16} /> <span className="text-xs font-bold">Baby-Sitter</span>
+                        <User size={16} /> <span className="text-xs font-bold">Je suis Nounou</span>
                     </button>
                     
                     <div className="h-px bg-slate-100 my-1"></div>
                     
-                    <div className="text-[9px] font-black uppercase text-slate-300 px-2 py-1">Animaux</div>
+                    <div className="text-[9px] font-black uppercase text-slate-300 px-2 py-1">Univers Animaux 🐾</div>
                     <button onClick={() => switchMode('parent', 'pet')} className={`flex items-center gap-3 p-3 rounded-xl text-left transition-colors ${currentRole === 'parent' && currentService === 'pet' ? 'bg-[#E64545] text-white' : 'hover:bg-slate-50 text-slate-600'}`}>
-                        <Dog size={16} /> <span className="text-xs font-bold">Maître</span>
+                        <Dog size={16} /> <span className="text-xs font-bold">Je suis Maître</span>
                     </button>
                     <button onClick={() => switchMode('sitter', 'pet')} className={`flex items-center gap-3 p-3 rounded-xl text-left transition-colors ${currentRole === 'sitter' && currentService === 'pet' ? 'bg-[#E0720F] text-white' : 'hover:bg-slate-50 text-slate-600'}`}>
-                        <PawPrint size={16} /> <span className="text-xs font-bold">Pet-Sitter</span>
+                        <PawPrint size={16} /> <span className="text-xs font-bold">Je suis Pet-Sitter</span>
                     </button>
                 </div>
             )}
@@ -186,8 +185,9 @@ const SettingsView = ({ user, profile, onBack, isDark, toggleDark }) => {
       setLoading(true);
       try {
         await deleteDoc(doc(db, 'artifacts', appId, 'users', user.uid, 'settings', 'profile'));
-        // Nettoyage des deux types de profils potentiels
-        await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'sitters', user.uid));
+        if (profile.role === 'sitter') {
+          await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'sitters', user.uid));
+        }
         await deleteUser(auth.currentUser);
         alert("Compte supprimé.");
       } catch (err) { alert("Erreur suppression."); } finally { setLoading(false); }
@@ -209,13 +209,13 @@ const SettingsView = ({ user, profile, onBack, isDark, toggleDark }) => {
     try {
       const updateData = { name: newName, phone, photoURL: customPhoto, privateMode };
       await updateDoc(doc(db, 'artifacts', appId, 'users', user.uid, 'settings', 'profile'), updateData);
-      // Mise à jour du profil public si le user est sitter (peu importe le mode)
       if (profile.role === 'sitter') {
+        // Mise à jour du profil public Sitter avec le serviceType pour bien le classer
         await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'sitters', user.uid), { 
             name: newName, 
             photoURL: customPhoto, 
             phone,
-            serviceType: profile.serviceType // On garde le type de service actuel
+            serviceType: profile.serviceType // Important pour le filtre
         }, { merge: true });
       }
       setStatus({ type: "success", msg: "Enregistré !" });
@@ -231,6 +231,8 @@ const SettingsView = ({ user, profile, onBack, isDark, toggleDark }) => {
       </div>
 
       <div className="max-w-2xl mx-auto p-6 space-y-8">
+        {status.msg && <div className="p-4 bg-[#E0720F]/10 text-[#E0720F] rounded-2xl font-bold text-center text-xs uppercase">{status.msg}</div>}
+
         <div className={`p-8 rounded-[3rem] border flex justify-between items-center ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-50'}`}>
            <div className="flex items-center gap-4"><Moon size={24} className="text-[#E0720F]"/><p className="font-black text-xs uppercase">Mode Sombre</p></div>
            <button onClick={toggleDark} className={`w-14 h-7 rounded-full relative ${isDark ? 'bg-[#E64545]' : 'bg-slate-200'}`}><div className={`absolute top-1 w-5 h-5 bg-white rounded-full shadow ${isDark ? 'right-1' : 'left-1'}`}></div></button>
@@ -248,10 +250,15 @@ const SettingsView = ({ user, profile, onBack, isDark, toggleDark }) => {
         <form onSubmit={handleUpdateProfile} className="space-y-6">
             <input value={newName} onChange={e=>setNewName(e.target.value)} className={`w-full p-4 rounded-2xl font-bold outline-none border ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-100'}`} placeholder="Prénom" />
             <input value={phone} onChange={e=>setPhone(e.target.value)} className={`w-full p-4 rounded-2xl font-bold outline-none border ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-100'}`} placeholder="Téléphone" />
+            <div className="flex items-center justify-between p-4 bg-slate-50/50 rounded-2xl">
+                <div className="flex items-center gap-3"><EyeOff size={16} className="text-slate-400"/><p className="text-xs font-black uppercase">Mode Privé</p></div>
+                <button type="button" onClick={() => setPrivateMode(!privateMode)} className={`w-12 h-6 rounded-full relative ${privateMode ? 'bg-[#E64545]' : 'bg-slate-300'}`}><div className={`absolute top-1 w-4 h-4 bg-white rounded-full ${privateMode ? 'right-1' : 'left-1'}`}></div></button>
+            </div>
             <button disabled={loading} className="w-full bg-[#E64545] text-white py-5 rounded-2xl font-black uppercase shadow-xl hover:brightness-110">Sauvegarder</button>
         </form>
 
         <div className="space-y-4">
+          <a href="mailto:babykeeper.bordais@gmail.com" className="w-full p-5 border-2 border-[#E0720F]/20 text-[#E0720F] rounded-2xl font-black text-xs uppercase flex justify-center gap-2 hover:bg-[#E0720F]/5">Support Technique</a>
           <button onClick={() => signOut(auth)} className="w-full p-5 border-2 border-dashed rounded-2xl font-black text-xs uppercase flex justify-center gap-2">Déconnexion</button>
           <button onClick={handleDeleteAccount} className="w-full p-5 bg-red-50 text-red-500 rounded-2xl font-black text-xs uppercase flex justify-center gap-2">Supprimer le compte</button>
         </div>
@@ -292,6 +299,12 @@ const PremiumView = ({ onBack, isDark }) => {
                  </div>
              </div>
              <div className="p-8 space-y-6">
+                 <ul className="space-y-4">
+                     <li className="flex items-center gap-3"><CheckCircle2 className="text-green-500" size={24}/><span className="font-bold text-sm">Réservations ILLIMITÉES</span></li>
+                     <li className="flex items-center gap-3"><CheckCircle2 className="text-green-500" size={24}/><span className="font-bold text-sm">Accès aux numéros directs</span></li>
+                     <li className="flex items-center gap-3"><CheckCircle2 className="text-green-500" size={24}/><span className="font-bold text-sm">Badge "Parent Vérifié" ✅</span></li>
+                     <li className="flex items-center gap-3"><CheckCircle2 className="text-green-500" size={24}/><span className="font-bold text-sm">Support Prioritaire 24/7</span></li>
+                 </ul>
                  <a 
                     href={STRIPE_LINK}
                     target="_self" 
@@ -324,7 +337,8 @@ const ChatRoom = ({ offer, currentUser, onBack, isDark }) => {
   const scrollToBottom = () => chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
 
   useEffect(() => {
-    const unsubMsg = onSnapshot(collection(db, 'artifacts', appId, 'public', 'data', 'offers', offer.id, 'messages'), (snap) => {
+    const q = collection(db, 'artifacts', appId, 'public', 'data', 'offers', offer.id, 'messages');
+    const unsubMsg = onSnapshot(q, (snap) => {
       const msgs = snap.docs.map(d => ({ id: d.id, ...d.data() })).sort((a, b) => (a.createdAt?.seconds || 0) - (b.createdAt?.seconds || 0));
       setMessages(msgs);
       setTimeout(() => chatEndRef.current?.scrollIntoView({ behavior: "smooth" }), 100);
@@ -496,7 +510,7 @@ const ChatRoom = ({ offer, currentUser, onBack, isDark }) => {
 };
 
 // ==========================================
-// 7. AUTH SCREEN
+// 7. AUTH SCREEN (MODIFIÉ : SELECTEUR D'UNIVERS & GESTION ERREUR EMAIL)
 // ==========================================
 
 const AuthScreen = () => {
@@ -505,7 +519,9 @@ const AuthScreen = () => {
   const [password, setPassword] = useState("");
   const [name, setName] = useState("");
   const [role, setRole] = useState("parent");
+  // NOUVEAU : Service Type
   const [serviceType, setServiceType] = useState("baby");
+  
   const [level, setLevel] = useState("1");
   const [remember, setRemember] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -542,7 +558,7 @@ const AuthScreen = () => {
       } else { await signInWithEmailAndPassword(auth, email, password); }
     } catch (err) { 
         if(err.code === 'auth/email-already-in-use') {
-            alert("Ce compte existe déjà. Connectez-vous et changez de mode dans l'application avec le bouton 'Mode' 🔄.");
+            alert("Compte existant ! Connectez-vous, puis changez de mode (Enfant/Animal) dans l'appli.");
             setIsRegister(false);
         } else {
             alert("Email ou mot de passe invalide."); 
@@ -559,7 +575,8 @@ const AuthScreen = () => {
           <h2 className="text-4xl font-black italic uppercase tracking-tighter leading-none text-transparent bg-clip-text bg-gradient-to-r from-[#E64545] to-[#E0720F]">BABYKEEPER</h2>
           <p className="text-[#E64545] text-sm font-bold uppercase tracking-widest mt-2">La recherche en toute confiance</p>
         </div>
-
+        
+        {/* SELECTEUR D'UNIVERS */}
         {isRegister && (
             <div className="flex gap-4 mb-6">
                 <button type="button" onClick={() => setServiceType("baby")} className={`flex-1 py-4 rounded-2xl font-black text-xs uppercase flex flex-col items-center gap-2 border-2 transition-all ${serviceType === "baby" ? "border-[#E64545] bg-[#E64545]/5 text-[#E64545]" : "border-slate-100 text-slate-400"}`}>
@@ -589,14 +606,18 @@ const AuthScreen = () => {
               <button type="button" onClick={() => setRole("parent")} className={`py-3 rounded-xl font-black text-[10px] ${role === "parent" ? "bg-white shadow text-[#E64545]" : "text-slate-400"}`}>{serviceType === 'baby' ? 'PARENT' : 'MAÎTRE'}</button>
               <button type="button" onClick={() => setRole("sitter")} className={`py-3 rounded-xl font-black text-[10px] ${role === "sitter" ? "bg-white shadow text-[#E0720F]" : "text-slate-400"}`}>SITTER</button>
             </div>
-            {role === "sitter" && serviceType === 'baby' && (
+            
+            {/* NIVEAUX POUR BABY SITTER */}
+            {role === "sitter" && serviceType === "baby" && (
               <div className="grid grid-cols-3 gap-1 mt-2">
                 <button type="button" onClick={() => setLevel("1")} className={`py-2 rounded-lg text-[10px] font-black uppercase transition-all ${level === "1" ? "bg-slate-900 text-white" : "bg-slate-200 text-slate-500"}`}>NIV 1 🍼<br/><span className="text-[8px] opacity-70 font-normal">Garde+Repas</span></button>
                 <button type="button" onClick={() => setLevel("2")} className={`py-2 rounded-lg text-[10px] font-black uppercase transition-all ${level === "2" ? "bg-slate-900 text-white" : "bg-slate-200 text-slate-500"}`}>NIV 2 🧸<br/><span className="text-[8px] opacity-70 font-normal">+ Change</span></button>
                 <button type="button" onClick={() => setLevel("3")} className={`py-2 rounded-lg text-[10px] font-black uppercase transition-all ${level === "3" ? "bg-slate-900 text-white" : "bg-slate-200 text-slate-500"}`}>NIV 3 👑<br/><span className="text-[8px] opacity-70 font-normal">+ Bain/Soins</span></button>
               </div>
             )}
-             {role === "sitter" && serviceType === 'pet' && (
+
+            {/* NOUVEAU : NIVEAUX POUR PET SITTER */}
+            {role === "sitter" && serviceType === "pet" && (
               <div className="grid grid-cols-3 gap-1 mt-2">
                 <button type="button" onClick={() => setLevel("1")} className={`py-2 rounded-lg text-[10px] font-black uppercase transition-all ${level === "1" ? "bg-slate-900 text-white" : "bg-slate-200 text-slate-500"}`}>NIV 1 🐕<br/><span className="text-[8px] opacity-70 font-normal">Promenade</span></button>
                 <button type="button" onClick={() => setLevel("2")} className={`py-2 rounded-lg text-[10px] font-black uppercase transition-all ${level === "2" ? "bg-slate-900 text-white" : "bg-slate-200 text-slate-500"}`}>NIV 2 🥘<br/><span className="text-[8px] opacity-70 font-normal">Visite/Repas</span></button>
@@ -619,7 +640,8 @@ const AuthScreen = () => {
   );
 };
 
-const CompleteProfileScreen = ({ uid }) => {
+// --- ECRAN COMPLÉTION PROFIL AVEC PHOTO OBLIGATOIRE ---
+const CompleteProfileScreen = ({ uid, serviceType }) => {
   const [name, setName] = useState("");
   const [role, setRole] = useState("parent");
   const [level, setLevel] = useState("1");
@@ -642,7 +664,7 @@ const CompleteProfileScreen = ({ uid }) => {
     setLoading(true);
     try {
         await setDoc(doc(db, 'artifacts', appId, 'users', uid, 'settings', 'profile'), {
-            uid, name: name.trim(), role, level: role === 'sitter' ? level : null, photoURL: photo, favorites: [], createdAt: new Date().toISOString()
+            uid, name: name.trim(), role, serviceType, level: role === 'sitter' ? level : null, photoURL: photo, favorites: [], createdAt: new Date().toISOString()
         });
     } catch(e) { console.error(e); }
     setLoading(false);
@@ -666,14 +688,21 @@ const CompleteProfileScreen = ({ uid }) => {
 
         <input placeholder="Ton Prénom" className="w-full p-6 bg-slate-50 rounded-3xl outline-none font-bold shadow-inner" value={name} onChange={(e) => setName(e.target.value)} />
         <div className="grid grid-cols-2 gap-2 p-1 bg-slate-100 rounded-2xl shadow-sm">
-          <button onClick={() => setRole("parent")} className={`py-4 rounded-xl font-black text-[10px] ${role === "parent" ? "bg-white shadow text-[#E64545]" : "text-slate-400"}`}>PARENT</button>
+          <button onClick={() => setRole("parent")} className={`py-4 rounded-xl font-black text-[10px] ${role === "parent" ? "bg-white shadow text-[#E64545]" : "text-slate-400"}`}>{serviceType === 'baby' ? 'PARENT' : 'MAÎTRE'}</button>
           <button onClick={() => setRole("sitter")} className={`py-4 rounded-xl font-black text-[10px] ${role === "sitter" ? "bg-white shadow text-[#E0720F]" : "text-slate-400"}`}>SITTER</button>
         </div>
-        {role === "sitter" && (
+        {role === "sitter" && serviceType === 'baby' && (
               <div className="grid grid-cols-3 gap-1 mt-2">
                 <button type="button" onClick={() => setLevel("1")} className={`py-2 rounded-lg text-[10px] font-black uppercase transition-all ${level === "1" ? "bg-slate-900 text-white" : "bg-slate-200 text-slate-500"}`}>NIV 1 🍼</button>
                 <button type="button" onClick={() => setLevel("2")} className={`py-2 rounded-lg text-[10px] font-black uppercase transition-all ${level === "2" ? "bg-slate-900 text-white" : "bg-slate-200 text-slate-500"}`}>NIV 2 🧸</button>
                 <button type="button" onClick={() => setLevel("3")} className={`py-2 rounded-lg text-[10px] font-black uppercase transition-all ${level === "3" ? "bg-slate-900 text-white" : "bg-slate-200 text-slate-500"}`}>NIV 3 👑</button>
+              </div>
+        )}
+         {role === "sitter" && serviceType === 'pet' && (
+              <div className="grid grid-cols-3 gap-1 mt-2">
+                <button type="button" onClick={() => setLevel("1")} className={`py-2 rounded-lg text-[10px] font-black uppercase transition-all ${level === "1" ? "bg-slate-900 text-white" : "bg-slate-200 text-slate-500"}`}>NIV 1 🐕</button>
+                <button type="button" onClick={() => setLevel("2")} className={`py-2 rounded-lg text-[10px] font-black uppercase transition-all ${level === "2" ? "bg-slate-900 text-white" : "bg-slate-200 text-slate-500"}`}>NIV 2 🥘</button>
+                <button type="button" onClick={() => setLevel("3")} className={`py-2 rounded-lg text-[10px] font-black uppercase transition-all ${level === "3" ? "bg-slate-900 text-white" : "bg-slate-200 text-slate-500"}`}>NIV 3 🏠</button>
               </div>
         )}
         <button onClick={finish} disabled={loading || !photo} className={`w-full py-6 rounded-[2rem] font-black shadow-lg uppercase transition-all active:scale-95 ${!photo ? 'bg-slate-300 text-slate-500 cursor-not-allowed' : 'bg-[#E64545] text-white hover:brightness-110'}`}>VALIDER</button>
@@ -683,7 +712,7 @@ const CompleteProfileScreen = ({ uid }) => {
 };
 
 // ==========================================
-// 8. DASHBOARD PARENT (MODIFIÉ AVEC LOGIQUE PREMIUM & AUTO-ACTIVATION & SWITCH)
+// 8. DASHBOARD PARENT (MODIFIÉ AVEC LOGIQUE PREMIUM & AUTO-ACTIVATION & SWITCH UNIVERS)
 // ==========================================
 
 const ParentDashboard = ({ profile, user }) => {
@@ -701,8 +730,7 @@ const ParentDashboard = ({ profile, user }) => {
   const [showFilters, setShowFilters] = useState(false);
   const [sitterReviews, setSitterReviews] = useState([]);
   const [isDark, setIsDark] = useState(localStorage.getItem('dark') === 'true');
-  
-  // DÉTECTION DU MODE ACTUEL (ENFANT OU ANIMAL)
+
   const isPet = profile.serviceType === 'pet';
 
   // --- AUTO-ACTIVATION PREMIUM VIA URL ---
@@ -720,7 +748,7 @@ const ParentDashboard = ({ profile, user }) => {
   useEffect(() => {
     localStorage.setItem('dark', isDark);
     const unsubSitters = onSnapshot(collection(db, 'artifacts', appId, 'public', 'data', 'sitters'), (snap) => {
-      // ON FILTRE LES SITTERS SELON LE MODE ACTUEL (Enfant ou Animal)
+      // FILTRE PAR UNIVERS (Baby ou Pet)
       setSitters(snap.docs.map(d => ({ id: d.id, ...d.data() })).filter(s => s.serviceType === profile.serviceType));
       setLoading(false);
     });
@@ -732,7 +760,7 @@ const ParentDashboard = ({ profile, user }) => {
       setOffers(snap.docs.map(d => ({ id: d.id, ...d.data() })));
     });
     return () => { unsubSitters(); unsubOffers(); };
-  }, [user.uid, isDark, profile.serviceType]); // On recharge quand le serviceType change
+  }, [user.uid, isDark, profile.serviceType]); // Ajout de profile.serviceType pour recharger au switch
 
   useEffect(() => {
       if (selectedSitter) {
@@ -774,7 +802,7 @@ const ParentDashboard = ({ profile, user }) => {
               return d > oneWeekAgo;
           });
           if (recentOffers.length >= 1) {
-              alert("🔒 Limite gratuite atteinte ! Vous avez déjà réservé cette semaine. Passez Premium pour continuer.");
+              alert("🔒 Limite atteinte ! Passez Premium.");
               setSelectedSitter(null); 
               setActiveTab("premium"); 
               return; 
@@ -1017,6 +1045,14 @@ const SitterDashboard = ({ user, profile }) => {
           {/* BOUTON SWITCHER D'UNIVERS */}
           <ModeSwitcher currentRole={profile.role} currentService={profile.serviceType || 'baby'} uid={user.uid} />
 
+          <button onClick={() => setActiveTab("premium")} className={`p-2 rounded-2xl transition-all shadow-md bg-gradient-to-br from-yellow-400 to-orange-500 text-white animate-pulse`}>
+              <Crown size={20} fill="white" />
+          </button>
+          
+          <div className="relative p-2 text-slate-400">
+              <Bell size={20}/>
+              {unreadCount > 0 && <span className="absolute top-1 right-1 w-4 h-4 bg-[#E64545] text-white text-[8px] font-black rounded-full flex items-center justify-center border-2 border-white animate-bounce">{unreadCount}</span>}
+          </div>
           <button onClick={() => setActiveTab("settings")} className={`p-2 rounded-2xl transition-all ${isDark ? 'bg-slate-800 text-[#E0720F]' : 'bg-slate-50 text-slate-300'}`}><Settings size={20} /></button>
           <button onClick={() => signOut(auth)} className={`p-2 rounded-2xl transition-all ${isDark ? 'bg-slate-800 text-slate-400' : 'bg-slate-50 text-slate-300'}`}><LogOut size={20} /></button>
         </div>
