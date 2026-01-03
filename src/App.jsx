@@ -257,7 +257,7 @@ const PremiumView = ({ onBack, isDark }) => {
 };
 
 // ==========================================
-// 4. MESSAGERIE & CHAT (CORRECTIF INSTANTANÉITÉ)
+// 4. MESSAGERIE & CHAT (DIRECT PAIEMENT)
 // ==========================================
 
 const ChatRoom = ({ offer, currentUser, onBack, isDark }) => {
@@ -270,13 +270,13 @@ const ChatRoom = ({ offer, currentUser, onBack, isDark }) => {
   const [translations, setTranslations] = useState({});
   const chatEndRef = useRef(null);
   
-  // --- CORRECTIF : STATE LOCAL POUR L'OFFRE EN TEMPS RÉEL ---
+  // State local pour l'offre en temps réel
   const [liveOffer, setLiveOffer] = useState(offer);
 
   const scrollToBottom = () => chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
 
   useEffect(() => {
-    // 1. Écouteur des messages (existant)
+    // 1. Écouteur des messages
     const q = collection(db, 'artifacts', appId, 'public', 'data', 'offers', offer.id, 'messages');
     const unsubMsg = onSnapshot(q, (snap) => {
       const msgs = snap.docs.map(d => ({ id: d.id, ...d.data() })).sort((a, b) => (a.createdAt?.seconds || 0) - (b.createdAt?.seconds || 0));
@@ -284,14 +284,14 @@ const ChatRoom = ({ offer, currentUser, onBack, isDark }) => {
       setTimeout(() => chatEndRef.current?.scrollIntoView({ behavior: "smooth" }), 100);
     });
 
-    // 2. --- NOUVEAU : ÉCOUTEUR DU STATUT DE L'OFFRE (POUR MAJ INSTANTANÉE) ---
+    // 2. Écouteur du statut de l'offre
     const unsubOffer = onSnapshot(doc(db, 'artifacts', appId, 'public', 'data', 'offers', offer.id), (docSnap) => {
         if (docSnap.exists()) {
             setLiveOffer({ id: docSnap.id, ...docSnap.data() });
         }
     });
     
-    // 3. Récupération contact (existant)
+    // 3. Récupération contact
     const getContact = async () => {
         const otherId = currentUser.uid === offer.sitterId ? offer.parentId : offer.sitterId;
         try {
@@ -307,7 +307,7 @@ const ChatRoom = ({ offer, currentUser, onBack, isDark }) => {
 
     return () => { 
         unsubMsg(); 
-        unsubOffer(); // On nettoie le nouvel écouteur
+        unsubOffer(); 
     };
   }, [offer.id]);
 
@@ -356,6 +356,7 @@ const ChatRoom = ({ offer, currentUser, onBack, isDark }) => {
     } catch (e) { console.error(e); }
   };
 
+  // CONFIRMER LA FIN (PAS DE PAIEMENT IN-APP)
   const confirmService = async () => {
     if(window.confirm("La garde est terminée ? En validant, vous pourrez noter le Baby-sitter.")) {
         await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'offers', offer.id), { 
@@ -555,7 +556,7 @@ const AuthScreen = () => {
   );
 };
 
-// --- ECRAN COMPLÉTION PROFIL ---
+// --- ECRAN COMPLÉTION PROFIL AVEC PHOTO OBLIGATOIRE ---
 const CompleteProfileScreen = ({ uid }) => {
   const [name, setName] = useState("");
   const [role, setRole] = useState("parent");
@@ -620,7 +621,7 @@ const CompleteProfileScreen = ({ uid }) => {
 };
 
 // ==========================================
-// 6. DASHBOARD PARENT (MODIFIÉ AVEC LOGIQUE PREMIUM)
+// 6. DASHBOARD PARENT (MODIFIÉ)
 // ==========================================
 
 const ParentDashboard = ({ profile, user }) => {
@@ -753,20 +754,20 @@ const ParentDashboard = ({ profile, user }) => {
 
   return (
     <div className={`min-h-screen font-sans pb-32 ${isDark ? 'bg-slate-950 text-white' : 'bg-slate-50 text-slate-800'}`}>
-      <nav className={`p-6 flex justify-between items-center sticky top-0 z-40 border-b shadow-sm ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-100'}`}>
-        <div className="flex items-center gap-3"><SitFinderLogo className="w-10 h-10" glow={false} /><span className="font-black italic text-2xl uppercase tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-[#E64545] to-[#E0720F]">BABYKEEPER</span></div>
-        <div className="flex items-center gap-2">
+      <nav className={`p-4 flex justify-between items-center sticky top-0 z-40 border-b shadow-sm ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-100'}`}>
+        <div className="flex items-center gap-2"><SitFinderLogo className="w-8 h-8" glow={false} /><span className="font-black italic text-lg md:text-2xl uppercase tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-[#E64545] to-[#E0720F]">BABYKEEPER</span></div>
+        <div className="flex items-center gap-1.5">
           {/* BOUTON PREMIUM DANS LE MENU */}
-          <button onClick={() => setActiveTab("premium")} className={`p-3 rounded-2xl transition-all shadow-md bg-gradient-to-br from-yellow-400 to-orange-500 text-white animate-pulse`}>
-              <Crown size={22} fill="white" />
+          <button onClick={() => setActiveTab("premium")} className={`p-2 rounded-2xl transition-all shadow-md bg-gradient-to-br from-yellow-400 to-orange-500 text-white animate-pulse`}>
+              <Crown size={20} fill="white" />
           </button>
           
           <div className="relative p-2 text-slate-400">
-              <Bell size={22}/>
+              <Bell size={20}/>
               {unreadCount > 0 && <span className="absolute top-1 right-1 w-4 h-4 bg-[#E64545] text-white text-[8px] font-black rounded-full flex items-center justify-center border-2 border-white animate-bounce">{unreadCount}</span>}
           </div>
-          <button onClick={() => setActiveTab("settings")} className={`p-3 rounded-2xl transition-all ${isDark ? 'bg-slate-800 text-[#E0720F]' : 'bg-slate-50 text-slate-300'}`}><Settings size={22} /></button>
-          <button onClick={() => signOut(auth)} className={`p-3 rounded-2xl transition-all ${isDark ? 'bg-slate-800 text-slate-400' : 'bg-slate-50 text-slate-300'}`}><LogOut size={22} /></button>
+          <button onClick={() => setActiveTab("settings")} className={`p-2 rounded-2xl transition-all ${isDark ? 'bg-slate-800 text-[#E0720F]' : 'bg-slate-50 text-slate-300'}`}><Settings size={20} /></button>
+          <button onClick={() => signOut(auth)} className={`p-2 rounded-2xl transition-all ${isDark ? 'bg-slate-800 text-slate-400' : 'bg-slate-50 text-slate-300'}`}><LogOut size={20} /></button>
         </div>
       </nav>
 
@@ -995,15 +996,15 @@ const SitterDashboard = ({ user, profile }) => {
 
   return (
     <div className={`min-h-screen font-sans pb-32 animate-in fade-in duration-500 ${isDark ? 'bg-slate-950 text-white' : 'bg-slate-50 text-slate-800'}`}>
-      <nav className={`p-6 flex justify-between items-center sticky top-0 z-40 border-b shadow-sm ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-100'}`}>
-        <div className="flex items-center gap-3 text-slate-900"><SitFinderLogo className="w-10 h-10" glow={false} /><span className="font-black italic text-xl uppercase tracking-tighter leading-none text-transparent bg-clip-text bg-gradient-to-r from-[#E64545] to-[#E0720F]">BABYKEEPER</span></div>
-        <div className="flex items-center gap-2">
+      <nav className={`p-4 flex justify-between items-center sticky top-0 z-40 border-b shadow-sm ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-100'}`}>
+        <div className="flex items-center gap-2"><SitFinderLogo className="w-8 h-8" glow={false} /><span className="font-black italic text-lg md:text-2xl uppercase tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-[#E64545] to-[#E0720F]">BABYKEEPER</span></div>
+        <div className="flex items-center gap-1.5">
           <div className="relative p-2 text-slate-400">
-              <Bell size={22}/>
+              <Bell size={20}/>
               {unreadCount > 0 && <span className="absolute top-1 right-1 w-4 h-4 bg-[#E64545] text-white text-[8px] font-black rounded-full flex items-center justify-center border-2 border-white animate-bounce">{unreadCount}</span>}
           </div>
-          <button onClick={() => setActiveTab("settings")} className={`p-3 rounded-2xl transition-all ${isDark ? 'bg-slate-800 text-[#E0720F]' : 'bg-slate-50 text-slate-300'}`}><Settings size={22} /></button>
-          <button onClick={() => signOut(auth)} className={`p-3 rounded-2xl transition-all ${isDark ? 'bg-slate-800 text-slate-400' : 'bg-slate-50 text-slate-300'}`}><LogOut size={22} /></button>
+          <button onClick={() => setActiveTab("settings")} className={`p-2 rounded-2xl transition-all ${isDark ? 'bg-slate-800 text-[#E0720F]' : 'bg-slate-50 text-slate-300'}`}><Settings size={20} /></button>
+          <button onClick={() => signOut(auth)} className={`p-2 rounded-2xl transition-all ${isDark ? 'bg-slate-800 text-slate-400' : 'bg-slate-50 text-slate-300'}`}><LogOut size={20} /></button>
         </div>
       </nav>
       <main className="p-6 max-w-4xl mx-auto space-y-12">
