@@ -257,7 +257,7 @@ const PremiumView = ({ onBack, isDark }) => {
 };
 
 // ==========================================
-// 4. MESSAGERIE & CHAT (DIRECT PAIEMENT)
+// 4. MESSAGERIE & CHAT (CORRECTIF INSTANTANÉITÉ)
 // ==========================================
 
 const ChatRoom = ({ offer, currentUser, onBack, isDark }) => {
@@ -269,17 +269,29 @@ const ChatRoom = ({ offer, currentUser, onBack, isDark }) => {
   const [reviewText, setReviewText] = useState("");
   const [translations, setTranslations] = useState({});
   const chatEndRef = useRef(null);
+  
+  // --- CORRECTIF : STATE LOCAL POUR L'OFFRE EN TEMPS RÉEL ---
+  const [liveOffer, setLiveOffer] = useState(offer);
 
   const scrollToBottom = () => chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
 
   useEffect(() => {
+    // 1. Écouteur des messages (existant)
     const q = collection(db, 'artifacts', appId, 'public', 'data', 'offers', offer.id, 'messages');
-    const unsub = onSnapshot(q, (snap) => {
+    const unsubMsg = onSnapshot(q, (snap) => {
       const msgs = snap.docs.map(d => ({ id: d.id, ...d.data() })).sort((a, b) => (a.createdAt?.seconds || 0) - (b.createdAt?.seconds || 0));
       setMessages(msgs);
       setTimeout(() => chatEndRef.current?.scrollIntoView({ behavior: "smooth" }), 100);
     });
+
+    // 2. --- NOUVEAU : ÉCOUTEUR DU STATUT DE L'OFFRE (POUR MAJ INSTANTANÉE) ---
+    const unsubOffer = onSnapshot(doc(db, 'artifacts', appId, 'public', 'data', 'offers', offer.id), (docSnap) => {
+        if (docSnap.exists()) {
+            setLiveOffer({ id: docSnap.id, ...docSnap.data() });
+        }
+    });
     
+    // 3. Récupération contact (existant)
     const getContact = async () => {
         const otherId = currentUser.uid === offer.sitterId ? offer.parentId : offer.sitterId;
         try {
@@ -292,7 +304,11 @@ const ChatRoom = ({ offer, currentUser, onBack, isDark }) => {
         } catch(e) {}
     };
     getContact();
-    return () => unsub();
+
+    return () => { 
+        unsubMsg(); 
+        unsubOffer(); // On nettoie le nouvel écouteur
+    };
   }, [offer.id]);
 
   const handleReport = async () => {
@@ -340,7 +356,6 @@ const ChatRoom = ({ offer, currentUser, onBack, isDark }) => {
     } catch (e) { console.error(e); }
   };
 
-  // NOUVEAU : JUSTE CONFIRMER LA FIN (PAS DE PAIEMENT IN-APP)
   const confirmService = async () => {
     if(window.confirm("La garde est terminée ? En validant, vous pourrez noter le Baby-sitter.")) {
         await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'offers', offer.id), { 
@@ -370,19 +385,19 @@ const ChatRoom = ({ offer, currentUser, onBack, isDark }) => {
       <div className={`p-6 border-b flex items-center justify-between sticky top-0 z-20 shadow-sm ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-100'}`}>
         <div className="flex items-center gap-4">
           <button onClick={onBack} className={`p-2 rounded-full ${isDark ? 'hover:bg-slate-800' : 'hover:bg-slate-50'}`}><ArrowLeft size={20}/></button>
-          <div className="text-left"><h3 className="font-black tracking-tight uppercase italic text-xs text-transparent bg-clip-text bg-gradient-to-r from-[#E64545] to-[#E0720F]">BABYKEEPER CHAT</h3><p className="text-[10px] text-[#E0720F] font-black uppercase tracking-widest">{offer.price}€/H • {offer.status}</p></div>
+          <div className="text-left"><h3 className="font-black tracking-tight uppercase italic text-xs text-transparent bg-clip-text bg-gradient-to-r from-[#E64545] to-[#E0720F]">BABYKEEPER CHAT</h3><p className="text-[10px] text-[#E0720F] font-black uppercase tracking-widest">{liveOffer.price}€/H • {liveOffer.status}</p></div>
         </div>
         <div className="flex gap-2">
             <button onClick={handleReport} className="p-3 text-slate-300 hover:text-red-500 transition-colors"><Flag size={18}/></button>
             {/* Bouton avis si fini */}
-            {offer.status === 'completed' && currentUser.uid === offer.parentId && <button onClick={() => setShowReview(true)} className="p-3 bg-[#E0720F]/20 text-[#E0720F] rounded-xl"><Star size={18}/></button>}
+            {liveOffer.status === 'completed' && currentUser.uid === liveOffer.parentId && <button onClick={() => setShowReview(true)} className="p-3 bg-[#E0720F]/20 text-[#E0720F] rounded-xl"><Star size={18}/></button>}
             {/* Téléphone seulement si accepté ou fini */}
-            {(offer.status === 'accepted' || offer.status === 'completed' || offer.status === 'reviewed') && otherUserPhone && <a href={`tel:${otherUserPhone}`} className="p-3 bg-[#E64545] text-white rounded-xl"><Phone size={18}/></a>}
+            {(liveOffer.status === 'accepted' || liveOffer.status === 'completed' || liveOffer.status === 'reviewed') && otherUserPhone && <a href={`tel:${otherUserPhone}`} className="p-3 bg-[#E64545] text-white rounded-xl"><Phone size={18}/></a>}
         </div>
       </div>
 
       {/* --- BANDEAU INFORMATION PAIEMENT DIRECT --- */}
-      {offer.status === 'accepted' && (
+      {liveOffer.status === 'accepted' && (
           <div className="p-4 bg-blue-50 border-b border-blue-100 flex flex-col gap-2 items-center text-center">
               <div className="flex items-center gap-2 text-blue-600 font-black text-xs uppercase tracking-widest">
                   <Info size={16} /> Paiement en direct
@@ -390,7 +405,7 @@ const ChatRoom = ({ offer, currentUser, onBack, isDark }) => {
               <p className="text-xs font-bold text-blue-900/70 max-w-xs">
                   BabyKeeper ne prend aucune commission. Réglez votre sitter directement (Espèces, Lydia, Paylib ou CESU).
               </p>
-              {currentUser.uid === offer.parentId && (
+              {currentUser.uid === liveOffer.parentId && (
                   <button onClick={confirmService} className="mt-2 w-full bg-blue-600 text-white py-3 rounded-xl font-bold flex items-center justify-center gap-2 text-xs uppercase tracking-widest shadow-lg shadow-blue-200">
                         Confirmer la fin de la garde
                   </button>
@@ -428,7 +443,7 @@ const ChatRoom = ({ offer, currentUser, onBack, isDark }) => {
           </div>
       )}
 
-      {offer.status === 'pending' && currentUser.uid === offer.sitterId && (
+      {liveOffer.status === 'pending' && currentUser.uid === liveOffer.sitterId && (
         <div className="p-4 bg-white border-t border-slate-50 grid grid-cols-2 gap-4 dark:bg-slate-900 dark:border-slate-800">
           <button onClick={() => updateOfferStatus('declined')} className="bg-slate-100 text-slate-400 py-4 rounded-2xl font-black text-[10px] uppercase dark:bg-slate-800">Refuser</button>
           <button onClick={() => updateOfferStatus('accepted')} className="bg-[#E64545] text-white py-4 rounded-2xl font-black text-[10px] uppercase shadow-lg">Accepter</button>
@@ -540,7 +555,7 @@ const AuthScreen = () => {
   );
 };
 
-// --- MODIFICATION ICI : ECRAN COMPLÉTION PROFIL AVEC PHOTO OBLIGATOIRE ---
+// --- ECRAN COMPLÉTION PROFIL ---
 const CompleteProfileScreen = ({ uid }) => {
   const [name, setName] = useState("");
   const [role, setRole] = useState("parent");
