@@ -31,7 +31,7 @@ import {
   Baby, LogOut, Save, Search, Loader2, AlertCircle, ShieldCheck, 
   Euro, User, Mail, Lock, ChevronRight, Sparkles, Heart, Filter, Calendar,
   Clock, UserPlus, Cake, FileUp, FileText, CheckCircle2, MessageSquare, 
-  Send, X, Check, ArrowLeft, MessageCircle, PartyPopper, Star, MapPin, Camera, SlidersHorizontal, Settings, KeyRound, Phone, Trash2, Palette, Image as ImageIcon, Share2, Quote, TrendingUp, Zap, Trophy, Languages, EyeOff, Moon, Sun, Bell, Flag, Eye, Wallet, Car, CreditCard, LockKeyhole, Crown, Info, Dog, Cat, Bone, PawPrint, RefreshCw, GraduationCap
+  Send, X, Check, ArrowLeft, MessageCircle, PartyPopper, Star, MapPin, Camera, SlidersHorizontal, Settings, KeyRound, Phone, Trash2, Palette, Image as ImageIcon, Share2, Quote, TrendingUp, Zap, Trophy, Languages, EyeOff, Moon, Sun, Bell, Flag, Eye, Wallet, Car, CreditCard, LockKeyhole, Crown, Info, Dog, Cat, Bone, PawPrint, RefreshCw
 } from "lucide-react";
 
 // ==========================================
@@ -168,7 +168,7 @@ const ModeSwitcher = ({ currentRole, currentService, uid }) => {
 };
 
 // ==========================================
-// 4. COMPOSANT PARAMÈTRES
+// 4. COMPOSANT PARAMÈTRES (AVEC LIENS LÉGAUX)
 // ==========================================
 
 const SettingsView = ({ user, profile, onBack, isDark, toggleDark }) => {
@@ -257,6 +257,14 @@ const SettingsView = ({ user, profile, onBack, isDark, toggleDark }) => {
 
         <div className="space-y-4">
           <a href="mailto:babykeeper.bordais@gmail.com" className="w-full p-5 border-2 border-[#E0720F]/20 text-[#E0720F] rounded-2xl font-black text-xs uppercase flex justify-center gap-2 hover:bg-[#E0720F]/5">Support Technique</a>
+          
+          {/* --- MENTIONS LÉGALES AJOUTÉES ICI --- */}
+          <div className="flex justify-center gap-4 text-[10px] text-slate-400 font-bold uppercase tracking-widest pt-4 border-t border-slate-100/50">
+             <button onClick={() => alert("Mentions Légales : \nBabyKeeper est une plateforme de mise en relation.\nNous ne sommes pas l'employeur des baby-sitters.")} className="hover:text-[#E64545]">CGU</button>
+             <span>•</span>
+             <button onClick={() => alert("Politique de Confidentialité : \nVos données sont sécurisées et ne sont jamais revendues.")} className="hover:text-[#E64545]">Confidentialité</button>
+          </div>
+
           <button onClick={() => signOut(auth)} className="w-full p-5 border-2 border-dashed rounded-2xl font-black text-xs uppercase flex justify-center gap-2">Déconnexion</button>
           <button onClick={handleDeleteAccount} className="w-full p-5 bg-red-50 text-red-500 rounded-2xl font-black text-xs uppercase flex justify-center gap-2">Supprimer le compte</button>
         </div>
@@ -305,7 +313,7 @@ const PremiumView = ({ onBack, isDark }) => {
                  </ul>
                  <a 
                     href={STRIPE_LINK}
-                    target="_self" 
+                    target="_blank"
                     className="block w-full py-5 bg-[#E64545] text-white text-center rounded-2xl font-black uppercase shadow-xl hover:scale-105 transition-transform"
                  >
                      Je m'abonne (3€)
@@ -379,7 +387,7 @@ const ChatRoom = ({ offer, currentUser, onBack, isDark }) => {
               const targetEmail = userDoc.data().email;
               const targetName = userDoc.data().name;
               
-              // ⚠️ REMPLACEZ PAR VOS CLÉS EMAILJS ICI ⚠️
+              // ⚠️ CLÉS EMAILJS INTÉGRÉES ⚠️
               await window.emailjs.send(
                   "service_hjonpe3", // TON SERVICE ID
                   "template_b2gl0lh", // TON TEMPLATE ID
@@ -390,6 +398,7 @@ const ChatRoom = ({ offer, currentUser, onBack, isDark }) => {
                       message: msgText
                   }
               );
+              console.log("Notif envoyée");
           }
       } catch (error) {
           console.error("Erreur envoi mail:", error);
@@ -943,7 +952,7 @@ const ParentDashboard = ({ profile, user }) => {
                   <h4 className={`font-black text-4xl font-sans mb-1 leading-none tracking-tighter text-left ${isDark ? 'text-white' : 'text-slate-800'}`}>{s.name}</h4>
                   <div className="flex items-center gap-3 text-slate-400 mb-6"><RatingStars rating={s.rating || 5} size={18}/><span className={`text-[10px] font-black uppercase px-2 py-0.5 rounded-lg border ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-slate-50 border-slate-100'}`}>{s.city}</span></div>
                   
-                  {/* --- AJOUT BADGES DE COMPÉTENCES ICI --- */}
+                  {/* --- BADGES DE COMPÉTENCES PARENT VIEW --- */}
                   {s.skills && (
                      <div className="flex flex-wrap gap-1 mb-4">
                         {s.skills.map((skill, i) => (
