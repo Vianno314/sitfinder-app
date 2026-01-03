@@ -84,17 +84,6 @@ const RatingStars = ({ rating = 5, size = 14, interactive = false, onRate = null
   </div>
 );
 
-// Fonction helper pour calculer l'âge
-const calculateAge = (birth) => {
-  if (!birth) return null;
-  const today = new Date();
-  const birthDate = new Date(birth);
-  let age = today.getFullYear() - birthDate.getFullYear();
-  const m = today.getMonth() - birthDate.getMonth();
-  if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) age--;
-  return age;
-};
-
 const SplashScreen = ({ message = "La recherche en toute confiance" }) => (
   <div className="flex flex-col items-center justify-center h-screen bg-white font-sans overflow-hidden">
     <div className="relative mb-10 animate-in zoom-in duration-1000">
@@ -254,7 +243,7 @@ const PremiumView = ({ onBack, isDark }) => {
                  </ul>
                  <a 
                     href={STRIPE_LINK}
-                    target="_blank"
+                    target="_self" 
                     className="block w-full py-5 bg-[#E64545] text-white text-center rounded-2xl font-black uppercase shadow-xl hover:scale-105 transition-transform"
                  >
                      Je m'abonne (3€)
@@ -632,7 +621,7 @@ const CompleteProfileScreen = ({ uid }) => {
 };
 
 // ==========================================
-// 6. DASHBOARD PARENT (MODIFIÉ)
+// 6. DASHBOARD PARENT (MODIFIÉ AVEC LOGIQUE PREMIUM & AUTO-ACTIVATION)
 // ==========================================
 
 const ParentDashboard = ({ profile, user }) => {
@@ -650,6 +639,22 @@ const ParentDashboard = ({ profile, user }) => {
   const [showFilters, setShowFilters] = useState(false);
   const [sitterReviews, setSitterReviews] = useState([]);
   const [isDark, setIsDark] = useState(localStorage.getItem('dark') === 'true');
+
+  // --- AUTO-ACTIVATION PREMIUM VIA URL ---
+  useEffect(() => {
+    // Vérifie si l'URL contient ?success=true (retour de Stripe)
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('success') === 'true') {
+        // Active le premium dans la base de données
+        updateDoc(doc(db, 'artifacts', appId, 'users', user.uid, 'settings', 'profile'), {
+            isPremium: true
+        }).then(() => {
+            alert("Félicitations ! Votre abonnement Premium est activé 🌟");
+            // Nettoie l'URL pour ne pas réactiver en boucle
+            window.history.replaceState({}, document.title, window.location.pathname);
+        });
+    }
+  }, [user.uid]); // Se déclenche une fois quand l'user est chargé
 
   useEffect(() => {
     localStorage.setItem('dark', isDark);
