@@ -130,8 +130,8 @@ const FAQModal = ({ onClose }) => {
         { q: "Comment payer le Sitter ?", r: "Le paiement se fait en direct (Espèces, Lydia, CESU) à la fin de la garde. BabyKeeper ne prend aucune commission." },
         { q: "C'est quoi le point vert ?", r: "C'est le mode 'Dispo Immédiate'. Le Sitter est prêt à intervenir tout de suite (urgence)." },
         { q: "Je veux garder des animaux aussi !", r: "Cliquez sur le bouton 'Mode' en haut à droite et choisissez 'Pet-Sitter'." },
-        { q: "Comment avoir le badge Vérifié ?", r: "Remplissez votre profil à 100% et ajoutez une photo claire." },
-        { q: "À quoi sert le Premium ?", r: "Le Premium (3€/mois) permet de contacter les Sitters en illimité." }
+        { q: "Badge Vérifié ?", r: "Remplissez votre profil à 100% et ajoutez une photo claire." },
+        { q: "À quoi sert le Premium ?", r: "Le Premium (3€/mois) vous permet de contacter les Sitters en illimité." }
     ];
 
     return (
@@ -265,7 +265,7 @@ const ModeSwitcher = ({ currentRole, currentService, uid }) => {
 };
 
 // ==========================================
-// 4. COMPOSANT PARAMÈTRES (AVEC PADDING POUR BOUTON DECONNEXION)
+// 4. COMPOSANT PARAMÈTRES
 // ==========================================
 
 const SettingsView = ({ user, profile, onBack, isDark, toggleDark }) => {
@@ -370,7 +370,7 @@ const SettingsView = ({ user, profile, onBack, isDark, toggleDark }) => {
 };
 
 // ==========================================
-// 5. COMPOSANT PREMIUM (3€)
+// 5. COMPOSANT PREMIUM
 // ==========================================
 
 const PremiumView = ({ onBack, isDark }) => {
@@ -423,7 +423,7 @@ const PremiumView = ({ onBack, isDark }) => {
 };
 
 // ==========================================
-// 6. MESSAGERIE & CHAT
+// 6. MESSAGERIE
 // ==========================================
 
 const ChatRoom = ({ offer, currentUser, onBack, isDark }) => {
@@ -649,7 +649,7 @@ const ChatRoom = ({ offer, currentUser, onBack, isDark }) => {
 };
 
 // ==========================================
-// 7. AUTH SCREEN (AVEC MOT DE PASSE OUBLIÉ & DESIGN FIX)
+// 7. AUTH SCREEN
 // ==========================================
 
 const AuthScreen = () => {
@@ -787,7 +787,7 @@ const AuthScreen = () => {
   );
 };
 
-// --- ECRAN COMPLÉTION PROFIL AVEC PHOTO OBLIGATOIRE ---
+// --- ECRAN COMPLÉTION PROFIL ---
 const CompleteProfileScreen = ({ uid, serviceType }) => {
   const [name, setName] = useState("");
   const [role, setRole] = useState("parent");
@@ -859,7 +859,7 @@ const CompleteProfileScreen = ({ uid, serviceType }) => {
 };
 
 // ==========================================
-// 8. DASHBOARD PARENT (MULTI-UNIVERS & FILTRE JOUR & BADGES & DISPO IMMEDIATE)
+// 8. DASHBOARD PARENT (FIX)
 // ==========================================
 
 const ParentDashboard = ({ profile, user }) => {
@@ -879,12 +879,11 @@ const ParentDashboard = ({ profile, user }) => {
   const [showFilters, setShowFilters] = useState(false);
   const [sitterReviews, setSitterReviews] = useState([]);
   const [isDark, setIsDark] = useState(localStorage.getItem('dark') === 'true');
-  const [showFAQ, setShowFAQ] = useState(false); // --- ETAT FAQ MODAL ---
+  const [showFAQ, setShowFAQ] = useState(false);
 
   const isPet = profile.serviceType === 'pet';
   const days = ["Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi", "Samedi", "Dimanche"];
 
-  // --- AUTO-ACTIVATION PREMIUM VIA URL ---
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     if (params.get('success') === 'true') {
@@ -992,7 +991,6 @@ const ParentDashboard = ({ profile, user }) => {
     setActiveChat(offer);
   };
 
-  // --- NAVIGATION CLAIRE ---
   if (activeChat) return <ChatRoom offer={activeChat} currentUser={user} onBack={() => setActiveChat(null)} isDark={isDark} />;
   if (activeTab === "settings") return <SettingsView user={user} profile={profile} onBack={() => setActiveTab("search")} isDark={isDark} toggleDark={() => setIsDark(!isDark)} />;
   if (activeTab === "premium") return <PremiumView onBack={() => setActiveTab("search")} isDark={isDark} />;
@@ -1020,8 +1018,10 @@ const ParentDashboard = ({ profile, user }) => {
       </nav>
 
       <main className="p-6 max-w-7xl mx-auto space-y-8 animate-in fade-in duration-500">
-        {activeTab === "search" ? (
-          <>
+        
+        {/* --- VUE RECHERCHE --- */}
+        {activeTab === "search" && (
+            <>
             <div className={`p-10 md:p-14 rounded-[3.5rem] shadow-2xl relative overflow-hidden group transition-all duration-700 ${isDark ? 'bg-gradient-to-br from-[#E64545] to-slate-900' : 'bg-gradient-to-br from-[#E64545] to-[#E0720F]'}`}>
               <div className="relative z-10 text-white">
                   <h2 className="text-4xl font-black italic tracking-tighter font-sans leading-tight animate-in slide-in-from-left duration-700">Bonjour {profile.name} ! 👋</h2>
@@ -1105,8 +1105,8 @@ const ParentDashboard = ({ profile, user }) => {
                   );
               })}
             </div>
-          </>
-        }
+            </>
+        )}
 
         {/* --- VUE MESSAGES --- */}
         {activeTab === "messages" && (
@@ -1379,7 +1379,6 @@ const SitterDashboard = ({ user, profile }) => {
         <div className="flex items-center gap-2"><SitFinderLogo className="w-8 h-8" glow={false} /><span className="font-black italic text-lg md:text-2xl uppercase tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-[#E64545] to-[#E0720F]">BABYKEEPER</span></div>
         <div className="flex items-center gap-1.5">
           <ModeSwitcher currentRole={profile.role} currentService={profile.serviceType || 'baby'} uid={user.uid} />
-          
           <button onClick={() => setShowFAQ(true)} className={`p-2 rounded-2xl transition-all shadow-sm flex items-center justify-center ${isDark ? 'bg-slate-800 text-slate-300' : 'bg-white border border-slate-100 text-slate-400'}`}>
               <HelpCircle size={20} />
           </button>
