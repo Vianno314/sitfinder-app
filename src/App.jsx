@@ -7,7 +7,8 @@ import {
   signInWithEmailAndPassword,
   onAuthStateChanged,
   signOut,
-  deleteUser
+  deleteUser,
+  sendPasswordResetEmail // <--- AJOUT ICI
 } from "firebase/auth";
 import {
   getFirestore,
@@ -168,7 +169,7 @@ const ModeSwitcher = ({ currentRole, currentService, uid }) => {
 };
 
 // ==========================================
-// 4. COMPOSANT PARAMÈTRES
+// 4. COMPOSANT PARAMÈTRES (AVEC LIENS LÉGAUX)
 // ==========================================
 
 const SettingsView = ({ user, profile, onBack, isDark, toggleDark }) => {
@@ -312,7 +313,7 @@ const PremiumView = ({ onBack, isDark }) => {
                  </ul>
                  <a 
                     href={STRIPE_LINK}
-                    target="_self" 
+                    target="_blank"
                     className="block w-full py-5 bg-[#E64545] text-white text-center rounded-2xl font-black uppercase shadow-xl hover:scale-105 transition-transform"
                  >
                      Je m'abonne (3€)
@@ -375,7 +376,7 @@ const ChatRoom = ({ offer, currentUser, onBack, isDark }) => {
     };
   }, [offer.id]);
 
-  // --- EMAIL NOTIF ---
+  // --- EMAIL NOTIF : Fonction d'envoi ---
   const sendEmailNotification = async (msgText) => {
       if (!window.emailjs) return; 
       
@@ -552,7 +553,7 @@ const ChatRoom = ({ offer, currentUser, onBack, isDark }) => {
 };
 
 // ==========================================
-// 7. AUTH SCREEN (MODIFIÉ)
+// 7. AUTH SCREEN (AVEC MOT DE PASSE OUBLIÉ)
 // ==========================================
 
 const AuthScreen = () => {
@@ -575,6 +576,16 @@ const AuthScreen = () => {
         setRemember(true);
     }
   }, []);
+
+  const handleResetPassword = async () => {
+    if (!email) return alert("Veuillez entrer votre email d'abord pour recevoir le lien.");
+    try {
+      await sendPasswordResetEmail(auth, email);
+      alert("📧 Email de réinitialisation envoyé ! Vérifiez vos spams.");
+    } catch (e) {
+      alert("Erreur : Email introuvable ou invalide.");
+    }
+  };
 
   const handleAuth = async (e) => {
     e.preventDefault(); 
@@ -633,9 +644,12 @@ const AuthScreen = () => {
           <input required type="password" placeholder="Mot de passe" className="w-full p-5 bg-slate-50 rounded-2xl outline-none font-bold shadow-inner" value={password} onChange={(e) => setPassword(e.target.value)} />
            
           {!isRegister && (
-             <div className="flex items-center gap-2 pl-2">
-                 <input type="checkbox" id="rem" checked={remember} onChange={(e) => setRemember(e.target.checked)} className="w-5 h-5 accent-[#E64545] rounded-lg"/>
-                 <label htmlFor="rem" className="text-xs font-bold text-slate-500 uppercase tracking-wide cursor-pointer">Se souvenir de moi</label>
+             <div className="flex justify-between items-center pl-2">
+                 <div className="flex items-center gap-2">
+                     <input type="checkbox" id="rem" checked={remember} onChange={(e) => setRemember(e.target.checked)} className="w-5 h-5 accent-[#E64545] rounded-lg"/>
+                     <label htmlFor="rem" className="text-xs font-bold text-slate-500 uppercase tracking-wide cursor-pointer">Se souvenir</label>
+                 </div>
+                 <button type="button" onClick={handleResetPassword} className="text-[10px] font-black uppercase text-[#E0720F] hover:underline">Mot de passe oublié ?</button>
              </div>
           )}
 
@@ -773,6 +787,7 @@ const ParentDashboard = ({ profile, user }) => {
   const isPet = profile.serviceType === 'pet';
   const days = ["Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi", "Samedi", "Dimanche"];
 
+  // --- AUTO-ACTIVATION PREMIUM VIA URL ---
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     if (params.get('success') === 'true') {
@@ -784,14 +799,26 @@ const ParentDashboard = ({ profile, user }) => {
     }
   }, [user.uid]); 
 
+  // FONCTION POUR BASCULER ENTRE ENFANT ET ANIMAL
+  const toggleServiceType = async () => {
+      const newType = isPet ? 'baby' : 'pet';
+      await updateDoc(doc(db, 'artifacts', appId, 'users', user.uid, 'settings', 'profile'), { serviceType: newType });
+  };
+
   useEffect(() => {
     localStorage.setItem('dark', isDark);
     const unsubSitters = onSnapshot(collection(db, 'artifacts', appId, 'public', 'data', 'sitters'), (snap) => {
+      // FILTRE PAR UNIVERS (Baby ou Pet)
       setSitters(snap.docs.map(d => ({ id: d.id, ...d.data() })).filter(s => s.serviceType === profile.serviceType));
       setLoading(false);
     });
-    const qOffers = query(collection(db, 'artifacts', appId, 'public', 'data', 'offers'), where("parentId", "==", user.uid));
-    const unsubOffers = onSnapshot(qOffers, (snap) => { setOffers(snap.docs.map(d => ({ id: d.id, ...d.data() }))); });
+    const qOffers = query(
+      collection(db, 'artifacts', appId, 'public', 'data', 'offers'), 
+      where("parentId", "==", user.uid)
+    );
+    const unsubOffers = onSnapshot(qOffers, (snap) => {
+      setOffers(snap.docs.map(d => ({ id: d.id, ...d.data() })));
+    });
     return () => { unsubSitters(); unsubOffers(); };
   }, [user.uid, isDark, profile.serviceType]); 
 
@@ -808,7 +835,9 @@ const ParentDashboard = ({ profile, user }) => {
 
   const toggleFavorite = async (sitterId) => {
       const isFav = profile.favorites?.includes(sitterId);
-      await updateDoc(doc(db, 'artifacts', appId, 'users', user.uid, 'settings', 'profile'), { favorites: isFav ? arrayRemove(sitterId) : arrayUnion(sitterId) });
+      await updateDoc(doc(db, 'artifacts', appId, 'users', user.uid, 'settings', 'profile'), {
+          favorites: isFav ? arrayRemove(sitterId) : arrayUnion(sitterId)
+      });
   };
 
   const filteredSitters = useMemo(() => {
@@ -819,6 +848,7 @@ const ParentDashboard = ({ profile, user }) => {
       const matchVerified = !onlyVerified || s.hasCV;
       const matchFav = !onlyFavorites || profile.favorites?.includes(s.id);
       const matchDay = !dayFilter || (s.availability && s.availability[dayFilter]?.active);
+
       return matchName && matchLocation && matchPrice && matchVerified && matchFav && matchDay;
     });
   }, [sitters, search, locationFilter, maxPrice, onlyVerified, onlyFavorites, profile.favorites, dayFilter]);
@@ -827,21 +857,35 @@ const ParentDashboard = ({ profile, user }) => {
     try {
       const isPremium = profile?.isPremium === true;
       if (!isPremium) {
-          const oneWeekAgo = new Date(); oneWeekAgo.setDate(oneWeekAgo.getDate() - 7); 
-          const recentOffers = offers.filter(o => { const d = o.createdAt?.toDate ? o.createdAt.toDate() : new Date(o.createdAt); return d > oneWeekAgo; });
-          if (recentOffers.length >= 1) { alert("🔒 Limite atteinte ! Passez Premium."); setSelectedSitter(null); setActiveTab("premium"); return; }
+          const oneWeekAgo = new Date();
+          oneWeekAgo.setDate(oneWeekAgo.getDate() - 7); 
+          const recentOffers = offers.filter(o => {
+              const d = o.createdAt?.toDate ? o.createdAt.toDate() : new Date(o.createdAt);
+              return d > oneWeekAgo;
+          });
+          if (recentOffers.length >= 1) {
+              alert("🔒 Limite atteinte ! Passez Premium.");
+              setSelectedSitter(null); 
+              setActiveTab("premium"); 
+              return; 
+          }
       }
       const offerText = `Offre : ${h}h à ${p}€/h`;
       const newOffer = await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'offers'), {
         parentId: user.uid, parentName: profile.name, sitterId: s.id, sitterName: s.name, price: p, hours: h, status: 'pending', createdAt: Timestamp.now(), lastMsg: offerText, lastMsgAt: Timestamp.now(), hasUnread: true, lastSenderId: user.uid
       });
-      await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'offers', newOffer.id, 'messages'), { text: `Bonjour ${s.name}, je souhaiterais réserver.`, senderId: user.uid, parentId: user.uid, sitterId: s.id, createdAt: Timestamp.now() });
-      setSelectedSitter(null); setActiveTab("messages");
+      await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'offers', newOffer.id, 'messages'), {
+        text: `Bonjour ${s.name}, je souhaiterais réserver une garde de ${h}H au prix de ${p}€/H.`, senderId: user.uid, parentId: user.uid, sitterId: s.id, createdAt: Timestamp.now()
+      });
+      setSelectedSitter(null); 
+      setActiveTab("messages");
     } catch (e) { console.error(e); }
   };
 
   const markAsRead = async (offer) => {
-    if (offer.hasUnread && offer.lastSenderId !== user.uid) { await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'offers', offer.id), { hasUnread: false }); }
+    if (offer.hasUnread && offer.lastSenderId !== user.uid) {
+        await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'offers', offer.id), { hasUnread: false });
+    }
     setActiveChat(offer);
   };
 
@@ -856,9 +900,17 @@ const ParentDashboard = ({ profile, user }) => {
       <nav className={`p-4 flex justify-between items-center sticky top-0 z-40 border-b shadow-sm ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-100'}`}>
         <div className="flex items-center gap-2"><SitFinderLogo className="w-8 h-8" glow={false} /><span className="font-black italic text-lg md:text-2xl uppercase tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-[#E64545] to-[#E0720F]">BABYKEEPER</span></div>
         <div className="flex items-center gap-1.5">
+          {/* BOUTON SWITCHER D'UNIVERS */}
           <ModeSwitcher currentRole={profile.role} currentService={profile.serviceType || 'baby'} uid={user.uid} />
-          <button onClick={() => setActiveTab("premium")} className={`p-2 rounded-2xl transition-all shadow-md bg-gradient-to-br from-yellow-400 to-orange-500 text-white animate-pulse`}><Crown size={20} fill="white" /></button>
-          <div className="relative p-2 text-slate-400"><Bell size={20}/>{unreadCount > 0 && <span className="absolute top-1 right-1 w-4 h-4 bg-[#E64545] text-white text-[8px] font-black rounded-full flex items-center justify-center border-2 border-white animate-bounce">{unreadCount}</span>}</div>
+
+          <button onClick={() => setActiveTab("premium")} className={`p-2 rounded-2xl transition-all shadow-md bg-gradient-to-br from-yellow-400 to-orange-500 text-white animate-pulse`}>
+              <Crown size={20} fill="white" />
+          </button>
+          
+          <div className="relative p-2 text-slate-400">
+              <Bell size={20}/>
+              {unreadCount > 0 && <span className="absolute top-1 right-1 w-4 h-4 bg-[#E64545] text-white text-[8px] font-black rounded-full flex items-center justify-center border-2 border-white animate-bounce">{unreadCount}</span>}
+          </div>
           <button onClick={() => setActiveTab("settings")} className={`p-2 rounded-2xl transition-all ${isDark ? 'bg-slate-800 text-[#E0720F]' : 'bg-slate-50 text-slate-300'}`}><Settings size={20} /></button>
           <button onClick={() => signOut(auth)} className={`p-2 rounded-2xl transition-all ${isDark ? 'bg-slate-800 text-slate-400' : 'bg-slate-50 text-slate-300'}`}><LogOut size={20} /></button>
         </div>
@@ -920,7 +972,6 @@ const ParentDashboard = ({ profile, user }) => {
                   <h4 className={`font-black text-4xl font-sans mb-1 leading-none tracking-tighter text-left ${isDark ? 'text-white' : 'text-slate-800'}`}>{s.name}</h4>
                   <div className="flex items-center gap-3 text-slate-400 mb-6"><RatingStars rating={s.rating || 5} size={18}/><span className={`text-[10px] font-black uppercase px-2 py-0.5 rounded-lg border ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-slate-50 border-slate-100'}`}>{s.city}</span></div>
                   
-                  {/* --- BADGES DE COMPÉTENCES PARENT VIEW --- */}
                   {s.skills && (
                      <div className="flex flex-wrap gap-1 mb-4">
                         {s.skills.map((skill, i) => (
