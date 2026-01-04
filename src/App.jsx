@@ -122,7 +122,7 @@ const UserAvatar = ({ photoURL, size = "w-full h-full", className = "" }) => {
 };
 
 // ==========================================
-// 3. COMPOSANTS GLOBAUX (SWITCHER & INSTALL & FAQ)
+// 3. COMPOSANTS GLOBAUX
 // ==========================================
 
 const FAQModal = ({ onClose }) => {
@@ -130,7 +130,7 @@ const FAQModal = ({ onClose }) => {
         { q: "Comment payer le Sitter ?", r: "Le paiement se fait en direct (Espèces, Lydia, CESU) à la fin de la garde. BabyKeeper ne prend aucune commission." },
         { q: "C'est quoi le point vert ?", r: "C'est le mode 'Dispo Immédiate'. Le Sitter est prêt à intervenir tout de suite (urgence)." },
         { q: "Je veux garder des animaux aussi !", r: "Cliquez sur le bouton 'Mode' en haut à droite et choisissez 'Pet-Sitter'." },
-        { q: "Badge Vérifié ?", r: "Remplissez votre profil à 100% et ajoutez une photo claire." },
+        { q: "Comment avoir le badge Vérifié ?", r: "Remplissez votre profil à 100% et ajoutez une photo claire." },
         { q: "À quoi sert le Premium ?", r: "Le Premium (3€/mois) permet de contacter les Sitters en illimité." }
     ];
 
@@ -318,7 +318,6 @@ const SettingsView = ({ user, profile, onBack, isDark, toggleDark }) => {
     finally { setLoading(false); }
   };
 
-  // --- MODIF : pb-64 pour laisser un gros espace en bas pour le mobile ---
   return (
     <div className={`min-h-screen font-sans ${isDark ? 'bg-slate-950 text-white' : 'bg-slate-50 text-slate-800'}`}>
       <div className={`p-6 border-b flex items-center gap-4 sticky top-0 z-50 ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-100'}`}>
@@ -473,7 +472,6 @@ const ChatRoom = ({ offer, currentUser, onBack, isDark }) => {
     };
   }, [offer.id]);
 
-  // --- EMAIL NOTIF ---
   const sendEmailNotification = async (msgText) => {
       if (!window.emailjs) return; 
       
@@ -485,8 +483,8 @@ const ChatRoom = ({ offer, currentUser, onBack, isDark }) => {
               const targetName = userDoc.data().name;
               
               await window.emailjs.send(
-                  "service_hjonpe3", // SERVICE ID
-                  "template_b2gl0lh", // TEMPLATE ID
+                  "service_hjonpe3", // TON SERVICE ID
+                  "template_b2gl0lh", // TON TEMPLATE ID
                   {
                       to_email: targetEmail,
                       to_name: targetName,
@@ -494,6 +492,7 @@ const ChatRoom = ({ offer, currentUser, onBack, isDark }) => {
                       message: msgText
                   }
               );
+              console.log("Notif envoyée");
           }
       } catch (error) {
           console.error("Erreur envoi mail:", error);
@@ -1498,13 +1497,7 @@ const SitterDashboard = ({ user, profile }) => {
           </div>
         )}
       </main>
-      <div className={`fixed bottom-10 left-1/2 -translate-x-1/2 w-[90%] max-w-md backdrop-blur-xl p-2.5 rounded-[3.5rem] shadow-2xl flex items-center justify-between z-50 border ${isDark ? 'bg-slate-900/95 border-slate-800' : 'bg-slate-900/95 border-white/10'}`}><button onClick={() => setActiveTab("profile")} className={`flex-1 flex flex-col items-center py-4 rounded-[2.5rem] transition-all duration-300 ${activeTab === "profile" ? (isDark ? "bg-[#E64545] text-white" : "bg-[#E64545] text-white") : "text-slate-400 hover:text-white"}`}><User size={22}/><span className="text-[9px] font-black uppercase mt-1.5 tracking-widest font-sans">Profil</span></button><button onClick={() => setActiveTab("messages")} className={`flex-1 flex flex-col items-center py-4 rounded-[2.5rem] transition-all duration-300 relative ${activeTab === "messages" ? (isDark ? "bg-[#E64545] text-white" : "bg-[#E64545] text-white") : "text-slate-400 hover:text-white"}`}><MessageSquare size={22}/><span className="text-[9px] font-black uppercase mt-1.5 font-sans tracking-widest">Offres</span>{unreadCount > 0 && <div className="absolute top-3 right-1/3 w-2.5 h-2.5 bg-[#E0720F] rounded-full border-2 border-slate-900 animate-pulse"></div>}</button></div>
-      
-      {/* --- BANDEAU INSTALLATION PWA --- */}
-      <InstallPrompt />
-
-      {/* --- FAQ MODAL --- */}
-      {showFAQ && <FAQModal onClose={() => setShowFAQ(false)} />}
+      <div className={`fixed bottom-10 left-1/2 -translate-x-1/2 w-[90%] max-w-md backdrop-blur-xl p-2.5 rounded-[3rem] shadow-2xl flex items-center justify-between z-50 border ${isDark ? 'bg-slate-900/95 border-slate-800' : 'bg-slate-900/95 border-white/10'}`}><button onClick={() => setActiveTab("profile")} className={`flex-1 flex flex-col items-center py-4 rounded-[2.5rem] transition-all duration-300 ${activeTab === "profile" ? (isDark ? "bg-[#E64545] text-white" : "bg-[#E64545] text-white") : "text-slate-400 hover:text-white"}`}><User size={22}/><span className="text-[9px] font-black uppercase mt-1.5 tracking-widest font-sans">Profil</span></button><button onClick={() => setActiveTab("messages")} className={`flex-1 flex flex-col items-center py-4 rounded-[2.5rem] transition-all duration-300 relative ${activeTab === "messages" ? (isDark ? "bg-[#E64545] text-white" : "bg-[#E64545] text-white") : "text-slate-400 hover:text-white"}`}><MessageSquare size={22}/><span className="text-[9px] font-black uppercase mt-1.5 font-sans tracking-widest">Offres</span>{unreadCount > 0 && <div className="absolute top-3 right-1/3 w-2.5 h-2.5 bg-[#E0720F] rounded-full border-2 border-slate-900 animate-pulse"></div>}</button></div>
     </div>
   );
 };
