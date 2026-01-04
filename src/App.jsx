@@ -131,7 +131,7 @@ const FAQModal = ({ onClose }) => {
         { q: "C'est quoi le point vert ?", r: "C'est le mode 'Dispo Immédiate'. Le Sitter est prêt à intervenir tout de suite (urgence)." },
         { q: "Je veux garder des animaux aussi !", r: "Cliquez sur le bouton 'Mode' en haut à droite et choisissez 'Pet-Sitter'." },
         { q: "Comment avoir le badge Vérifié ?", r: "Remplissez votre profil à 100% et ajoutez une photo claire." },
-        { q: "À quoi sert le Premium ?", r: "Le Premium (3€/mois) vous permet de contacter les Sitters en illimité." }
+        { q: "À quoi sert le Premium ?", r: "Le Premium (3€/mois) permet de contacter les Sitters en illimité." }
     ];
 
     return (
@@ -265,7 +265,7 @@ const ModeSwitcher = ({ currentRole, currentService, uid }) => {
 };
 
 // ==========================================
-// 4. COMPOSANT PARAMÈTRES (CORRIGÉ & CENTRÉ)
+// 4. COMPOSANT PARAMÈTRES (AVEC PADDING ENORME POUR MOBILE)
 // ==========================================
 
 const SettingsView = ({ user, profile, onBack, isDark, toggleDark }) => {
@@ -318,7 +318,6 @@ const SettingsView = ({ user, profile, onBack, isDark, toggleDark }) => {
     finally { setLoading(false); }
   };
 
-  // Ajout de pb-52 (200px env) pour que le bouton déconnexion remonte bien
   return (
     <div className={`min-h-screen font-sans ${isDark ? 'bg-slate-950 text-white' : 'bg-slate-50 text-slate-800'}`}>
       <div className={`p-6 border-b flex items-center gap-4 sticky top-0 z-50 ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-100'}`}>
@@ -326,7 +325,7 @@ const SettingsView = ({ user, profile, onBack, isDark, toggleDark }) => {
         <h2 className="font-black text-xl italic uppercase text-[#E64545]">Réglages</h2>
       </div>
 
-      <div className="max-w-2xl w-full mx-auto p-6 space-y-8 pb-52"> 
+      <div className="max-w-2xl mx-auto p-6 space-y-8 pb-64"> 
         {status.msg && <div className="p-4 bg-[#E0720F]/10 text-[#E0720F] rounded-2xl font-bold text-center text-xs uppercase">{status.msg}</div>}
 
         <div className={`p-8 rounded-[3rem] border flex justify-between items-center ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-50'}`}>
@@ -353,7 +352,7 @@ const SettingsView = ({ user, profile, onBack, isDark, toggleDark }) => {
             <button disabled={loading} className="w-full bg-[#E64545] text-white py-5 rounded-2xl font-black uppercase shadow-xl hover:brightness-110">Sauvegarder</button>
         </form>
 
-        <div className="space-y-6 pt-8"> {/* Ajout de padding-top pour séparer */}
+        <div className="space-y-6 pt-8"> 
           <a href="mailto:babykeeper.bordais@gmail.com" className="w-full p-5 border-2 border-[#E0720F]/20 text-[#E0720F] rounded-2xl font-black text-xs uppercase flex justify-center gap-2 hover:bg-[#E0720F]/5">Support Technique</a>
           
           <div className="flex justify-center gap-4 text-[10px] text-slate-400 font-bold uppercase tracking-widest pt-4 border-t border-slate-100/50">
@@ -475,14 +474,12 @@ const ChatRoom = ({ offer, currentUser, onBack, isDark }) => {
 
   const sendEmailNotification = async (msgText) => {
       if (!window.emailjs) return; 
-      
       const otherId = currentUser.uid === offer.sitterId ? offer.parentId : offer.sitterId;
       try {
           const userDoc = await getDoc(doc(db, 'artifacts', appId, 'users', otherId, 'settings', 'profile'));
           if (userDoc.exists()) {
               const targetEmail = userDoc.data().email;
               const targetName = userDoc.data().name;
-              
               await window.emailjs.send(
                   "service_hjonpe3", // TON SERVICE ID
                   "template_b2gl0lh", // TON TEMPLATE ID
@@ -905,7 +902,6 @@ const ParentDashboard = ({ profile, user }) => {
   useEffect(() => {
     localStorage.setItem('dark', isDark);
     const unsubSitters = onSnapshot(collection(db, 'artifacts', appId, 'public', 'data', 'sitters'), (snap) => {
-      // FILTRE PAR UNIVERS (Baby ou Pet)
       setSitters(snap.docs.map(d => ({ id: d.id, ...d.data() })).filter(s => s.serviceType === profile.serviceType));
       setLoading(false);
     });
@@ -933,7 +929,6 @@ const ParentDashboard = ({ profile, user }) => {
   };
 
   const filteredSitters = useMemo(() => {
-    // 1. D'abord on filtre
     const filtered = sitters.filter(s => {
       const matchName = s.name?.toLowerCase().includes(search.toLowerCase());
       const matchLocation = !locationFilter || s.city?.toLowerCase().includes(locationFilter.toLowerCase());
@@ -945,15 +940,12 @@ const ParentDashboard = ({ profile, user }) => {
       return matchName && matchLocation && matchPrice && matchVerified && matchFav && matchDay;
     });
 
-    // 2. Ensuite on trie (DISPO IMMEDIATE EN PREMIER)
     return filtered.sort((a, b) => {
         const isInstantA = a.instantAvailableUntil && new Date(a.instantAvailableUntil) > new Date();
         const isInstantB = b.instantAvailableUntil && new Date(b.instantAvailableUntil) > new Date();
         
-        if (isInstantA && !isInstantB) return -1; // A en premier
-        if (!isInstantA && isInstantB) return 1;  // B en premier
-        
-        // Si égalité, on trie par vues (popularité)
+        if (isInstantA && !isInstantB) return -1;
+        if (!isInstantA && isInstantB) return 1;
         return (b.views || 0) - (a.views || 0);
     });
 
@@ -999,10 +991,13 @@ const ParentDashboard = ({ profile, user }) => {
         <div className="flex items-center gap-2"><SitFinderLogo className="w-8 h-8" glow={false} /><span className="font-black italic text-lg md:text-2xl uppercase tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-[#E64545] to-[#E0720F]">BABYKEEPER</span></div>
         <div className="flex items-center gap-1.5">
           <ModeSwitcher currentRole={profile.role} currentService={profile.serviceType || 'baby'} uid={user.uid} />
+          
           <button onClick={() => setShowFAQ(true)} className={`p-2 rounded-2xl transition-all shadow-sm flex items-center justify-center ${isDark ? 'bg-slate-800 text-slate-300' : 'bg-white border border-slate-100 text-slate-400'}`}>
               <HelpCircle size={20} />
           </button>
+
           <button onClick={() => setActiveTab("premium")} className={`p-2 rounded-2xl transition-all shadow-md bg-gradient-to-br from-yellow-400 to-orange-500 text-white animate-pulse`}><Crown size={20} fill="white" /></button>
+          
           <div className="relative p-2 text-slate-400"><Bell size={20}/>{unreadCount > 0 && <span className="absolute top-1 right-1 w-4 h-4 bg-[#E64545] text-white text-[8px] font-black rounded-full flex items-center justify-center border-2 border-white animate-bounce">{unreadCount}</span>}</div>
         </div>
       </nav>
@@ -1052,13 +1047,11 @@ const ParentDashboard = ({ profile, user }) => {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-10">
               {loading ? <div className="col-span-full py-20 flex justify-center animate-pulse"><Loader2 className="animate-spin text-[#E64545]" size={64} /></div> 
               : filteredSitters.map((s) => {
-                  // Vérification Dispo Immédiate
                   const isInstant = s.instantAvailableUntil && new Date(s.instantAvailableUntil) > new Date();
 
                   return (
                     <div key={s.id} className={`p-10 rounded-[3.5rem] shadow-xl border hover:shadow-2xl transition-all flex flex-col min-h-[520px] group/card relative ${isDark ? 'bg-slate-900 border-slate-800 shadow-slate-950' : 'bg-white border-slate-50 shadow-slate-200'} ${isInstant ? 'ring-4 ring-green-400/50' : ''}`}>
                       
-                      {/* --- BADGE DISPO IMMEDIATE --- */}
                       {isInstant && (
                           <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-green-500 text-white px-6 py-2 rounded-full font-black text-xs uppercase shadow-lg shadow-green-500/30 animate-bounce z-10 flex items-center gap-2">
                               <span className="w-2 h-2 bg-white rounded-full animate-ping"></span>
@@ -1096,7 +1089,7 @@ const ParentDashboard = ({ profile, user }) => {
               })}
             </div>
             </>
-        )}
+        }
 
         {/* --- VUE MESSAGES --- */}
         {activeTab === "messages" && (
@@ -1106,7 +1099,7 @@ const ParentDashboard = ({ profile, user }) => {
               {offers.length === 0 ? 
                  <div className={`py-24 text-center rounded-[4rem] border-2 border-dashed italic text-xl shadow-inner flex flex-col items-center justify-center gap-4 ${isDark ? 'bg-slate-900 border-slate-800 text-slate-500' : 'bg-white border-slate-100 text-slate-400'}`}>
                     <Inbox size={48} className="opacity-20"/>
-                    <p>Aucune offre en cours...</p>
+                    <p>Aucune demande pour le moment...</p>
                  </div>
               : offers.sort((a,b) => (b.lastMsgAt?.seconds || 0) - (a.lastMsgAt?.seconds || 0)).map(o => (
                   <div key={o.id} onClick={() => markAsRead(o)} className={`p-10 rounded-[3.5rem] shadow-xl border flex items-center justify-between hover:border-[#E0720F]/30 cursor-pointer transition-all active:scale-[0.99] shadow-md ${isDark ? 'bg-slate-900 border-slate-800 text-white shadow-slate-950' : 'bg-white border-slate-100 text-slate-900 shadow-slate-100'} ${o.hasUnread && o.lastSenderId !== user.uid ? 'ring-2 ring-[#E64545]' : ''}`}>
@@ -1383,8 +1376,8 @@ const SitterDashboard = ({ user, profile }) => {
 
           <button onClick={() => setActiveTab("premium")} className={`p-2 rounded-2xl transition-all shadow-md bg-gradient-to-br from-yellow-400 to-orange-500 text-white animate-pulse`}><Crown size={20} fill="white" /></button>
           <div className="relative p-2 text-slate-400"><Bell size={20}/>{unreadCount > 0 && <span className="absolute top-1 right-1 w-4 h-4 bg-[#E64545] text-white text-[8px] font-black rounded-full flex items-center justify-center border-2 border-white animate-bounce">{unreadCount}</span>}</div>
+          {/* BOUTON REGLAGES DANS LA BARRE DU HAUT (SITTER) */}
           <button onClick={() => setActiveTab("settings")} className={`p-2 rounded-2xl transition-all ${isDark ? 'bg-slate-800 text-[#E0720F]' : 'bg-slate-50 text-slate-300'}`}><Settings size={20} /></button>
-          <button onClick={() => signOut(auth)} className={`p-2 rounded-2xl transition-all ${isDark ? 'bg-slate-800 text-slate-400' : 'bg-slate-50 text-slate-300'}`}><LogOut size={20} /></button>
         </div>
       </nav>
       <main className="p-6 max-w-4xl mx-auto space-y-12">
@@ -1505,7 +1498,9 @@ const SitterDashboard = ({ user, profile }) => {
       </main>
 
       <div className={`fixed bottom-10 left-1/2 -translate-x-1/2 w-[90%] max-w-md backdrop-blur-xl p-2.5 rounded-[3rem] shadow-2xl flex items-center justify-between z-50 border ${isDark ? 'bg-slate-900/95 border-slate-800' : 'bg-slate-900/95 border-white/10'}`}>
-        <button onClick={() => setActiveTab("profile")} className={`flex-1 flex flex-col items-center py-4 rounded-[2.5rem] transition-all duration-300 ${activeTab === "profile" ? (isDark ? "bg-[#E64545] text-white" : "bg-[#E64545] text-white") : "text-slate-400 hover:text-white"}`}><User size={22}/><span className="text-[9px] font-black uppercase mt-1.5 tracking-widest font-sans">Profil</span></button><button onClick={() => setActiveTab("messages")} className={`flex-1 flex flex-col items-center py-4 rounded-[2.5rem] transition-all duration-300 relative ${activeTab === "messages" ? (isDark ? "bg-[#E64545] text-white" : "bg-[#E64545] text-white") : "text-slate-400 hover:text-white"}`}><MessageSquare size={22}/><span className="text-[9px] font-black uppercase mt-1.5 font-sans tracking-widest">Offres</span>{unreadCount > 0 && <div className="absolute top-3 right-1/3 w-2.5 h-2.5 bg-[#E0720F] rounded-full border-2 border-slate-900 animate-pulse"></div>}</button></div>
+        <button onClick={() => setActiveTab("profile")} className={`flex-1 flex flex-col items-center py-4 rounded-[2.5rem] transition-all duration-300 ${activeTab === "profile" ? (isDark ? "bg-[#E64545] text-white" : "bg-[#E64545] text-white") : "text-slate-400 hover:text-white"}`}><User size={22}/><span className="text-[9px] font-black uppercase mt-1.5 tracking-widest font-sans">Profil</span></button>
+        <button onClick={() => setActiveTab("messages")} className={`flex-1 flex flex-col items-center py-4 rounded-[2.5rem] transition-all duration-300 relative ${activeTab === "messages" ? (isDark ? "bg-[#E64545] text-white" : "bg-[#E64545] text-white") : "text-slate-400 hover:text-white"}`}><MessageSquare size={22}/><span className="text-[9px] font-black uppercase mt-1.5 font-sans tracking-widest">Offres</span>{unreadCount > 0 && <div className="absolute top-3 right-1/3 w-2.5 h-2.5 bg-[#E0720F] rounded-full border-2 border-slate-900 animate-pulse"></div>}</button>
+      </div>
     
       {/* --- BANDEAU INSTALLATION PWA --- */}
       <InstallPrompt />
