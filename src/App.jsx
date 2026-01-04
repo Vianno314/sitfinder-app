@@ -986,7 +986,7 @@ const ParentDashboard = ({ profile, user }) => {
   };
 
   if (activeChat) return <ChatRoom offer={activeChat} currentUser={user} onBack={() => setActiveChat(null)} isDark={isDark} />;
-  if (activeTab === "profile") return <SettingsView user={user} profile={profile} onBack={() => setActiveTab("search")} isDark={isDark} toggleDark={() => setIsDark(!isDark)} />;
+  if (activeTab === "settings") return <SettingsView user={user} profile={profile} onBack={() => setActiveTab("search")} isDark={isDark} toggleDark={() => setIsDark(!isDark)} />;
   if (activeTab === "premium") return <PremiumView onBack={() => setActiveTab("search")} isDark={isDark} />;
 
   const getSPhoto = (s) => (s.useCustomPhoto && s.photoURL) ? s.photoURL : `https://api.dicebear.com/7.x/${s.avatarStyle || 'avataaars'}/svg?seed=${s.name}`;
@@ -1118,11 +1118,17 @@ const ParentDashboard = ({ profile, user }) => {
                     <div className="flex items-center gap-6 text-left">
                         <div className={`w-20 h-20 rounded-3xl overflow-hidden shadow-sm border ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-[#E0720F]/10 border-[#E0720F]/20'}`}>
                             {/* Récupération de l'image du Sitter */}
-                            <UserAvatar photoURL={profile.photoURL} />
+                            <UserAvatar photoURL={sitters.find(x => x.id === o.sitterId)?.photoURL} />
                         </div>
-                        <div className="text-left"><h4 className={`font-black text-3xl italic leading-tight ${isDark ? 'text-white' : ''}`}>{o.parentName}</h4><p className={`text-[11px] font-black uppercase tracking-[0.3em] mt-1 ${isDark ? 'text-indigo-400' : 'text-[#E0720F]'}`}>{o.status === 'accepted' ? 'Validé ✨' : `Offre : ${o.price}€/H`}</p></div>
+                        <div className="text-left"><h4 className="font-black text-2xl font-sans leading-tight">{o.sitterName}</h4>
+                        <p className={`text-[11px] font-bold truncate max-w-[150px] mt-1 ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>{o.lastMsg}</p>
+                         {/* BADGE PAIEMENT */}
+                        {o.status === 'paid_held' && <span className="text-[9px] bg-yellow-100 text-yellow-600 px-2 rounded-full mt-1 inline-block font-bold">Payé (En attente)</span>}
+                        {o.status === 'completed' && <span className="text-[9px] bg-green-100 text-green-600 px-2 rounded-full mt-1 inline-block font-bold">Terminé</span>}
+                        </div>
                     </div>
-                    {o.hasUnread && o.lastSenderId !== user.uid && <div className="w-4 h-4 bg-[#E64545] rounded-full animate-pulse shadow-xl"></div>}
+                    {o.hasUnread && o.lastSenderId !== user.uid && <div className="w-3 h-3 bg-[#E64545] rounded-full animate-pulse shadow-[#E64545]/20"></div>}
+                    <ChevronRight className="text-slate-200" size={24}/>
                   </div>
               ))}
             </div>
@@ -1134,7 +1140,7 @@ const ParentDashboard = ({ profile, user }) => {
         <button onClick={() => setActiveTab("search")} className={`flex-1 flex flex-col items-center py-4 rounded-[2.5rem] transition-all duration-300 ${activeTab === "search" ? (isDark ? "bg-[#E64545] text-white" : "bg-[#E64545] text-white") : "text-slate-400 hover:text-white"}`}><Search size={22}/><span className="text-[9px] font-black uppercase mt-1.5 tracking-widest">Trouver</span></button>
         <button onClick={() => setActiveTab("messages")} className={`flex-1 flex flex-col items-center py-4 rounded-[2.5rem] transition-all duration-300 relative ${activeTab === "messages" ? (isDark ? "bg-[#E64545] text-white" : "bg-[#E64545] text-white") : "text-slate-400 hover:text-white"}`}><MessageSquare size={22}/><span className="text-[9px] font-black uppercase mt-1.5 font-sans tracking-widest">Offres</span>{unreadCount > 0 && <div className="absolute top-3 right-1/3 w-2.5 h-2.5 bg-[#E0720F] rounded-full border-2 border-slate-900 animate-pulse"></div>}</button>
         {/* NOUVEAU BOUTON REGLAGES EN BAS QUI OUVRE LES REGLAGES */}
-        <button onClick={() => setActiveTab("profile")} className={`flex-1 flex flex-col items-center py-4 rounded-[2.5rem] transition-all duration-300 ${activeTab === "profile" ? (isDark ? "bg-[#E64545] text-white" : "bg-[#E64545] text-white") : "text-slate-400 hover:text-white"}`}>
+        <button onClick={() => setActiveTab("settings")} className={`flex-1 flex flex-col items-center py-4 rounded-[2.5rem] transition-all duration-300 ${activeTab === "settings" ? (isDark ? "bg-[#E64545] text-white" : "bg-[#E64545] text-white") : "text-slate-400 hover:text-white"}`}>
             <Settings size={22}/>
             <span className="text-[9px] font-black uppercase mt-1.5 tracking-widest font-sans">Réglages</span>
         </button>
@@ -1496,6 +1502,7 @@ const SitterDashboard = ({ user, profile }) => {
                         <div className="text-left"><h4 className={`font-black text-3xl italic leading-tight ${isDark ? 'text-white' : ''}`}>{o.parentName}</h4><p className={`text-[11px] font-black uppercase tracking-[0.3em] mt-1 ${isDark ? 'text-indigo-400' : 'text-[#E0720F]'}`}>{o.status === 'accepted' ? 'Validé ✨' : `Offre : ${o.price}€/H`}</p></div>
                     </div>
                     {o.hasUnread && o.lastSenderId !== user.uid && <div className="w-4 h-4 bg-[#E64545] rounded-full animate-pulse shadow-xl"></div>}
+                    <ChevronRight className="text-slate-200" size={24}/>
                   </div>
               ))}
             </div>
