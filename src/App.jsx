@@ -32,7 +32,7 @@ import {
   Baby, LogOut, Save, Search, Loader2, AlertCircle, ShieldCheck, 
   Euro, User, Mail, Lock, ChevronRight, Sparkles, Heart, Filter, Calendar,
   Clock, UserPlus, Cake, FileUp, FileText, CheckCircle2, MessageSquare, 
-  Send, X, Check, ArrowLeft, MessageCircle, PartyPopper, Star, MapPin, Camera, SlidersHorizontal, Settings, KeyRound, Phone, Trash2, Palette, Image as ImageIcon, Share2, Quote, TrendingUp, Zap, Trophy, Languages, EyeOff, Moon, Sun, Bell, Flag, Eye, Wallet, Car, CreditCard, LockKeyhole, Crown, Info, Dog, Cat, Bone, PawPrint, RefreshCw, Power
+  Send, X, Check, ArrowLeft, MessageCircle, PartyPopper, Star, MapPin, Camera, SlidersHorizontal, Settings, KeyRound, Phone, Trash2, Palette, Image as ImageIcon, Share2, Quote, TrendingUp, Zap, Trophy, Languages, EyeOff, Moon, Sun, Bell, Flag, Eye, Wallet, Car, CreditCard, LockKeyhole, Crown, Info, Dog, Cat, Bone, PawPrint, RefreshCw, HelpCircle
 } from "lucide-react";
 
 // ==========================================
@@ -122,8 +122,41 @@ const UserAvatar = ({ photoURL, size = "w-full h-full", className = "" }) => {
 };
 
 // ==========================================
-// 3. COMPOSANTS GLOBAUX (SWITCHER & INSTALL)
+// 3. COMPOSANTS GLOBAUX (SWITCHER & INSTALL & FAQ)
 // ==========================================
+
+// --- FAQ MODAL ---
+const FAQModal = ({ onClose }) => {
+    const faqs = [
+        { q: "Comment payer le Sitter ?", r: "Le paiement se fait en direct (Espèces, Lydia, CESU) à la fin de la garde. BabyKeeper ne prend aucune commission sur les gardes." },
+        { q: "C'est quoi le point vert ?", r: "C'est le mode 'Dispo Immédiate'. Cela signifie que le Sitter est prêt à intervenir tout de suite (urgence)." },
+        { q: "Je veux garder des animaux aussi !", r: "Facile ! Cliquez sur le bouton 'Mode' en haut à droite et choisissez 'Pet-Sitter' pour créer votre profil animaux." },
+        { q: "Comment avoir le badge Vérifié ?", r: "Remplissez votre profil à 100% et ajoutez une photo claire. L'équipe vérifie régulièrement les profils." },
+        { q: "À quoi sert le Premium ?", r: "Le Premium (3€/mois) vous permet de contacter les Sitters en illimité et d'accéder aux numéros de téléphone directs." }
+    ];
+
+    return (
+        <div className="fixed inset-0 bg-slate-900/90 backdrop-blur-md z-[70] flex items-center justify-center p-6 text-slate-900 animate-in fade-in zoom-in duration-300">
+            <div className="bg-white w-full max-w-md rounded-[3rem] p-8 space-y-6 max-h-[80vh] overflow-y-auto">
+                <div className="flex justify-between items-center">
+                    <h3 className="text-2xl font-black italic uppercase tracking-tighter text-[#E64545]">Questions Freq.</h3>
+                    <button onClick={onClose} className="p-3 bg-slate-100 rounded-full"><X size={20}/></button>
+                </div>
+                <div className="space-y-4">
+                    {faqs.map((item, i) => (
+                        <div key={i} className="p-5 bg-slate-50 rounded-2xl border border-slate-100">
+                            <h4 className="font-black text-xs uppercase mb-2 flex items-center gap-2"><HelpCircle size={14} className="text-[#E0720F]"/> {item.q}</h4>
+                            <p className="text-sm text-slate-600 leading-relaxed">{item.r}</p>
+                        </div>
+                    ))}
+                </div>
+                <div className="text-center pt-4 border-t border-slate-100">
+                    <a href="mailto:babykeeper.bordais@gmail.com" className="text-xs font-bold text-slate-400 hover:text-[#E64545] uppercase tracking-widest">Contacter le support</a>
+                </div>
+            </div>
+        </div>
+    );
+};
 
 const InstallPrompt = () => {
     const [deferredPrompt, setDeferredPrompt] = useState(null);
@@ -442,7 +475,7 @@ const ChatRoom = ({ offer, currentUser, onBack, isDark }) => {
 
   // --- EMAIL NOTIF : Fonction d'envoi ---
   const sendEmailNotification = async (msgText) => {
-      if (!window.emailjs) return; 
+      if (!window.emailjs) return; // Sécurité si le script n'est pas chargé
       
       const otherId = currentUser.uid === offer.sitterId ? offer.parentId : offer.sitterId;
       try {
@@ -451,6 +484,7 @@ const ChatRoom = ({ offer, currentUser, onBack, isDark }) => {
               const targetEmail = userDoc.data().email;
               const targetName = userDoc.data().name;
               
+              // ⚠️ CLÉS EMAILJS INTÉGRÉES ⚠️
               await window.emailjs.send(
                   "service_hjonpe3", // TON SERVICE ID
                   "template_b2gl0lh", // TON TEMPLATE ID
@@ -461,6 +495,7 @@ const ChatRoom = ({ offer, currentUser, onBack, isDark }) => {
                       message: msgText
                   }
               );
+              console.log("Notif envoyée");
           }
       } catch (error) {
           console.error("Erreur envoi mail:", error);
@@ -487,6 +522,8 @@ const ChatRoom = ({ offer, currentUser, onBack, isDark }) => {
     e.preventDefault();
     const txt = newMessage.trim();
     if (!txt) return;
+    
+    // Optimistic UI update
     setNewMessage("");
 
     try {
@@ -496,7 +533,10 @@ const ChatRoom = ({ offer, currentUser, onBack, isDark }) => {
       await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'offers', offer.id), {
           lastMsg: txt, lastMsgAt: Timestamp.now(), hasUnread: true, lastSenderId: currentUser.uid
       });
+      
+      // --- EMAIL NOTIF : Appel ---
       sendEmailNotification(txt);
+
     } catch (e) { console.error(e); }
   };
 
@@ -513,7 +553,9 @@ const ChatRoom = ({ offer, currentUser, onBack, isDark }) => {
       
       await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'offers', offer.id, 'messages'), { text, senderId: 'system', parentId: offer.parentId, sitterId: offer.sitterId, createdAt: Timestamp.now() });
 
+      // --- EMAIL NOTIF : Appel lors de l'acceptation ---
       if(status === 'accepted') sendEmailNotification("Votre offre a été acceptée !");
+
     } catch (e) { console.error(e); }
   };
 
@@ -847,6 +889,7 @@ const ParentDashboard = ({ profile, user }) => {
   const [showFilters, setShowFilters] = useState(false);
   const [sitterReviews, setSitterReviews] = useState([]);
   const [isDark, setIsDark] = useState(localStorage.getItem('dark') === 'true');
+  const [showFAQ, setShowFAQ] = useState(false); // --- ETAT FAQ MODAL ---
 
   const isPet = profile.serviceType === 'pet';
   const days = ["Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi", "Samedi", "Dimanche"];
@@ -927,7 +970,8 @@ const ParentDashboard = ({ profile, user }) => {
     try {
       const isPremium = profile?.isPremium === true;
       if (!isPremium) {
-          const oneWeekAgo = new Date(); oneWeekAgo.setDate(oneWeekAgo.getDate() - 7); 
+          const oneWeekAgo = new Date();
+          oneWeekAgo.setDate(oneWeekAgo.getDate() - 7); 
           const recentOffers = offers.filter(o => { const d = o.createdAt?.toDate ? o.createdAt.toDate() : new Date(o.createdAt); return d > oneWeekAgo; });
           if (recentOffers.length >= 1) { alert("🔒 Limite atteinte ! Passez Premium."); setSelectedSitter(null); setActiveTab("premium"); return; }
       }
@@ -957,7 +1001,13 @@ const ParentDashboard = ({ profile, user }) => {
         <div className="flex items-center gap-2"><SitFinderLogo className="w-8 h-8" glow={false} /><span className="font-black italic text-lg md:text-2xl uppercase tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-[#E64545] to-[#E0720F]">BABYKEEPER</span></div>
         <div className="flex items-center gap-1.5">
           <ModeSwitcher currentRole={profile.role} currentService={profile.serviceType || 'baby'} uid={user.uid} />
+          
+          <button onClick={() => setShowFAQ(true)} className={`p-2 rounded-2xl transition-all shadow-sm flex items-center justify-center ${isDark ? 'bg-slate-800 text-slate-300' : 'bg-white border border-slate-100 text-slate-400'}`}>
+              <HelpCircle size={20} />
+          </button>
+
           <button onClick={() => setActiveTab("premium")} className={`p-2 rounded-2xl transition-all shadow-md bg-gradient-to-br from-yellow-400 to-orange-500 text-white animate-pulse`}><Crown size={20} fill="white" /></button>
+          
           <div className="relative p-2 text-slate-400"><Bell size={20}/>{unreadCount > 0 && <span className="absolute top-1 right-1 w-4 h-4 bg-[#E64545] text-white text-[8px] font-black rounded-full flex items-center justify-center border-2 border-white animate-bounce">{unreadCount}</span>}</div>
           <button onClick={() => setActiveTab("settings")} className={`p-2 rounded-2xl transition-all ${isDark ? 'bg-slate-800 text-[#E0720F]' : 'bg-slate-50 text-slate-300'}`}><Settings size={20} /></button>
           <button onClick={() => signOut(auth)} className={`p-2 rounded-2xl transition-all ${isDark ? 'bg-slate-800 text-slate-400' : 'bg-slate-50 text-slate-300'}`}><LogOut size={20} /></button>
@@ -989,6 +1039,7 @@ const ParentDashboard = ({ profile, user }) => {
                 <div className={`p-10 rounded-[3.5rem] shadow-2xl border grid grid-cols-1 md:grid-cols-3 gap-12 animate-in slide-in-from-top-4 duration-300 relative z-30 ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-100'}`}>
                    <div className="space-y-4 text-left"><label className="text-[11px] font-black text-slate-400 uppercase italic">Ville</label><input type="text" placeholder="Paris, Lyon..." className={`w-full p-5 rounded-2xl outline-none font-bold ${isDark ? 'bg-slate-800' : 'bg-slate-50'}`} value={locationFilter} onChange={(e) => setLocationFilter(e.target.value)} /></div>
                    
+                   {/* NOUVEAU : SELECTEUR DE JOUR */}
                    <div className="space-y-4 text-left">
                        <label className="text-[11px] font-black text-slate-400 uppercase italic">Disponibilité</label>
                        <select value={dayFilter} onChange={(e) => setDayFilter(e.target.value)} className={`w-full p-5 rounded-2xl outline-none font-bold appearance-none ${isDark ? 'bg-slate-800 text-white' : 'bg-slate-50 text-slate-800'}`}>
@@ -1059,6 +1110,7 @@ const ParentDashboard = ({ profile, user }) => {
                   <div key={o.id} onClick={() => markAsRead(o)} className={`p-10 rounded-[3.5rem] shadow-xl border flex items-center justify-between hover:border-[#E0720F]/30 cursor-pointer transition-all active:scale-[0.99] shadow-md ${isDark ? 'bg-slate-900 border-slate-800 text-white shadow-slate-950' : 'bg-white border-slate-100 text-slate-900 shadow-slate-100'} ${o.hasUnread && o.lastSenderId !== user.uid ? 'ring-2 ring-[#E64545]' : ''}`}>
                     <div className="flex items-center gap-6 text-left">
                         <div className={`w-20 h-20 rounded-3xl overflow-hidden shadow-sm border ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-[#E0720F]/10 border-[#E0720F]/20'}`}>
+                            {/* Récupération de l'image du Sitter */}
                             <UserAvatar photoURL={sitters.find(x => x.id === o.sitterId)?.photoURL} />
                         </div>
                         <div className="text-left"><h4 className="font-black text-2xl font-sans leading-tight">{o.sitterName}</h4>
@@ -1076,96 +1128,13 @@ const ParentDashboard = ({ profile, user }) => {
           </div>
         )}
       </main>
-
-      <div className={`fixed bottom-10 left-1/2 -translate-x-1/2 w-[90%] max-w-md backdrop-blur-xl p-2.5 rounded-[3rem] shadow-2xl flex items-center justify-between z-50 border ${isDark ? 'bg-slate-900/95 border-slate-800' : 'bg-slate-900/95 border-white/10'}`}>
-        <button onClick={() => setActiveTab("search")} className={`flex-1 flex flex-col items-center py-4 rounded-[2.5rem] transition-all duration-300 ${activeTab === "search" ? (isDark ? "bg-[#E64545] text-white" : "bg-[#E64545] text-white") : "text-slate-400 hover:text-white"}`}><Search size={22}/><span className="text-[9px] font-black uppercase mt-1.5 tracking-widest">Trouver</span></button>
-        <button onClick={() => setActiveTab("messages")} className={`flex-1 flex flex-col items-center py-4 rounded-[2.5rem] transition-all duration-300 relative ${activeTab === "messages" ? (isDark ? "bg-[#E64545] text-white" : "bg-[#E64545] text-white") : "text-slate-400 hover:text-white"}`}><MessageSquare size={22}/><span className="text-[9px] font-black uppercase mt-1.5 font-sans tracking-widest">Offres</span>{unreadCount > 0 && <div className="absolute top-3 right-1/3 w-2.5 h-2.5 bg-[#E0720F] rounded-full border-2 border-slate-900 animate-pulse"></div>}</button></div>
-     
-      {selectedSitter && (
-        <div className="fixed inset-0 bg-slate-900/90 backdrop-blur-md z-[100] flex items-center justify-center p-6 text-slate-900">
-          <div className="bg-white w-full max-w-xl rounded-[4rem] overflow-hidden shadow-2xl animate-in slide-in-from-bottom-10 duration-500 p-10 space-y-10">
-            <div className="flex justify-between items-start">
-              <div className="flex gap-8 items-center text-left">
-                 <div className="w-28 h-28 rounded-[2.5rem] overflow-hidden border-4 shadow-2xl border-white shadow-slate-200">
-                     <UserAvatar photoURL={getSPhoto(selectedSitter)} />
-                 </div>
-                 <div className="space-y-1"><h3 className="text-4xl font-black tracking-tighter font-sans leading-none">{selectedSitter.name}</h3><RatingStars rating={selectedSitter.rating || 5} size={20}/></div>
-              </div>
-              <div className="flex gap-2">
-                <button 
-                    onClick={() => {
-                        if (navigator.share) {
-                            navigator.share({
-                                title: `Profil de ${selectedSitter.name} sur BabyKeeper`,
-                                text: `Regarde ce profil de Sitter (${selectedSitter.price}€/h) : ${selectedSitter.bio}`,
-                                url: window.location.href
-                            });
-                        } else {
-                            alert("Lien copié dans le presse-papier !"); 
-                            navigator.clipboard.writeText(`Regarde ce profil de ${selectedSitter.name} sur BabyKeeper !`);
-                        }
-                    }} 
-                    className="p-4 rounded-full transition-all bg-blue-50 text-blue-600 hover:bg-blue-100"
-                >
-                    <Share2 size={24}/>
-                </button>
-                <button onClick={() => setSelectedSitter(null)} className="p-4 rounded-full transition-all bg-slate-50 text-slate-800 hover:bg-red-50"><X size={24}/></button>
-              </div>
-            </div>
-            <div className="max-h-[300px] overflow-y-auto space-y-6 pr-2 text-left custom-scrollbar">
-                <div className="p-10 rounded-[3.5rem] space-y-6 shadow-inner border bg-slate-50 border-slate-100/50 shadow-slate-100">
-                    <div className="flex justify-between items-center"><span className="font-black text-slate-500 text-[11px] uppercase tracking-widest italic">Lieu</span><span className="font-black uppercase">{selectedSitter.city || "France"}</span></div>
-                    <div className="flex justify-between items-center"><span className="font-black text-slate-500 text-[11px] uppercase tracking-widest italic">Visites</span><span className="font-black uppercase">{selectedSitter.views || 0} 👀</span></div>
-                    {selectedSitter.level && !isPet && <div className="flex justify-between items-center"><span className="font-black text-slate-500 text-[11px] uppercase tracking-widest italic">Niveau</span><span className="font-black uppercase text-[#E0720F]">NIV {selectedSitter.level} 👑</span></div>}
-                    {selectedSitter.level && isPet && <div className="flex justify-between items-center"><span className="font-black text-slate-500 text-[11px] uppercase tracking-widest italic">Niveau</span><span className="font-black uppercase text-[#E0720F]">NIV {selectedSitter.level} 🐾</span></div>}
-                    
-                    {selectedSitter.skills && (
-                        <div className="flex flex-wrap gap-2 mt-4 pt-4 border-t border-slate-100">
-                            {selectedSitter.skills.map((skill, i) => (
-                                <span key={i} className="text-[10px] font-bold uppercase bg-slate-100 text-slate-600 px-3 py-1.5 rounded-xl border flex items-center gap-1">✨ {skill}</span>
-                            ))}
-                        </div>
-                    )}
-                </div>
-                {sitterReviews.length > 0 && (
-                    <div className="space-y-4">
-                        <h4 className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-500 ml-5 italic">Avis de parents</h4>
-                        {sitterReviews.map((r, idx) => (
-                            <div key={idx} className="p-6 rounded-[2rem] shadow-sm space-y-3 border bg-white border-slate-100">
-                                <div className="flex justify-between items-center"><span className="font-black text-xs">{r.parentName}</span><RatingStars rating={r.rating} size={12} /></div>
-                                <p className="text-xs italic leading-relaxed text-slate-500">"{r.text}"</p>
-                            </div>
-                        ))}
-                    </div>
-                )}
-            </div>
-            <div className="space-y-5">
-              <div className="grid grid-cols-2 gap-4 text-left">
-                  <div className="space-y-2">
-                      <label className="text-[10px] font-black uppercase italic ml-4 text-slate-400 font-sans">Prix (€/H)</label>
-                      <input id="neg-p" type="number" defaultValue={selectedSitter.price} className="w-full p-6 rounded-[2.5rem] outline-none font-black text-2xl shadow-inner bg-slate-50 text-slate-800" />
-                  </div>
-                  <div className="space-y-2">
-                      <label className="text-[10px] font-black uppercase italic ml-4 text-slate-400 font-sans">Temps (H)</label>
-                      <input id="neg-h" type="number" defaultValue="2" className="w-full p-6 rounded-[2.5rem] outline-none font-black text-2xl shadow-inner bg-slate-50 text-slate-800" />
-                  </div>
-              </div>
-
-               <div className="flex justify-between items-center bg-slate-50 p-4 rounded-2xl">
-                 <div className="flex items-center gap-2 text-xs font-bold text-slate-500"><Car size={16}/> {selectedSitter.hasCar ? "Véhiculé 🚗" : "Non véhiculé"}</div>
-              </div>
-
-              <button onClick={() => {
-                  const p = document.getElementById('neg-p').value;
-                  const h = document.getElementById('neg-h').value;
-                  handleBooking(selectedSitter, p, h);
-              }} className="w-full py-8 rounded-[2.5rem] font-black text-sm shadow-xl shadow-[#E64545]/20 uppercase tracking-[0.2em] active:scale-95 transition-all bg-[#E64545] text-white hover:bg-[#E64545]/90">ENVOYER LA DEMANDE</button>
-            </div>
-          </div>
-        </div>
-      )}
-      
+      <div className={`fixed bottom-10 left-1/2 -translate-x-1/2 w-[90%] max-w-md backdrop-blur-xl p-2.5 rounded-[3rem] shadow-2xl flex items-center justify-between z-50 border ${isDark ? 'bg-slate-900/95 border-slate-800' : 'bg-slate-900/95 border-white/10'}`}><button onClick={() => setActiveTab("profile")} className={`flex-1 flex flex-col items-center py-4 rounded-[2.5rem] transition-all duration-300 ${activeTab === "profile" ? (isDark ? "bg-[#E64545] text-white" : "bg-[#E64545] text-white") : "text-slate-400 hover:text-white"}`}><User size={22}/><span className="text-[9px] font-black uppercase mt-1.5 tracking-widest font-sans">Profil</span></button><button onClick={() => setActiveTab("messages")} className={`flex-1 flex flex-col items-center py-4 rounded-[2.5rem] transition-all duration-300 relative ${activeTab === "messages" ? (isDark ? "bg-[#E64545] text-white" : "bg-[#E64545] text-white") : "text-slate-400 hover:text-white"}`}><MessageSquare size={22}/><span className="text-[9px] font-black uppercase mt-1.5 font-sans tracking-widest">Offres</span>{unreadCount > 0 && <div className="absolute top-3 right-1/3 w-2.5 h-2.5 bg-[#E0720F] rounded-full border-2 border-slate-900 animate-pulse"></div>}</button></div>
+    
+      {/* --- BANDEAU INSTALLATION PWA --- */}
       <InstallPrompt />
+
+      {/* --- FAQ MODAL --- */}
+      {showFAQ && <FAQModal onClose={() => setShowFAQ(false)} />}
     </div>
   );
 };
@@ -1182,8 +1151,10 @@ const SitterDashboard = ({ user, profile }) => {
   const [city, setCity] = useState("");
   const [level, setLevel] = useState(profile?.level || "1");
   const [hasCar, setHasCar] = useState(false);
-  const [skills, setSkills] = useState([]);
-  const [isInstant, setIsInstant] = useState(false); // --- ETAT DISPO IMMEDIATE ---
+  const [showFAQ, setShowFAQ] = useState(false); // --- ETAT FAQ MODAL ---
+  
+  // --- NOUVEAU : GESTION DES COMPETENCES ---
+  const [skills, setSkills] = useState([]); // Tableau des compétences sélectionnées
 
   const [loading, setLoading] = useState(false);
   const [activeTab, setActiveTab] = useState("profile");
@@ -1195,6 +1166,8 @@ const SitterDashboard = ({ user, profile }) => {
   const [views, setViews] = useState(0);
 
   const isPet = profile.serviceType === 'pet';
+
+  // LISTE DES COMPÉTENCES DISPONIBLES (Selon Mode)
   const AVAILABLE_SKILLS = isPet 
     ? ["🚗 Véhiculé", "💊 Soins", "🏃 Sportif", "🏠 Jardin Clos", "✂️ Toilettage", "🎓 Éducation"]
     : ["🚗 Permis B", "⛑️ PSC1", "🇬🇧 Anglais", "📚 Devoirs", "🎨 Créatif", "🍳 Cuisine"];
@@ -1212,20 +1185,27 @@ const SitterDashboard = ({ user, profile }) => {
         if (d.level) setLevel(d.level);
         if (d.skills) setSkills(d.skills); 
         if (d.availability) setAvailability(d.availability);
-        // Check si dispo immédiate encore valide
-        if (d.instantAvailableUntil && new Date(d.instantAvailableUntil) > new Date()) setIsInstant(true);
-        else setIsInstant(false);
       }
     });
-    const qOffers = query(collection(db, 'artifacts', appId, 'public', 'data', 'offers'), where("sitterId", "==", user.uid));
-    const unsubOffers = onSnapshot(qOffers, (snap) => { setOffers(snap.docs.map(d => ({ id: d.id, ...d.data() }))); });
-    const unsubReviews = onSnapshot(collection(db, 'artifacts', appId, 'public', 'data', 'sitters', user.uid, 'reviews'), (snap) => { setReviews(snap.docs.map(d => d.data())); });
+    // FILTRE SÉCURITÉ POUR LE SITTER
+    const qOffers = query(
+      collection(db, 'artifacts', appId, 'public', 'data', 'offers'), 
+      where("sitterId", "==", user.uid)
+    );
+    const unsubOffers = onSnapshot(qOffers, (snap) => {
+      setOffers(snap.docs.map(d => ({ id: d.id, ...d.data() })));
+    });
+    const unsubReviews = onSnapshot(collection(db, 'artifacts', appId, 'public', 'data', 'sitters', user.uid, 'reviews'), (snap) => {
+        setReviews(snap.docs.map(d => d.data()));
+    });
     return () => { unsubPublic(); unsubOffers(); unsubReviews(); };
   }, [user.uid, isDark]);
 
   const totalEarnings = useMemo(() => {
-      return offers.filter(o => ['accepted', 'paid_held', 'completed', 'reviewed'].includes(o.status)).reduce((acc, o) => acc + ((parseFloat(o.price) || 0) * (parseFloat(o.hours) || 0)), 0);
-  }, [offers]);
+      return offers
+        .filter(o => ['accepted', 'paid_held', 'completed', 'reviewed'].includes(o.status))
+        .reduce((acc, o) => acc + ((parseFloat(o.price) || 0) * (parseFloat(o.hours) || 0)), 0);
+    }, [offers]);
 
   const [availability, setAvailability] = useState({
     Lundi: { active: false, start: "08:00", end: "18:00" }, Mardi: { active: false, start: "08:00", end: "18:00" },
@@ -1240,20 +1220,35 @@ const SitterDashboard = ({ user, profile }) => {
      if (skills.includes(skill)) setSkills(skills.filter(s => s !== skill));
      else setSkills([...skills, skill]);
   };
-
+  
   // --- NOUVEAU : ACTIVATION DISPO IMMEDIATE ---
+  const [isInstant, setIsInstant] = useState(false);
+
+  useEffect(() => {
+     const checkInstant = async () => {
+         const docSnap = await getDoc(doc(db, 'artifacts', appId, 'public', 'data', 'sitters', user.uid));
+         if (docSnap.exists()) {
+            const data = docSnap.data();
+            if (data.instantAvailableUntil && new Date(data.instantAvailableUntil) > new Date()) setIsInstant(true);
+            else setIsInstant(false);
+         }
+     }
+     checkInstant();
+  }, []);
+
   const toggleInstantAvailability = async () => {
      const newStatus = !isInstant;
      setIsInstant(newStatus);
-     // Valable 2 heures
      const until = newStatus ? new Date(Date.now() + 2 * 60 * 60 * 1000).toISOString() : null;
      await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'sitters', user.uid), { 
          instantAvailableUntil: until 
      });
   };
+  // --------------------------------------------
 
   const handleSave = async () => {
     if (!bio || !price || !city || !birthDate) return alert("Champs requis : Bio, Tarif, Ville, Naissance.");
+    
     const age = calculateAge(birthDate);
     if (age < 16) return alert("Désolé, vous devez avoir au moins 16 ans pour vous inscrire comme Baby-sitter.");
 
@@ -1283,6 +1278,11 @@ const SitterDashboard = ({ user, profile }) => {
         <div className="flex items-center gap-2"><SitFinderLogo className="w-8 h-8" glow={false} /><span className="font-black italic text-lg md:text-2xl uppercase tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-[#E64545] to-[#E0720F]">BABYKEEPER</span></div>
         <div className="flex items-center gap-1.5">
           <ModeSwitcher currentRole={profile.role} currentService={profile.serviceType || 'baby'} uid={user.uid} />
+          
+          <button onClick={() => setShowFAQ(true)} className={`p-2 rounded-2xl transition-all shadow-sm flex items-center justify-center ${isDark ? 'bg-slate-800 text-slate-300' : 'bg-white border border-slate-100 text-slate-400'}`}>
+              <HelpCircle size={20} />
+          </button>
+
           <button onClick={() => setActiveTab("premium")} className={`p-2 rounded-2xl transition-all shadow-md bg-gradient-to-br from-yellow-400 to-orange-500 text-white animate-pulse`}><Crown size={20} fill="white" /></button>
           <div className="relative p-2 text-slate-400"><Bell size={20}/>{unreadCount > 0 && <span className="absolute top-1 right-1 w-4 h-4 bg-[#E64545] text-white text-[8px] font-black rounded-full flex items-center justify-center border-2 border-white animate-bounce">{unreadCount}</span>}</div>
           <button onClick={() => setActiveTab("settings")} className={`p-2 rounded-2xl transition-all ${isDark ? 'bg-slate-800 text-[#E0720F]' : 'bg-slate-50 text-slate-300'}`}><Settings size={20} /></button>
@@ -1308,10 +1308,18 @@ const SitterDashboard = ({ user, profile }) => {
                     onClick={toggleInstantAvailability} 
                     className={`p-8 rounded-[3rem] shadow-xl flex flex-col items-center justify-center space-y-2 transition-all active:scale-95 duration-300 ${isInstant ? 'bg-green-500 text-white animate-pulse' : (isDark ? 'bg-slate-800 text-white' : 'bg-white text-slate-800')}`}
                 >
-                     <Power size={48} className={isInstant ? "text-white" : "text-green-500"} />
+                     <div className={`p-4 rounded-full ${isInstant ? 'bg-white/20' : 'bg-green-100'}`}>
+                        <Power size={32} className={isInstant ? "text-white" : "text-green-500"} />
+                     </div>
                      <h3 className="text-xl font-black uppercase italic tracking-tighter">{isInstant ? "MODE URGENCE ACTIF" : "ACTIVER DISPO IMMÉDIATE"}</h3>
                      <p className="text-[9px] font-bold uppercase tracking-widest opacity-70">{isInstant ? "Visible en tête de liste (2h)" : "Valable 2h • Booster de visibilité"}</p>
                 </button>
+
+                <div className={`p-8 rounded-[3rem] shadow-xl text-white flex flex-col justify-center space-y-2 transition-all ${isDark ? 'bg-indigo-600' : 'bg-gradient-to-br from-[#E64545] to-[#E0720F]'}`}>
+                    <Wallet className="mb-1" size={24}/><p className="text-[10px] font-black uppercase tracking-widest opacity-70">Mon Revenu</p>
+                    <h3 className="text-4xl font-black italic tracking-tighter">{totalEarnings}€</h3>
+                    <p className="text-[8px] font-bold opacity-50 uppercase tracking-widest font-sans italic">Total cumulé</p>
+                </div>
             </div>
 
             <div className={`p-12 md:p-16 rounded-[4.5rem] shadow-2xl border space-y-12 relative overflow-hidden ${isDark ? 'bg-slate-900 border-slate-800 shadow-slate-950' : 'bg-white border-white shadow-slate-200'}`}>
@@ -1323,6 +1331,7 @@ const SitterDashboard = ({ user, profile }) => {
                 <div className="space-y-3 text-left"><label className="text-[11px] font-black text-blue-300 uppercase tracking-widest ml-4 font-sans italic">Naissance</label><input type="date" className={`w-full p-8 rounded-[2.5rem] font-bold outline-none shadow-inner border border-transparent ${isDark ? 'bg-slate-800 text-white' : 'bg-slate-50 text-slate-800'}`} value={birthDate} onChange={(e) => setBirthDate(e.target.value)} /></div>
                 <div className="space-y-3 text-left"><label className="text-[11px] font-black text-blue-300 uppercase tracking-widest ml-4 font-sans italic">Ma Bio Professionnelle</label><textarea placeholder="Expériences..." className={`w-full p-10 rounded-[3.5rem] h-64 font-bold outline-none shadow-inner resize-none leading-relaxed ${isDark ? 'bg-slate-800 text-white' : 'bg-slate-50 text-slate-800'}`} value={bio} onChange={(e) => setBio(e.target.value)} /></div>
                 
+                {/* --- SELECTION DES BADGES DE COMPETENCES --- */}
                 <div className="space-y-3 text-left">
                     <label className="text-[11px] font-black text-blue-300 uppercase tracking-widest ml-4 font-sans italic">Mes Compétences & Atouts</label>
                     <div className="flex flex-wrap gap-2">
@@ -1388,6 +1397,12 @@ const SitterDashboard = ({ user, profile }) => {
         )}
       </main>
       <div className={`fixed bottom-10 left-1/2 -translate-x-1/2 w-[90%] max-w-md backdrop-blur-xl p-2.5 rounded-[3.5rem] shadow-2xl flex items-center justify-between z-50 border ${isDark ? 'bg-slate-900/95 border-slate-800' : 'bg-slate-900/95 border-white/10'}`}><button onClick={() => setActiveTab("profile")} className={`flex-1 flex flex-col items-center py-4 rounded-[2.5rem] transition-all duration-300 ${activeTab === "profile" ? (isDark ? "bg-[#E64545] text-white" : "bg-[#E64545] text-white") : "text-slate-400 hover:text-white"}`}><User size={22}/><span className="text-[9px] font-black uppercase mt-1.5 tracking-widest font-sans">Profil</span></button><button onClick={() => setActiveTab("messages")} className={`flex-1 flex flex-col items-center py-4 rounded-[2.5rem] transition-all duration-300 relative ${activeTab === "messages" ? (isDark ? "bg-[#E64545] text-white" : "bg-[#E64545] text-white") : "text-slate-400 hover:text-white"}`}><MessageSquare size={22}/><span className="text-[9px] font-black uppercase mt-1.5 font-sans tracking-widest">Offres</span>{unreadCount > 0 && <div className="absolute top-3 right-1/3 w-2.5 h-2.5 bg-[#E0720F] rounded-full border-2 border-slate-900 animate-pulse"></div>}</button></div>
+
+      {/* --- BANDEAU INSTALLATION PWA --- */}
+      <InstallPrompt />
+
+      {/* --- FAQ MODAL --- */}
+      {showFAQ && <FAQModal onClose={() => setShowFAQ(false)} />}
     </div>
   );
 };
