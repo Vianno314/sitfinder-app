@@ -265,7 +265,7 @@ const ModeSwitcher = ({ currentRole, currentService, uid }) => {
 };
 
 // ==========================================
-// 4. COMPOSANT PARAMÈTRES (AVEC PADDING ENORME POUR MOBILE)
+// 4. COMPOSANT PARAMÈTRES (CORRIGÉ & CENTRÉ)
 // ==========================================
 
 const SettingsView = ({ user, profile, onBack, isDark, toggleDark }) => {
@@ -318,7 +318,7 @@ const SettingsView = ({ user, profile, onBack, isDark, toggleDark }) => {
     finally { setLoading(false); }
   };
 
-  // Ajout de pb-64 pour que le bouton déconnexion soit toujours visible
+  // Ajout de pb-52 (200px env) pour que le bouton déconnexion remonte bien
   return (
     <div className={`min-h-screen font-sans ${isDark ? 'bg-slate-950 text-white' : 'bg-slate-50 text-slate-800'}`}>
       <div className={`p-6 border-b flex items-center gap-4 sticky top-0 z-50 ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-100'}`}>
@@ -326,7 +326,7 @@ const SettingsView = ({ user, profile, onBack, isDark, toggleDark }) => {
         <h2 className="font-black text-xl italic uppercase text-[#E64545]">Réglages</h2>
       </div>
 
-      <div className="max-w-2xl mx-auto p-6 space-y-8 pb-64"> 
+      <div className="max-w-2xl w-full mx-auto p-6 space-y-8 pb-52"> 
         {status.msg && <div className="p-4 bg-[#E0720F]/10 text-[#E0720F] rounded-2xl font-bold text-center text-xs uppercase">{status.msg}</div>}
 
         <div className={`p-8 rounded-[3rem] border flex justify-between items-center ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-50'}`}>
@@ -353,7 +353,7 @@ const SettingsView = ({ user, profile, onBack, isDark, toggleDark }) => {
             <button disabled={loading} className="w-full bg-[#E64545] text-white py-5 rounded-2xl font-black uppercase shadow-xl hover:brightness-110">Sauvegarder</button>
         </form>
 
-        <div className="space-y-6">
+        <div className="space-y-6 pt-8"> {/* Ajout de padding-top pour séparer */}
           <a href="mailto:babykeeper.bordais@gmail.com" className="w-full p-5 border-2 border-[#E0720F]/20 text-[#E0720F] rounded-2xl font-black text-xs uppercase flex justify-center gap-2 hover:bg-[#E0720F]/5">Support Technique</a>
           
           <div className="flex justify-center gap-4 text-[10px] text-slate-400 font-bold uppercase tracking-widest pt-4 border-t border-slate-100/50">
@@ -475,12 +475,14 @@ const ChatRoom = ({ offer, currentUser, onBack, isDark }) => {
 
   const sendEmailNotification = async (msgText) => {
       if (!window.emailjs) return; 
+      
       const otherId = currentUser.uid === offer.sitterId ? offer.parentId : offer.sitterId;
       try {
           const userDoc = await getDoc(doc(db, 'artifacts', appId, 'users', otherId, 'settings', 'profile'));
           if (userDoc.exists()) {
               const targetEmail = userDoc.data().email;
               const targetName = userDoc.data().name;
+              
               await window.emailjs.send(
                   "service_hjonpe3", // TON SERVICE ID
                   "template_b2gl0lh", // TON TEMPLATE ID
@@ -648,7 +650,7 @@ const ChatRoom = ({ offer, currentUser, onBack, isDark }) => {
 };
 
 // ==========================================
-// 7. AUTH SCREEN (AVEC MOT DE PASSE OUBLIÉ & DESIGN FIX)
+// 7. AUTH SCREEN
 // ==========================================
 
 const AuthScreen = () => {
@@ -894,6 +896,7 @@ const ParentDashboard = ({ profile, user }) => {
     }
   }, [user.uid]); 
 
+  // FONCTION POUR BASCULER ENTRE ENFANT ET ANIMAL
   const toggleServiceType = async () => {
       const newType = isPet ? 'baby' : 'pet';
       await updateDoc(doc(db, 'artifacts', appId, 'users', user.uid, 'settings', 'profile'), { serviceType: newType });
@@ -902,6 +905,7 @@ const ParentDashboard = ({ profile, user }) => {
   useEffect(() => {
     localStorage.setItem('dark', isDark);
     const unsubSitters = onSnapshot(collection(db, 'artifacts', appId, 'public', 'data', 'sitters'), (snap) => {
+      // FILTRE PAR UNIVERS (Baby ou Pet)
       setSitters(snap.docs.map(d => ({ id: d.id, ...d.data() })).filter(s => s.serviceType === profile.serviceType));
       setLoading(false);
     });
@@ -929,6 +933,7 @@ const ParentDashboard = ({ profile, user }) => {
   };
 
   const filteredSitters = useMemo(() => {
+    // 1. D'abord on filtre
     const filtered = sitters.filter(s => {
       const matchName = s.name?.toLowerCase().includes(search.toLowerCase());
       const matchLocation = !locationFilter || s.city?.toLowerCase().includes(locationFilter.toLowerCase());
@@ -940,11 +945,15 @@ const ParentDashboard = ({ profile, user }) => {
       return matchName && matchLocation && matchPrice && matchVerified && matchFav && matchDay;
     });
 
+    // 2. Ensuite on trie (DISPO IMMEDIATE EN PREMIER)
     return filtered.sort((a, b) => {
         const isInstantA = a.instantAvailableUntil && new Date(a.instantAvailableUntil) > new Date();
         const isInstantB = b.instantAvailableUntil && new Date(b.instantAvailableUntil) > new Date();
-        if (isInstantA && !isInstantB) return -1;
-        if (!isInstantA && isInstantB) return 1;
+        
+        if (isInstantA && !isInstantB) return -1; // A en premier
+        if (!isInstantA && isInstantB) return 1;  // B en premier
+        
+        // Si égalité, on trie par vues (popularité)
         return (b.views || 0) - (a.views || 0);
     });
 
@@ -1000,6 +1009,7 @@ const ParentDashboard = ({ profile, user }) => {
 
       <main className="p-6 max-w-7xl mx-auto space-y-8 animate-in fade-in duration-500">
         
+        {/* --- VUE RECHERCHE --- */}
         {activeTab === "search" && (
             <>
             <div className={`p-10 md:p-14 rounded-[3.5rem] shadow-2xl relative overflow-hidden group transition-all duration-700 ${isDark ? 'bg-gradient-to-br from-[#E64545] to-slate-900' : 'bg-gradient-to-br from-[#E64545] to-[#E0720F]'}`}>
@@ -1023,6 +1033,8 @@ const ParentDashboard = ({ profile, user }) => {
               {showFilters && (
                 <div className={`p-10 rounded-[3.5rem] shadow-2xl border grid grid-cols-1 md:grid-cols-3 gap-12 animate-in slide-in-from-top-4 duration-300 relative z-30 ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-100'}`}>
                    <div className="space-y-4 text-left"><label className="text-[11px] font-black text-slate-400 uppercase italic">Ville</label><input type="text" placeholder="Paris, Lyon..." className={`w-full p-5 rounded-2xl outline-none font-bold ${isDark ? 'bg-slate-800' : 'bg-slate-50'}`} value={locationFilter} onChange={(e) => setLocationFilter(e.target.value)} /></div>
+                   
+                   {/* NOUVEAU : SELECTEUR DE JOUR */}
                    <div className="space-y-4 text-left">
                        <label className="text-[11px] font-black text-slate-400 uppercase italic">Disponibilité</label>
                        <select value={dayFilter} onChange={(e) => setDayFilter(e.target.value)} className={`w-full p-5 rounded-2xl outline-none font-bold appearance-none ${isDark ? 'bg-slate-800 text-white' : 'bg-slate-50 text-slate-800'}`}>
@@ -1030,6 +1042,7 @@ const ParentDashboard = ({ profile, user }) => {
                            {days.map(d => <option key={d} value={d}>{d}</option>)}
                        </select>
                    </div>
+
                    <div className="space-y-4 text-left"><div className="flex justify-between items-center text-slate-800"><label className="text-[10px] font-black text-slate-400 uppercase italic">Budget ({maxPrice}€)</label><span className="text-xl font-black text-[#E64545] font-sans">{maxPrice}€/H</span></div><input type="range" min="10" max="100" step="5" className="w-full accent-[#E64545]" value={maxPrice} onChange={(e) => setMaxPrice(e.target.value)} /></div>
                    <div className="flex gap-3 pt-6"><button onClick={() => setOnlyVerified(!onlyVerified)} className={`flex-1 py-4 rounded-2xl text-[10px] font-black uppercase transition-all ${onlyVerified ? 'bg-[#E64545]/10 text-[#E64545]' : (isDark ? 'bg-slate-800' : 'bg-slate-50')}`}>Sitter Pro ✨</button><button onClick={() => setOnlyFavorites(!onlyFavorites)} className={`flex-1 py-4 rounded-2xl text-[10px] font-black uppercase transition-all ${onlyFavorites ? 'bg-red-50 text-red-600' : (isDark ? 'bg-slate-800' : 'bg-slate-50')}`}>❤️</button></div>
                 </div>
@@ -1039,11 +1052,13 @@ const ParentDashboard = ({ profile, user }) => {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-10">
               {loading ? <div className="col-span-full py-20 flex justify-center animate-pulse"><Loader2 className="animate-spin text-[#E64545]" size={64} /></div> 
               : filteredSitters.map((s) => {
+                  // Vérification Dispo Immédiate
                   const isInstant = s.instantAvailableUntil && new Date(s.instantAvailableUntil) > new Date();
 
                   return (
                     <div key={s.id} className={`p-10 rounded-[3.5rem] shadow-xl border hover:shadow-2xl transition-all flex flex-col min-h-[520px] group/card relative ${isDark ? 'bg-slate-900 border-slate-800 shadow-slate-950' : 'bg-white border-slate-50 shadow-slate-200'} ${isInstant ? 'ring-4 ring-green-400/50' : ''}`}>
                       
+                      {/* --- BADGE DISPO IMMEDIATE --- */}
                       {isInstant && (
                           <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-green-500 text-white px-6 py-2 rounded-full font-black text-xs uppercase shadow-lg shadow-green-500/30 animate-bounce z-10 flex items-center gap-2">
                               <span className="w-2 h-2 bg-white rounded-full animate-ping"></span>
@@ -1083,6 +1098,7 @@ const ParentDashboard = ({ profile, user }) => {
             </>
         )}
 
+        {/* --- VUE MESSAGES --- */}
         {activeTab === "messages" && (
           <div className="space-y-8 animate-in fade-in duration-500">
             <h2 className={`text-4xl font-black italic uppercase font-sans tracking-tight leading-none text-left ${isDark ? 'text-white' : 'text-slate-800'}`}>Discussions</h2>
@@ -1360,6 +1376,7 @@ const SitterDashboard = ({ user, profile }) => {
         <div className="flex items-center gap-2"><SitFinderLogo className="w-8 h-8" glow={false} /><span className="font-black italic text-lg md:text-2xl uppercase tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-[#E64545] to-[#E0720F]">BABYKEEPER</span></div>
         <div className="flex items-center gap-1.5">
           <ModeSwitcher currentRole={profile.role} currentService={profile.serviceType || 'baby'} uid={user.uid} />
+          
           <button onClick={() => setShowFAQ(true)} className={`p-2 rounded-2xl transition-all shadow-sm flex items-center justify-center ${isDark ? 'bg-slate-800 text-slate-300' : 'bg-white border border-slate-100 text-slate-400'}`}>
               <HelpCircle size={20} />
           </button>
@@ -1488,9 +1505,7 @@ const SitterDashboard = ({ user, profile }) => {
       </main>
 
       <div className={`fixed bottom-10 left-1/2 -translate-x-1/2 w-[90%] max-w-md backdrop-blur-xl p-2.5 rounded-[3rem] shadow-2xl flex items-center justify-between z-50 border ${isDark ? 'bg-slate-900/95 border-slate-800' : 'bg-slate-900/95 border-white/10'}`}>
-        <button onClick={() => setActiveTab("profile")} className={`flex-1 flex flex-col items-center py-4 rounded-[2.5rem] transition-all duration-300 ${activeTab === "profile" ? (isDark ? "bg-[#E64545] text-white" : "bg-[#E64545] text-white") : "text-slate-400 hover:text-white"}`}><User size={22}/><span className="text-[9px] font-black uppercase mt-1.5 tracking-widest font-sans">Profil</span></button>
-        <button onClick={() => setActiveTab("messages")} className={`flex-1 flex flex-col items-center py-4 rounded-[2.5rem] transition-all duration-300 relative ${activeTab === "messages" ? (isDark ? "bg-[#E64545] text-white" : "bg-[#E64545] text-white") : "text-slate-400 hover:text-white"}`}><MessageSquare size={22}/><span className="text-[9px] font-black uppercase mt-1.5 font-sans tracking-widest">Offres</span>{unreadCount > 0 && <div className="absolute top-3 right-1/3 w-2.5 h-2.5 bg-[#E0720F] rounded-full border-2 border-slate-900 animate-pulse"></div>}</button>
-      </div>
+        <button onClick={() => setActiveTab("profile")} className={`flex-1 flex flex-col items-center py-4 rounded-[2.5rem] transition-all duration-300 ${activeTab === "profile" ? (isDark ? "bg-[#E64545] text-white" : "bg-[#E64545] text-white") : "text-slate-400 hover:text-white"}`}><User size={22}/><span className="text-[9px] font-black uppercase mt-1.5 tracking-widest font-sans">Profil</span></button><button onClick={() => setActiveTab("messages")} className={`flex-1 flex flex-col items-center py-4 rounded-[2.5rem] transition-all duration-300 relative ${activeTab === "messages" ? (isDark ? "bg-[#E64545] text-white" : "bg-[#E64545] text-white") : "text-slate-400 hover:text-white"}`}><MessageSquare size={22}/><span className="text-[9px] font-black uppercase mt-1.5 font-sans tracking-widest">Offres</span>{unreadCount > 0 && <div className="absolute top-3 right-1/3 w-2.5 h-2.5 bg-[#E0720F] rounded-full border-2 border-slate-900 animate-pulse"></div>}</button></div>
     
       {/* --- BANDEAU INSTALLATION PWA --- */}
       <InstallPrompt />
