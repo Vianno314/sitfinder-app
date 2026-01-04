@@ -8,7 +8,7 @@ import {
   onAuthStateChanged,
   signOut,
   deleteUser,
-  sendPasswordResetEmail // <--- AJOUT ICI
+  sendPasswordResetEmail
 } from "firebase/auth";
 import {
   getFirestore,
@@ -972,6 +972,7 @@ const ParentDashboard = ({ profile, user }) => {
                   <h4 className={`font-black text-4xl font-sans mb-1 leading-none tracking-tighter text-left ${isDark ? 'text-white' : 'text-slate-800'}`}>{s.name}</h4>
                   <div className="flex items-center gap-3 text-slate-400 mb-6"><RatingStars rating={s.rating || 5} size={18}/><span className={`text-[10px] font-black uppercase px-2 py-0.5 rounded-lg border ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-slate-50 border-slate-100'}`}>{s.city}</span></div>
                   
+                  {/* --- BADGES DE COMPÉTENCES PARENT VIEW --- */}
                   {s.skills && (
                      <div className="flex flex-wrap gap-1 mb-4">
                         {s.skills.map((skill, i) => (
@@ -983,6 +984,7 @@ const ParentDashboard = ({ profile, user }) => {
                   <p className={`italic mb-8 leading-relaxed text-sm flex-1 line-clamp-3 text-left ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>"{s.bio || "..."}"</p>
                   <div className={`flex justify-between items-center pt-8 border-t mt-auto ${isDark ? 'border-slate-800' : 'border-slate-50'}`}>
                     <span className="text-3xl font-black text-[#E64545] font-sans">{s.price || 0}€<span className="text-[10px] text-slate-400 ml-1">/H</span></span>
+                    {/* BOUTON PROFIL : ROUGE */}
                     <button onClick={() => setSelectedSitter(s)} className={`px-10 py-5 rounded-[2.5rem] font-black text-[10px] uppercase shadow-lg active:scale-95 transition-all hover:bg-[#E64545] tracking-widest ${isDark ? 'bg-[#E64545] text-white' : 'bg-slate-900 text-white'}`}>VOIR PROFIL</button>
                   </div>
                 </div>
@@ -1031,7 +1033,27 @@ const ParentDashboard = ({ profile, user }) => {
                  </div>
                  <div className="space-y-1"><h3 className="text-4xl font-black tracking-tighter font-sans leading-none">{selectedSitter.name}</h3><RatingStars rating={selectedSitter.rating || 5} size={20}/></div>
               </div>
-              <button onClick={() => setSelectedSitter(null)} className="p-4 rounded-full transition-all bg-slate-50 text-slate-800 hover:bg-red-50"><X size={24}/></button>
+              <div className="flex gap-2">
+                {/* --- NOUVEAU BOUTON PARTAGE --- */}
+                <button 
+                    onClick={() => {
+                        if (navigator.share) {
+                            navigator.share({
+                                title: `Profil de ${selectedSitter.name} sur BabyKeeper`,
+                                text: `Regarde ce profil de Sitter (${selectedSitter.price}€/h) : ${selectedSitter.bio}`,
+                                url: window.location.href
+                            });
+                        } else {
+                            alert("Lien copié dans le presse-papier !"); 
+                            navigator.clipboard.writeText(`Regarde ce profil de ${selectedSitter.name} sur BabyKeeper !`);
+                        }
+                    }} 
+                    className="p-4 rounded-full transition-all bg-blue-50 text-blue-600 hover:bg-blue-100"
+                >
+                    <Share2 size={24}/>
+                </button>
+                <button onClick={() => setSelectedSitter(null)} className="p-4 rounded-full transition-all bg-slate-50 text-slate-800 hover:bg-red-50"><X size={24}/></button>
+              </div>
             </div>
             <div className="max-h-[300px] overflow-y-auto space-y-6 pr-2 text-left custom-scrollbar">
                 <div className="p-10 rounded-[3.5rem] space-y-6 shadow-inner border bg-slate-50 border-slate-100/50 shadow-slate-100">
