@@ -54,7 +54,7 @@ const db = getFirestore(app, "default");
 const appId = "sitfinder-prod-v1";
 
 // ==========================================
-// 2. UTILITAIRES
+// 2. UTILITAIRES DE DESIGN
 // ==========================================
 
 const SitFinderLogo = ({ className = "w-16 h-16", glow = true }) => (
@@ -95,17 +95,6 @@ const calculateAge = (birth) => {
   return age;
 };
 
-const UserAvatar = ({ photoURL, size = "w-full h-full", className = "" }) => {
-    if (photoURL) {
-        return <img src={photoURL} alt="User" className={`${size} object-cover ${className}`} />;
-    }
-    return (
-        <div className={`${size} bg-slate-200 flex items-center justify-center text-slate-400 ${className}`}>
-            <User size="50%" />
-        </div>
-    );
-};
-
 const SplashScreen = ({ message = "La recherche en toute confiance" }) => (
   <div className="flex flex-col items-center justify-center h-screen bg-white font-sans overflow-hidden">
     <div className="relative mb-10 animate-in zoom-in duration-1000">
@@ -120,6 +109,17 @@ const SplashScreen = ({ message = "La recherche en toute confiance" }) => (
     </div>
   </div>
 );
+
+const UserAvatar = ({ photoURL, size = "w-full h-full", className = "" }) => {
+    if (photoURL) {
+        return <img src={photoURL} alt="User" className={`${size} object-cover ${className}`} />;
+    }
+    return (
+        <div className={`${size} bg-slate-200 flex items-center justify-center text-slate-400 ${className}`}>
+            <User size="50%" />
+        </div>
+    );
+};
 
 // ==========================================
 // 3. COMPOSANTS GLOBAUX
@@ -184,7 +184,9 @@ const InstallPrompt = () => {
         if (deferredPrompt) {
             deferredPrompt.prompt();
             deferredPrompt.userChoice.then((choiceResult) => {
-                if (choiceResult.outcome === 'accepted') { setShowInstall(false); }
+                if (choiceResult.outcome === 'accepted') {
+                    setShowInstall(false);
+                }
                 setDeferredPrompt(null);
             });
         }
@@ -195,8 +197,13 @@ const InstallPrompt = () => {
     return (
         <div className="fixed bottom-24 left-4 right-4 bg-slate-900 text-white p-4 rounded-2xl shadow-2xl z-[60] flex items-center justify-between border border-slate-700 animate-in slide-in-from-bottom-10 fade-in duration-700">
             <div className="flex items-center gap-3">
-                <div className="bg-white p-1 rounded-lg"><img src="/logo.png" alt="Icon" className="w-8 h-8 rounded-md" /></div>
-                <div><h4 className="font-bold text-sm">Installer BabyKeeper</h4><p className="text-[10px] text-slate-400">Pour un accès plus rapide</p></div>
+                <div className="bg-white p-1 rounded-lg">
+                    <img src="/logo.png" alt="Icon" className="w-8 h-8 rounded-md" />
+                </div>
+                <div>
+                    <h4 className="font-bold text-sm">Installer BabyKeeper</h4>
+                    <p className="text-[10px] text-slate-400">Pour un accès plus rapide</p>
+                </div>
             </div>
             
             {isIOS ? (
@@ -216,25 +223,41 @@ const InstallPrompt = () => {
 
 const ModeSwitcher = ({ currentRole, currentService, uid }) => {
     const [isOpen, setIsOpen] = useState(false);
+
     const switchMode = async (role, service) => {
         setIsOpen(false);
-        await updateDoc(doc(db, 'artifacts', appId, 'users', uid, 'settings', 'profile'), { role: role, serviceType: service });
+        await updateDoc(doc(db, 'artifacts', appId, 'users', uid, 'settings', 'profile'), { 
+            role: role, 
+            serviceType: service 
+        });
     };
+
     return (
         <div className="relative z-50">
             <button onClick={() => setIsOpen(!isOpen)} className="p-2 rounded-2xl bg-slate-100 text-slate-600 border border-slate-200 shadow-sm flex items-center gap-2 active:scale-95 transition-all">
                 <RefreshCw size={18} className={isOpen ? "animate-spin" : ""} />
                 <span className="text-[10px] font-black uppercase hidden md:inline">Mode</span>
             </button>
+            
             {isOpen && (
                 <div className="absolute top-12 right-0 w-48 bg-white rounded-2xl shadow-2xl border border-slate-100 p-2 flex flex-col gap-1 animate-in fade-in slide-in-from-top-2">
-                    <div className="text-[9px] font-black uppercase text-slate-300 px-2 py-1">Enfants 👶</div>
-                    <button onClick={() => switchMode('parent', 'baby')} className="flex items-center gap-3 p-3 rounded-xl hover:bg-slate-50 text-slate-600"><Baby size={16} /> <span className="text-xs font-bold">Je suis Parent</span></button>
-                    <button onClick={() => switchMode('sitter', 'baby')} className="flex items-center gap-3 p-3 rounded-xl hover:bg-slate-50 text-slate-600"><User size={16} /> <span className="text-xs font-bold">Je suis Baby-Sitter</span></button>
+                    <div className="text-[9px] font-black uppercase text-slate-300 px-2 py-1">Univers Enfants 👶</div>
+                    <button onClick={() => switchMode('parent', 'baby')} className={`flex items-center gap-3 p-3 rounded-xl text-left transition-colors ${currentRole === 'parent' && currentService === 'baby' ? 'bg-[#E64545] text-white' : 'hover:bg-slate-50 text-slate-600'}`}>
+                        <Baby size={16} /> <span className="text-xs font-bold">Je suis Parent</span>
+                    </button>
+                    <button onClick={() => switchMode('sitter', 'baby')} className={`flex items-center gap-3 p-3 rounded-xl text-left transition-colors ${currentRole === 'sitter' && currentService === 'baby' ? 'bg-[#E0720F] text-white' : 'hover:bg-slate-50 text-slate-600'}`}>
+                        <User size={16} /> <span className="text-xs font-bold">Je suis Baby-Sitter</span>
+                    </button>
+                    
                     <div className="h-px bg-slate-100 my-1"></div>
-                    <div className="text-[9px] font-black uppercase text-slate-300 px-2 py-1">Animaux 🐾</div>
-                    <button onClick={() => switchMode('parent', 'pet')} className="flex items-center gap-3 p-3 rounded-xl hover:bg-slate-50 text-slate-600"><Dog size={16} /> <span className="text-xs font-bold">Je suis Maître</span></button>
-                    <button onClick={() => switchMode('sitter', 'pet')} className="flex items-center gap-3 p-3 rounded-xl hover:bg-slate-50 text-slate-600"><PawPrint size={16} /> <span className="text-xs font-bold">Je suis Pet-Sitter</span></button>
+                    
+                    <div className="text-[9px] font-black uppercase text-slate-300 px-2 py-1">Univers Animaux 🐾</div>
+                    <button onClick={() => switchMode('parent', 'pet')} className={`flex items-center gap-3 p-3 rounded-xl text-left transition-colors ${currentRole === 'parent' && currentService === 'pet' ? 'bg-[#E64545] text-white' : 'hover:bg-slate-50 text-slate-600'}`}>
+                        <Dog size={16} /> <span className="text-xs font-bold">Je suis Maître</span>
+                    </button>
+                    <button onClick={() => switchMode('sitter', 'pet')} className={`flex items-center gap-3 p-3 rounded-xl text-left transition-colors ${currentRole === 'sitter' && currentService === 'pet' ? 'bg-[#E0720F] text-white' : 'hover:bg-slate-50 text-slate-600'}`}>
+                        <PawPrint size={16} /> <span className="text-xs font-bold">Je suis Pet-Sitter</span>
+                    </button>
                 </div>
             )}
         </div>
@@ -242,7 +265,7 @@ const ModeSwitcher = ({ currentRole, currentService, uid }) => {
 };
 
 // ==========================================
-// 4. COMPOSANT PARAMÈTRES (AVEC PADDING MOBILE)
+// 4. COMPOSANT PARAMÈTRES (AVEC PADDING ENORME POUR MOBILE)
 // ==========================================
 
 const SettingsView = ({ user, profile, onBack, isDark, toggleDark }) => {
@@ -258,7 +281,9 @@ const SettingsView = ({ user, profile, onBack, isDark, toggleDark }) => {
       setLoading(true);
       try {
         await deleteDoc(doc(db, 'artifacts', appId, 'users', user.uid, 'settings', 'profile'));
-        if (profile.role === 'sitter') { await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'sitters', user.uid)); }
+        if (profile.role === 'sitter') {
+          await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'sitters', user.uid));
+        }
         await deleteUser(auth.currentUser);
         alert("Compte supprimé.");
       } catch (err) { alert("Erreur suppression."); } finally { setLoading(false); }
@@ -282,7 +307,10 @@ const SettingsView = ({ user, profile, onBack, isDark, toggleDark }) => {
       await updateDoc(doc(db, 'artifacts', appId, 'users', user.uid, 'settings', 'profile'), updateData);
       if (profile.role === 'sitter') {
         await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'sitters', user.uid), { 
-            name: newName, photoURL: customPhoto, phone, serviceType: profile.serviceType
+            name: newName, 
+            photoURL: customPhoto, 
+            phone,
+            serviceType: profile.serviceType
         }, { merge: true });
       }
       setStatus({ type: "success", msg: "Enregistré !" });
@@ -290,6 +318,7 @@ const SettingsView = ({ user, profile, onBack, isDark, toggleDark }) => {
     finally { setLoading(false); }
   };
 
+  // Ajout de pb-64 pour que le bouton déconnexion soit toujours visible
   return (
     <div className={`min-h-screen font-sans ${isDark ? 'bg-slate-950 text-white' : 'bg-slate-50 text-slate-800'}`}>
       <div className={`p-6 border-b flex items-center gap-4 sticky top-0 z-50 ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-100'}`}>
@@ -324,7 +353,7 @@ const SettingsView = ({ user, profile, onBack, isDark, toggleDark }) => {
             <button disabled={loading} className="w-full bg-[#E64545] text-white py-5 rounded-2xl font-black uppercase shadow-xl hover:brightness-110">Sauvegarder</button>
         </form>
 
-        <div className="space-y-6">
+        <div className="space-y-6 pt-8"> 
           <a href="mailto:babykeeper.bordais@gmail.com" className="w-full p-5 border-2 border-[#E0720F]/20 text-[#E0720F] rounded-2xl font-black text-xs uppercase flex justify-center gap-2 hover:bg-[#E0720F]/5">Support Technique</a>
           
           <div className="flex justify-center gap-4 text-[10px] text-slate-400 font-bold uppercase tracking-widest pt-4 border-t border-slate-100/50">
@@ -452,9 +481,21 @@ const ChatRoom = ({ offer, currentUser, onBack, isDark }) => {
           if (userDoc.exists()) {
               const targetEmail = userDoc.data().email;
               const targetName = userDoc.data().name;
-              await window.emailjs.send("service_hjonpe3", "template_b2gl0lh", { to_email: targetEmail, to_name: targetName, from_name: currentUser.displayName || "Un utilisateur", message: msgText });
+              await window.emailjs.send(
+                  "service_hjonpe3", // TON SERVICE ID
+                  "template_b2gl0lh", // TON TEMPLATE ID
+                  {
+                      to_email: targetEmail,
+                      to_name: targetName,
+                      from_name: currentUser.displayName || "Un utilisateur",
+                      message: msgText
+                  }
+              );
+              console.log("Notif envoyée");
           }
-      } catch (error) { console.error("Erreur envoi mail:", error); }
+      } catch (error) {
+          console.error("Erreur envoi mail:", error);
+      }
   };
 
   const handleReport = async () => {
@@ -817,7 +858,7 @@ const CompleteProfileScreen = ({ uid, serviceType }) => {
 };
 
 // ==========================================
-// 8. DASHBOARD PARENT (FIX NAVIGATION & EMPTY STATE & STRUCTURE)
+// 8. DASHBOARD PARENT (FIX NAVIGATION & EMPTY STATE)
 // ==========================================
 
 const ParentDashboard = ({ profile, user }) => {
@@ -955,11 +996,15 @@ const ParentDashboard = ({ profile, user }) => {
       <nav className={`p-4 flex justify-between items-center sticky top-0 z-40 border-b shadow-sm ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-100'}`}>
         <div className="flex items-center gap-2"><SitFinderLogo className="w-8 h-8" glow={false} /><span className="font-black italic text-lg md:text-2xl uppercase tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-[#E64545] to-[#E0720F]">BABYKEEPER</span></div>
         <div className="flex items-center gap-1.5">
+          {/* BOUTON SWITCHER D'UNIVERS */}
           <ModeSwitcher currentRole={profile.role} currentService={profile.serviceType || 'baby'} uid={user.uid} />
+          
           <button onClick={() => setShowFAQ(true)} className={`p-2 rounded-2xl transition-all shadow-sm flex items-center justify-center ${isDark ? 'bg-slate-800 text-slate-300' : 'bg-white border border-slate-100 text-slate-400'}`}>
               <HelpCircle size={20} />
           </button>
+
           <button onClick={() => setActiveTab("premium")} className={`p-2 rounded-2xl transition-all shadow-md bg-gradient-to-br from-yellow-400 to-orange-500 text-white animate-pulse`}><Crown size={20} fill="white" /></button>
+          
           <div className="relative p-2 text-slate-400"><Bell size={20}/>{unreadCount > 0 && <span className="absolute top-1 right-1 w-4 h-4 bg-[#E64545] text-white text-[8px] font-black rounded-full flex items-center justify-center border-2 border-white animate-bounce">{unreadCount}</span>}</div>
         </div>
       </nav>
@@ -1064,7 +1109,7 @@ const ParentDashboard = ({ profile, user }) => {
               {offers.length === 0 && (
                  <div className={`py-24 text-center rounded-[4rem] border-2 border-dashed italic text-xl shadow-inner flex flex-col items-center justify-center gap-4 ${isDark ? 'bg-slate-900 border-slate-800 text-slate-500' : 'bg-white border-slate-100 text-slate-400'}`}>
                     <Inbox size={48} className="opacity-20"/>
-                    <p>Aucune offre en cours...</p>
+                    <p>Aucune demande pour le moment...</p>
                  </div>
               )}
 
@@ -1336,7 +1381,6 @@ const SitterDashboard = ({ user, profile }) => {
         <div className="flex items-center gap-2"><SitFinderLogo className="w-8 h-8" glow={false} /><span className="font-black italic text-lg md:text-2xl uppercase tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-[#E64545] to-[#E0720F]">BABYKEEPER</span></div>
         <div className="flex items-center gap-1.5">
           <ModeSwitcher currentRole={profile.role} currentService={profile.serviceType || 'baby'} uid={user.uid} />
-          
           <button onClick={() => setShowFAQ(true)} className={`p-2 rounded-2xl transition-all shadow-sm flex items-center justify-center ${isDark ? 'bg-slate-800 text-slate-300' : 'bg-white border border-slate-100 text-slate-400'}`}>
               <HelpCircle size={20} />
           </button>
@@ -1466,7 +1510,10 @@ const SitterDashboard = ({ user, profile }) => {
       </main>
 
       <div className={`fixed bottom-10 left-1/2 -translate-x-1/2 w-[90%] max-w-md backdrop-blur-xl p-2.5 rounded-[3rem] shadow-2xl flex items-center justify-between z-50 border ${isDark ? 'bg-slate-900/95 border-slate-800' : 'bg-slate-900/95 border-white/10'}`}>
-        <button onClick={() => setActiveTab("profile")} className={`flex-1 flex flex-col items-center py-4 rounded-[2.5rem] transition-all duration-300 ${activeTab === "profile" ? (isDark ? "bg-[#E64545] text-white" : "bg-[#E64545] text-white") : "text-slate-400 hover:text-white"}`}><User size={22}/><span className="text-[9px] font-black uppercase mt-1.5 tracking-widest font-sans">Profil</span></button>
+        <button onClick={() => setActiveTab("profile")} className={`flex-1 flex flex-col items-center py-4 rounded-[2.5rem] transition-all duration-300 ${activeTab === "profile" ? (isDark ? "bg-[#E64545] text-white" : "bg-[#E64545] text-white") : "text-slate-400 hover:text-white"}`}>
+            <User size={22}/>
+            <span className="text-[9px] font-black uppercase mt-1.5 tracking-widest font-sans">Profil</span>
+        </button>
         <button onClick={() => setActiveTab("messages")} className={`flex-1 flex flex-col items-center py-4 rounded-[2.5rem] transition-all duration-300 relative ${activeTab === "messages" ? (isDark ? "bg-[#E64545] text-white" : "bg-[#E64545] text-white") : "text-slate-400 hover:text-white"}`}><MessageSquare size={22}/><span className="text-[9px] font-black uppercase mt-1.5 font-sans tracking-widest">Offres</span>{unreadCount > 0 && <div className="absolute top-3 right-1/3 w-2.5 h-2.5 bg-[#E0720F] rounded-full border-2 border-slate-900 animate-pulse"></div>}</button>
       </div>
     
