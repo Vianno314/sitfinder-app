@@ -95,6 +95,17 @@ const calculateAge = (birth) => {
   return age;
 };
 
+const UserAvatar = ({ photoURL, size = "w-full h-full", className = "" }) => {
+    if (photoURL) {
+        return <img src={photoURL} alt="User" className={`${size} object-cover ${className}`} />;
+    }
+    return (
+        <div className={`${size} bg-slate-200 flex items-center justify-center text-slate-400 ${className}`}>
+            <User size="50%" />
+        </div>
+    );
+};
+
 const SplashScreen = ({ message = "La recherche en toute confiance" }) => (
   <div className="flex flex-col items-center justify-center h-screen bg-white font-sans overflow-hidden">
     <div className="relative mb-10 animate-in zoom-in duration-1000">
@@ -109,17 +120,6 @@ const SplashScreen = ({ message = "La recherche en toute confiance" }) => (
     </div>
   </div>
 );
-
-const UserAvatar = ({ photoURL, size = "w-full h-full", className = "" }) => {
-    if (photoURL) {
-        return <img src={photoURL} alt="User" className={`${size} object-cover ${className}`} />;
-    }
-    return (
-        <div className={`${size} bg-slate-200 flex items-center justify-center text-slate-400 ${className}`}>
-            <User size="50%" />
-        </div>
-    );
-};
 
 // ==========================================
 // 3. COMPOSANTS GLOBAUX
@@ -318,6 +318,7 @@ const SettingsView = ({ user, profile, onBack, isDark, toggleDark }) => {
     finally { setLoading(false); }
   };
 
+  // Ajout de pb-64 pour que le bouton déconnexion soit toujours visible
   return (
     <div className={`min-h-screen font-sans ${isDark ? 'bg-slate-950 text-white' : 'bg-slate-50 text-slate-800'}`}>
       <div className={`p-6 border-b flex items-center gap-4 sticky top-0 z-50 ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-100'}`}>
@@ -857,7 +858,7 @@ const CompleteProfileScreen = ({ uid, serviceType }) => {
 };
 
 // ==========================================
-// 8. DASHBOARD PARENT (FIX NAVIGATION & EMPTY STATE & STRUCTURE)
+// 8. DASHBOARD PARENT (FIX NAVIGATION & EMPTY STATE)
 // ==========================================
 
 const ParentDashboard = ({ profile, user }) => {
@@ -902,7 +903,6 @@ const ParentDashboard = ({ profile, user }) => {
   useEffect(() => {
     localStorage.setItem('dark', isDark);
     const unsubSitters = onSnapshot(collection(db, 'artifacts', appId, 'public', 'data', 'sitters'), (snap) => {
-      // FILTRE PAR UNIVERS (Baby ou Pet)
       setSitters(snap.docs.map(d => ({ id: d.id, ...d.data() })).filter(s => s.serviceType === profile.serviceType));
       setLoading(false);
     });
@@ -996,11 +996,13 @@ const ParentDashboard = ({ profile, user }) => {
         <div className="flex items-center gap-2"><SitFinderLogo className="w-8 h-8" glow={false} /><span className="font-black italic text-lg md:text-2xl uppercase tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-[#E64545] to-[#E0720F]">BABYKEEPER</span></div>
         <div className="flex items-center gap-1.5">
           <ModeSwitcher currentRole={profile.role} currentService={profile.serviceType || 'baby'} uid={user.uid} />
+          
           <button onClick={() => setShowFAQ(true)} className={`p-2 rounded-2xl transition-all shadow-sm flex items-center justify-center ${isDark ? 'bg-slate-800 text-slate-300' : 'bg-white border border-slate-100 text-slate-400'}`}>
               <HelpCircle size={20} />
           </button>
 
           <button onClick={() => setActiveTab("premium")} className={`p-2 rounded-2xl transition-all shadow-md bg-gradient-to-br from-yellow-400 to-orange-500 text-white animate-pulse`}><Crown size={20} fill="white" /></button>
+          
           <div className="relative p-2 text-slate-400"><Bell size={20}/>{unreadCount > 0 && <span className="absolute top-1 right-1 w-4 h-4 bg-[#E64545] text-white text-[8px] font-black rounded-full flex items-center justify-center border-2 border-white animate-bounce">{unreadCount}</span>}</div>
         </div>
       </nav>
@@ -1095,21 +1097,19 @@ const ParentDashboard = ({ profile, user }) => {
               })}
             </div>
             </>
-        }
+        )}
 
         {/* --- VUE MESSAGES --- */}
         {activeTab === "messages" && (
           <div className="space-y-8 animate-in fade-in duration-500">
             <h2 className={`text-4xl font-black italic uppercase font-sans tracking-tight leading-none text-left ${isDark ? 'text-white' : 'text-slate-800'}`}>Discussions</h2>
             <div className="grid gap-6">
-              {offers.length === 0 && (
+              {offers.length === 0 ? 
                  <div className={`py-24 text-center rounded-[4rem] border-2 border-dashed italic text-xl shadow-inner flex flex-col items-center justify-center gap-4 ${isDark ? 'bg-slate-900 border-slate-800 text-slate-500' : 'bg-white border-slate-100 text-slate-400'}`}>
                     <Inbox size={48} className="opacity-20"/>
                     <p>Aucune demande pour le moment...</p>
                  </div>
-              )}
-
-              {offers.length > 0 && offers.sort((a,b) => (b.lastMsgAt?.seconds || 0) - (a.lastMsgAt?.seconds || 0)).map(o => (
+              : offers.sort((a,b) => (b.lastMsgAt?.seconds || 0) - (a.lastMsgAt?.seconds || 0)).map(o => (
                   <div key={o.id} onClick={() => markAsRead(o)} className={`p-10 rounded-[3.5rem] shadow-xl border flex items-center justify-between hover:border-[#E0720F]/30 cursor-pointer transition-all active:scale-[0.99] shadow-md ${isDark ? 'bg-slate-900 border-slate-800 text-white shadow-slate-950' : 'bg-white border-slate-100 text-slate-900 shadow-slate-100'} ${o.hasUnread && o.lastSenderId !== user.uid ? 'ring-2 ring-[#E64545]' : ''}`}>
                     <div className="flex items-center gap-6 text-left">
                         <div className={`w-20 h-20 rounded-3xl overflow-hidden shadow-sm border ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-[#E0720F]/10 border-[#E0720F]/20'}`}>
@@ -1363,7 +1363,7 @@ const SitterDashboard = ({ user, profile }) => {
   };
 
   if (activeChat) return <ChatRoom offer={activeChat} currentUser={user} onBack={() => setActiveChat(null)} isDark={isDark} />;
-  if (activeTab === "settings") return <SettingsView user={user} profile={profile} onBack={() => setActiveTab("profile")} isDark={isDark} toggleDark={() => setIsDark(!isDark)} />;
+  if (activeTab === "profile") return <SettingsView user={user} profile={profile} onBack={() => setActiveTab("profile")} isDark={isDark} toggleDark={() => setIsDark(!isDark)} />;
 
   return (
     <div className={`min-h-screen font-sans pb-32 animate-in fade-in duration-500 ${isDark ? 'bg-slate-950 text-white' : 'bg-slate-50 text-slate-800'}`}>
@@ -1371,7 +1371,6 @@ const SitterDashboard = ({ user, profile }) => {
         <div className="flex items-center gap-2"><SitFinderLogo className="w-8 h-8" glow={false} /><span className="font-black italic text-lg md:text-2xl uppercase tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-[#E64545] to-[#E0720F]">BABYKEEPER</span></div>
         <div className="flex items-center gap-1.5">
           <ModeSwitcher currentRole={profile.role} currentService={profile.serviceType || 'baby'} uid={user.uid} />
-          
           <button onClick={() => setShowFAQ(true)} className={`p-2 rounded-2xl transition-all shadow-sm flex items-center justify-center ${isDark ? 'bg-slate-800 text-slate-300' : 'bg-white border border-slate-100 text-slate-400'}`}>
               <HelpCircle size={20} />
           </button>
@@ -1491,7 +1490,7 @@ const SitterDashboard = ({ user, profile }) => {
                         </div>
                         <div className="text-left"><h4 className={`font-black text-3xl italic leading-tight ${isDark ? 'text-white' : ''}`}>{o.parentName}</h4><p className={`text-[11px] font-black uppercase tracking-[0.3em] mt-1 ${isDark ? 'text-indigo-400' : 'text-[#E0720F]'}`}>{o.status === 'accepted' ? 'Validé ✨' : `Offre : ${o.price}€/H`}</p></div>
                     </div>
-                    {o.hasUnread && o.lastSenderId !== user.uid && <div className="w-4 h-4 bg-[#E64545] rounded-full animate-pulse shadow-xl"></div>}
+                    {o.hasUnread && o.lastSenderId !== user.uid && <div className="w-3 h-3 bg-[#E64545] rounded-full animate-pulse shadow-xl"></div>}
                   </div>
               ))}
             </div>
@@ -1500,111 +1499,19 @@ const SitterDashboard = ({ user, profile }) => {
       </main>
 
       <div className={`fixed bottom-10 left-1/2 -translate-x-1/2 w-[90%] max-w-md backdrop-blur-xl p-2.5 rounded-[3rem] shadow-2xl flex items-center justify-between z-50 border ${isDark ? 'bg-slate-900/95 border-slate-800' : 'bg-slate-900/95 border-white/10'}`}>
+        {/* NOUVEAU BOUTON PROFIL EN BAS QUI OUVRE LES REGLAGES */}
         <button onClick={() => setActiveTab("profile")} className={`flex-1 flex flex-col items-center py-4 rounded-[2.5rem] transition-all duration-300 ${activeTab === "profile" ? (isDark ? "bg-[#E64545] text-white" : "bg-[#E64545] text-white") : "text-slate-400 hover:text-white"}`}>
-            <User size={22}/>
-            <span className="text-[9px] font-black uppercase mt-1.5 tracking-widest font-sans">Profil</span>
-        </button>
-        <button onClick={() => setActiveTab("messages")} className={`flex-1 flex flex-col items-center py-4 rounded-[2.5rem] transition-all duration-300 relative ${activeTab === "messages" ? (isDark ? "bg-[#E64545] text-white" : "bg-[#E64545] text-white") : "text-slate-400 hover:text-white"}`}><MessageSquare size={22}/><span className="text-[9px] font-black uppercase mt-1.5 font-sans tracking-widest">Offres</span>{unreadCount > 0 && <div className="absolute top-3 right-1/3 w-2.5 h-2.5 bg-[#E0720F] rounded-full border-2 border-slate-900 animate-pulse"></div>}</button>
-        
-        {/* NOUVEAU BOUTON REGLAGES DANS LA BARRE DU BAS POUR LE SITTER */}
-        <button onClick={() => setActiveTab("settings")} className={`flex-1 flex flex-col items-center py-4 rounded-[2.5rem] transition-all duration-300 ${activeTab === "settings" ? (isDark ? "bg-[#E64545] text-white" : "bg-[#E64545] text-white") : "text-slate-400 hover:text-white"}`}>
             <Settings size={22}/>
             <span className="text-[9px] font-black uppercase mt-1.5 tracking-widest font-sans">Réglages</span>
         </button>
+        <button onClick={() => setActiveTab("messages")} className={`flex-1 flex flex-col items-center py-4 rounded-[2.5rem] transition-all duration-300 relative ${activeTab === "messages" ? (isDark ? "bg-[#E64545] text-white" : "bg-[#E64545] text-white") : "text-slate-400 hover:text-white"}`}><MessageSquare size={22}/><span className="text-[9px] font-black uppercase mt-1.5 font-sans tracking-widest">Offres</span>{unreadCount > 0 && <div className="absolute top-3 right-1/3 w-2.5 h-2.5 bg-[#E0720F] rounded-full border-2 border-slate-900 animate-pulse"></div>}</button>
       </div>
-
+    
       {/* --- BANDEAU INSTALLATION PWA --- */}
       <InstallPrompt />
 
       {/* --- FAQ MODAL --- */}
       {showFAQ && <FAQModal onClose={() => setShowFAQ(false)} />}
-      
-      {selectedSitter && (
-        <div className="fixed inset-0 bg-slate-900/90 backdrop-blur-md z-[100] flex items-center justify-center p-6 text-slate-900">
-          <div className="bg-white w-full max-w-xl rounded-[4rem] overflow-hidden shadow-2xl animate-in slide-in-from-bottom-10 duration-500 p-10 space-y-10">
-            <div className="flex justify-between items-start">
-              <div className="flex gap-8 items-center text-left">
-                 <div className="w-28 h-28 rounded-[2.5rem] overflow-hidden border-4 shadow-2xl border-white shadow-slate-200">
-                     <UserAvatar photoURL={getSPhoto(selectedSitter)} />
-                 </div>
-                 <div className="space-y-1"><h3 className="text-4xl font-black tracking-tighter font-sans leading-none">{selectedSitter.name}</h3><RatingStars rating={selectedSitter.rating || 5} size={20}/></div>
-              </div>
-              <div className="flex gap-2">
-                {/* --- BOUTON PARTAGE --- */}
-                <button 
-                    onClick={() => {
-                        if (navigator.share) {
-                            navigator.share({
-                                title: `Profil de ${selectedSitter.name} sur BabyKeeper`,
-                                text: `Regarde ce profil de Sitter (${selectedSitter.price}€/h) : ${selectedSitter.bio}`,
-                                url: window.location.href
-                            });
-                        } else {
-                            alert("Lien copié dans le presse-papier !"); 
-                            navigator.clipboard.writeText(`Regarde ce profil de ${selectedSitter.name} sur BabyKeeper !`);
-                        }
-                    }} 
-                    className="p-4 rounded-full transition-all bg-blue-50 text-blue-600 hover:bg-blue-100"
-                >
-                    <Share2 size={24}/>
-                </button>
-                <button onClick={() => setSelectedSitter(null)} className="p-4 rounded-full transition-all bg-slate-50 text-slate-800 hover:bg-red-50"><X size={24}/></button>
-              </div>
-            </div>
-            <div className="max-h-[300px] overflow-y-auto space-y-6 pr-2 text-left custom-scrollbar">
-                <div className="p-10 rounded-[3.5rem] space-y-6 shadow-inner border bg-slate-50 border-slate-100/50 shadow-slate-100">
-                    <div className="flex justify-between items-center"><span className="font-black text-slate-500 text-[11px] uppercase tracking-widest italic">Lieu</span><span className="font-black uppercase">{selectedSitter.city || "France"}</span></div>
-                    <div className="flex justify-between items-center"><span className="font-black text-slate-500 text-[11px] uppercase tracking-widest italic">Visites</span><span className="font-black uppercase">{selectedSitter.views || 0} 👀</span></div>
-                    {selectedSitter.level && !isPet && <div className="flex justify-between items-center"><span className="font-black text-slate-500 text-[11px] uppercase tracking-widest italic">Niveau</span><span className="font-black uppercase text-[#E0720F]">NIV {selectedSitter.level} 👑</span></div>}
-                    {selectedSitter.level && isPet && <div className="flex justify-between items-center"><span className="font-black text-slate-500 text-[11px] uppercase tracking-widest italic">Niveau</span><span className="font-black uppercase text-[#E0720F]">NIV {selectedSitter.level} 🐾</span></div>}
-                    
-                    {/* LISTE COMPETENCES DANS PROFIL COMPLET */}
-                    {selectedSitter.skills && (
-                        <div className="flex flex-wrap gap-2 mt-4 pt-4 border-t border-slate-100">
-                            {selectedSitter.skills.map((skill, i) => (
-                                <span key={i} className="text-[10px] font-bold uppercase bg-slate-100 text-slate-600 px-3 py-1.5 rounded-xl border flex items-center gap-1">✨ {skill}</span>
-                            ))}
-                        </div>
-                    )}
-                </div>
-                {sitterReviews.length > 0 && (
-                    <div className="space-y-4">
-                        <h4 className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-500 ml-5 italic">Avis de parents</h4>
-                        {sitterReviews.map((r, idx) => (
-                            <div key={idx} className="p-6 rounded-[2rem] shadow-sm space-y-3 border bg-white border-slate-100">
-                                <div className="flex justify-between items-center"><span className="font-black text-xs">{r.parentName}</span><RatingStars rating={r.rating} size={12} /></div>
-                                <p className="text-xs italic leading-relaxed text-slate-500">"{r.text}"</p>
-                            </div>
-                        ))}
-                    </div>
-                )}
-            </div>
-            <div className="space-y-5">
-              <div className="grid grid-cols-2 gap-4 text-left">
-                  <div className="space-y-2">
-                      <label className="text-[10px] font-black uppercase italic ml-4 text-slate-400 font-sans">Prix (€/H)</label>
-                      <input id="neg-p" type="number" defaultValue={selectedSitter.price} className="w-full p-6 rounded-[2.5rem] outline-none font-black text-2xl shadow-inner bg-slate-50 text-slate-800" />
-                  </div>
-                  <div className="space-y-2">
-                      <label className="text-[10px] font-black uppercase italic ml-4 text-slate-400 font-sans">Temps (H)</label>
-                      <input id="neg-h" type="number" defaultValue="2" className="w-full p-6 rounded-[2.5rem] outline-none font-black text-2xl shadow-inner bg-slate-50 text-slate-800" />
-                  </div>
-              </div>
-
-               <div className="flex justify-between items-center bg-slate-50 p-4 rounded-2xl">
-                 <div className="flex items-center gap-2 text-xs font-bold text-slate-500"><Car size={16}/> {selectedSitter.hasCar ? "Véhiculé 🚗" : "Non véhiculé"}</div>
-              </div>
-
-              {/* BOUTON ENVOYER DEMANDE : ROUGE */}
-              <button onClick={() => {
-                  const p = document.getElementById('neg-p').value;
-                  const h = document.getElementById('neg-h').value;
-                  handleBooking(selectedSitter, p, h);
-              }} className="w-full py-8 rounded-[2.5rem] font-black text-sm shadow-xl shadow-[#E64545]/20 uppercase tracking-[0.2em] active:scale-95 transition-all bg-[#E64545] text-white hover:bg-[#E64545]/90">ENVOYER LA DEMANDE</button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 };
