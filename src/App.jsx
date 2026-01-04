@@ -32,7 +32,7 @@ import {
   Baby, LogOut, Save, Search, Loader2, AlertCircle, ShieldCheck, 
   Euro, User, Mail, Lock, ChevronRight, Sparkles, Heart, Filter, Calendar,
   Clock, UserPlus, Cake, FileUp, FileText, CheckCircle2, MessageSquare, 
-  Send, X, Check, ArrowLeft, MessageCircle, PartyPopper, Star, MapPin, Camera, SlidersHorizontal, Settings, KeyRound, Phone, Trash2, Palette, Image as ImageIcon, Share2, Quote, TrendingUp, Zap, Trophy, Languages, EyeOff, Moon, Sun, Bell, Flag, Eye, Wallet, Car, CreditCard, LockKeyhole, Crown, Info, Dog, Cat, Bone, PawPrint, RefreshCw
+  Send, X, Check, ArrowLeft, MessageCircle, PartyPopper, Star, MapPin, Camera, SlidersHorizontal, Settings, KeyRound, Phone, Trash2, Palette, Image as ImageIcon, Share2, Quote, TrendingUp, Zap, Trophy, Languages, EyeOff, Moon, Sun, Bell, Flag, Eye, Wallet, Car, CreditCard, LockKeyhole, Crown, Info, Dog, Cat, Bone, PawPrint, RefreshCw, Download, Share
 } from "lucide-react";
 
 // ==========================================
@@ -122,8 +122,75 @@ const UserAvatar = ({ photoURL, size = "w-full h-full", className = "" }) => {
 };
 
 // ==========================================
-// 3. COMPOSANTS GLOBAUX (SWITCHER)
+// 3. COMPOSANTS GLOBAUX (SWITCHER & INSTALL)
 // ==========================================
+
+// --- NOUVEAU : BANDEAU D'INSTALLATION PWA ---
+const InstallPrompt = () => {
+    const [deferredPrompt, setDeferredPrompt] = useState(null);
+    const [showInstall, setShowInstall] = useState(false);
+    const [isIOS, setIsIOS] = useState(false);
+
+    useEffect(() => {
+        // Détection iOS
+        const isIosDevice = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+        const isInStandaloneMode = ('standalone' in window.navigator) && (window.navigator.standalone);
+        
+        if (isIosDevice && !isInStandaloneMode) {
+            setIsIOS(true);
+            setShowInstall(true);
+        }
+
+        // Détection Android / Chrome
+        const handler = (e) => {
+            e.preventDefault();
+            setDeferredPrompt(e);
+            setShowInstall(true);
+        };
+        window.addEventListener("beforeinstallprompt", handler);
+        return () => window.removeEventListener("beforeinstallprompt", handler);
+    }, []);
+
+    const handleInstallClick = () => {
+        if (deferredPrompt) {
+            deferredPrompt.prompt();
+            deferredPrompt.userChoice.then((choiceResult) => {
+                if (choiceResult.outcome === 'accepted') {
+                    setShowInstall(false);
+                }
+                setDeferredPrompt(null);
+            });
+        }
+    };
+
+    if (!showInstall) return null;
+
+    return (
+        <div className="fixed bottom-24 left-4 right-4 bg-slate-900 text-white p-4 rounded-2xl shadow-2xl z-[60] flex items-center justify-between border border-slate-700 animate-in slide-in-from-bottom-10 fade-in duration-700">
+            <div className="flex items-center gap-3">
+                <div className="bg-white p-1 rounded-lg">
+                    <img src="/logo.png" alt="Icon" className="w-8 h-8 rounded-md" />
+                </div>
+                <div>
+                    <h4 className="font-bold text-sm">Installer BabyKeeper</h4>
+                    <p className="text-[10px] text-slate-400">Pour un accès plus rapide</p>
+                </div>
+            </div>
+            
+            {isIOS ? (
+                <div className="flex items-center gap-2 text-[10px] font-bold text-[#E0720F]">
+                    <span>Partager <Share size={10} className="inline"/> puis "Sur l'écran d'accueil"</span>
+                    <button onClick={() => setShowInstall(false)} className="bg-slate-800 p-2 rounded-full"><X size={14}/></button>
+                </div>
+            ) : (
+                <div className="flex gap-2">
+                    <button onClick={handleInstallClick} className="bg-[#E64545] px-4 py-2 rounded-xl text-xs font-black uppercase shadow-lg">Installer</button>
+                    <button onClick={() => setShowInstall(false)} className="bg-slate-800 p-2 rounded-xl"><X size={16}/></button>
+                </div>
+            )}
+        </div>
+    );
+};
 
 const ModeSwitcher = ({ currentRole, currentService, uid }) => {
     const [isOpen, setIsOpen] = useState(false);
@@ -378,7 +445,7 @@ const ChatRoom = ({ offer, currentUser, onBack, isDark }) => {
 
   // --- EMAIL NOTIF : Fonction d'envoi ---
   const sendEmailNotification = async (msgText) => {
-      if (!window.emailjs) return; 
+      if (!window.emailjs) return; // Sécurité si le script n'est pas chargé
       
       const otherId = currentUser.uid === offer.sitterId ? offer.parentId : offer.sitterId;
       try {
@@ -387,9 +454,10 @@ const ChatRoom = ({ offer, currentUser, onBack, isDark }) => {
               const targetEmail = userDoc.data().email;
               const targetName = userDoc.data().name;
               
+              // ⚠️ CLÉS EMAILJS INTÉGRÉES ⚠️
               await window.emailjs.send(
-                  "service_hjonpe3", // SERVICE ID
-                  "template_b2gl0lh", // TEMPLATE ID
+                  "service_hjonpe3", // TON SERVICE ID
+                  "template_b2gl0lh", // TON TEMPLATE ID
                   {
                       to_email: targetEmail,
                       to_name: targetName,
@@ -397,6 +465,7 @@ const ChatRoom = ({ offer, currentUser, onBack, isDark }) => {
                       message: msgText
                   }
               );
+              console.log("Notif envoyée");
           }
       } catch (error) {
           console.error("Erreur envoi mail:", error);
@@ -423,6 +492,8 @@ const ChatRoom = ({ offer, currentUser, onBack, isDark }) => {
     e.preventDefault();
     const txt = newMessage.trim();
     if (!txt) return;
+    
+    // Optimistic UI update
     setNewMessage("");
 
     try {
@@ -432,7 +503,10 @@ const ChatRoom = ({ offer, currentUser, onBack, isDark }) => {
       await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'offers', offer.id), {
           lastMsg: txt, lastMsgAt: Timestamp.now(), hasUnread: true, lastSenderId: currentUser.uid
       });
+      
+      // --- EMAIL NOTIF : Appel ---
       sendEmailNotification(txt);
+
     } catch (e) { console.error(e); }
   };
 
@@ -449,7 +523,9 @@ const ChatRoom = ({ offer, currentUser, onBack, isDark }) => {
       
       await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'offers', offer.id, 'messages'), { text, senderId: 'system', parentId: offer.parentId, sitterId: offer.sitterId, createdAt: Timestamp.now() });
 
+      // --- EMAIL NOTIF : Appel lors de l'acceptation ---
       if(status === 'accepted') sendEmailNotification("Votre offre a été acceptée !");
+
     } catch (e) { console.error(e); }
   };
 
@@ -859,33 +935,20 @@ const ParentDashboard = ({ profile, user }) => {
       if (!isPremium) {
           const oneWeekAgo = new Date();
           oneWeekAgo.setDate(oneWeekAgo.getDate() - 7); 
-          const recentOffers = offers.filter(o => {
-              const d = o.createdAt?.toDate ? o.createdAt.toDate() : new Date(o.createdAt);
-              return d > oneWeekAgo;
-          });
-          if (recentOffers.length >= 1) {
-              alert("🔒 Limite atteinte ! Passez Premium.");
-              setSelectedSitter(null); 
-              setActiveTab("premium"); 
-              return; 
-          }
+          const recentOffers = offers.filter(o => { const d = o.createdAt?.toDate ? o.createdAt.toDate() : new Date(o.createdAt); return d > oneWeekAgo; });
+          if (recentOffers.length >= 1) { alert("🔒 Limite atteinte ! Passez Premium."); setSelectedSitter(null); setActiveTab("premium"); return; }
       }
       const offerText = `Offre : ${h}h à ${p}€/h`;
       const newOffer = await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'offers'), {
         parentId: user.uid, parentName: profile.name, sitterId: s.id, sitterName: s.name, price: p, hours: h, status: 'pending', createdAt: Timestamp.now(), lastMsg: offerText, lastMsgAt: Timestamp.now(), hasUnread: true, lastSenderId: user.uid
       });
-      await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'offers', newOffer.id, 'messages'), {
-        text: `Bonjour ${s.name}, je souhaiterais réserver une garde de ${h}H au prix de ${p}€/H.`, senderId: user.uid, parentId: user.uid, sitterId: s.id, createdAt: Timestamp.now()
-      });
-      setSelectedSitter(null); 
-      setActiveTab("messages");
+      await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'offers', newOffer.id, 'messages'), { text: `Bonjour ${s.name}, je souhaiterais réserver.`, senderId: user.uid, parentId: user.uid, sitterId: s.id, createdAt: Timestamp.now() });
+      setSelectedSitter(null); setActiveTab("messages");
     } catch (e) { console.error(e); }
   };
 
   const markAsRead = async (offer) => {
-    if (offer.hasUnread && offer.lastSenderId !== user.uid) {
-        await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'offers', offer.id), { hasUnread: false });
-    }
+    if (offer.hasUnread && offer.lastSenderId !== user.uid) { await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'offers', offer.id), { hasUnread: false }); }
     setActiveChat(offer);
   };
 
@@ -1109,6 +1172,9 @@ const ParentDashboard = ({ profile, user }) => {
           </div>
         </div>
       )}
+      
+      {/* --- BANDEAU INSTALLATION PWA --- */}
+      <InstallPrompt />
     </div>
   );
 };
@@ -1328,7 +1394,11 @@ const SitterDashboard = ({ user, profile }) => {
           </div>
         )}
       </main>
-      <div className={`fixed bottom-10 left-1/2 -translate-x-1/2 w-[90%] max-w-md backdrop-blur-xl p-2.5 rounded-[3.5rem] shadow-2xl flex items-center justify-between z-50 border ${isDark ? 'bg-slate-900/95 border-slate-800' : 'bg-slate-900/95 border-white/10'}`}><button onClick={() => setActiveTab("profile")} className={`flex-1 flex flex-col items-center py-4 rounded-[2.5rem] transition-all duration-300 ${activeTab === "profile" ? (isDark ? "bg-[#E64545] text-white" : "bg-[#E64545] text-white") : "text-slate-400 hover:text-white"}`}><User size={22}/><span className="text-[9px] font-black uppercase mt-1.5 tracking-widest font-sans">Profil</span></button><button onClick={() => setActiveTab("messages")} className={`flex-1 flex flex-col items-center py-4 rounded-[2.5rem] transition-all duration-300 relative ${activeTab === "messages" ? (isDark ? "bg-[#E64545] text-white" : "bg-[#E64545] text-white") : "text-slate-400 hover:text-white"}`}><MessageSquare size={22}/><span className="text-[9px] font-black uppercase mt-1.5 font-sans tracking-widest">Offres</span>{unreadCount > 0 && <div className="absolute top-3 right-1/3 w-2.5 h-2.5 bg-[#E0720F] rounded-full border-2 border-slate-900 animate-pulse"></div>}</button></div>
+      
+      {/* --- BANDEAU INSTALLATION PWA --- */}
+      <InstallPrompt />
+      
+      <div className={`fixed bottom-10 left-1/2 -translate-x-1/2 w-[90%] max-w-md backdrop-blur-xl p-2.5 rounded-[3rem] shadow-2xl flex items-center justify-between z-50 border ${isDark ? 'bg-slate-900/95 border-slate-800' : 'bg-slate-900/95 border-white/10'}`}><button onClick={() => setActiveTab("profile")} className={`flex-1 flex flex-col items-center py-4 rounded-[2.5rem] transition-all duration-300 ${activeTab === "profile" ? (isDark ? "bg-[#E64545] text-white" : "bg-[#E64545] text-white") : "text-slate-400 hover:text-white"}`}><User size={22}/><span className="text-[9px] font-black uppercase mt-1.5 tracking-widest font-sans">Profil</span></button><button onClick={() => setActiveTab("messages")} className={`flex-1 flex flex-col items-center py-4 rounded-[2.5rem] transition-all duration-300 relative ${activeTab === "messages" ? (isDark ? "bg-[#E64545] text-white" : "bg-[#E64545] text-white") : "text-slate-400 hover:text-white"}`}><MessageSquare size={22}/><span className="text-[9px] font-black uppercase mt-1.5 font-sans tracking-widest">Offres</span>{unreadCount > 0 && <div className="absolute top-3 right-1/3 w-2.5 h-2.5 bg-[#E0720F] rounded-full border-2 border-slate-900 animate-pulse"></div>}</button></div>
     </div>
   );
 };
