@@ -1,5 +1,3 @@
-Tiens voici mon code actuelle qui fonctionnent, je te demande juste et juste ça, d’enlever le bouton se déconnecter visible en haut sur l’interface car il est déjà dans les paramètres et ça suffira d’en avoir qu’un. Modifie rien d’autre stp
-Voici mon code actuelle
 import React, { useEffect, useState, useMemo, useRef } from "react";
 // Importations Firebase
 import { initializeApp, getApps, getApp } from "firebase/app";
