@@ -95,6 +95,17 @@ const calculateAge = (birth) => {
   return age;
 };
 
+const UserAvatar = ({ photoURL, size = "w-full h-full", className = "" }) => {
+    if (photoURL) {
+        return <img src={photoURL} alt="User" className={`${size} object-cover ${className}`} />;
+    }
+    return (
+        <div className={`${size} bg-slate-200 flex items-center justify-center text-slate-400 ${className}`}>
+            <User size="50%" />
+        </div>
+    );
+};
+
 const SplashScreen = ({ message = "La recherche en toute confiance" }) => (
   <div className="flex flex-col items-center justify-center h-screen bg-white font-sans overflow-hidden">
     <div className="relative mb-10 animate-in zoom-in duration-1000">
@@ -110,28 +121,17 @@ const SplashScreen = ({ message = "La recherche en toute confiance" }) => (
   </div>
 );
 
-const UserAvatar = ({ photoURL, size = "w-full h-full", className = "" }) => {
-    if (photoURL) {
-        return <img src={photoURL} alt="User" className={`${size} object-cover ${className}`} />;
-    }
-    return (
-        <div className={`${size} bg-slate-200 flex items-center justify-center text-slate-400 ${className}`}>
-            <User size="50%" />
-        </div>
-    );
-};
-
 // ==========================================
 // 3. COMPOSANTS GLOBAUX
 // ==========================================
 
 const FAQModal = ({ onClose }) => {
     const faqs = [
-        { q: "Comment payer le Sitter ?", r: "Le paiement se fait en direct (Espèces, Lydia, CESU) à la fin de la garde. BabyKeeper ne prend aucune commission." },
-        { q: "C'est quoi le point vert ?", r: "C'est le mode 'Dispo Immédiate'. Le Sitter est prêt à intervenir tout de suite (urgence)." },
-        { q: "Je veux garder des animaux aussi !", r: "Cliquez sur le bouton 'Mode' en haut à droite et choisissez 'Pet-Sitter'." },
-        { q: "Comment avoir le badge Vérifié ?", r: "Remplissez votre profil à 100% et ajoutez une photo claire." },
-        { q: "À quoi sert le Premium ?", r: "Le Premium (3€/mois) vous permet de contacter les Sitters en illimité." }
+        { q: "Comment payer le Sitter ?", r: "Le paiement se fait en direct (Espèces, Lydia, CESU) à la fin de la garde. BabyKeeper ne prend aucune commission sur les gardes." },
+        { q: "C'est quoi le point vert ?", r: "C'est le mode 'Dispo Immédiate'. Cela signifie que le Sitter est prêt à intervenir tout de suite (urgence)." },
+        { q: "Je veux garder des animaux aussi !", r: "Facile ! Cliquez sur le bouton 'Mode' en haut à droite et choisissez 'Pet-Sitter' pour créer votre profil animaux." },
+        { q: "Comment avoir le badge Vérifié ?", r: "Remplissez votre profil à 100% et ajoutez une photo claire. L'équipe vérifie régulièrement les profils." },
+        { q: "À quoi sert le Premium ?", r: "Le Premium (3€/mois) vous permet de contacter les Sitters en illimité et d'accéder aux numéros de téléphone directs." }
     ];
 
     return (
@@ -265,7 +265,7 @@ const ModeSwitcher = ({ currentRole, currentService, uid }) => {
 };
 
 // ==========================================
-// 4. COMPOSANT PARAMÈTRES (CORRIGÉ & CENTRÉ)
+// 4. COMPOSANT PARAMÈTRES (AVEC PADDING ENORME POUR MOBILE)
 // ==========================================
 
 const SettingsView = ({ user, profile, onBack, isDark, toggleDark }) => {
@@ -318,7 +318,7 @@ const SettingsView = ({ user, profile, onBack, isDark, toggleDark }) => {
     finally { setLoading(false); }
   };
 
-  // Ajout de pb-52 (200px env) pour que le bouton déconnexion remonte bien
+  // Ajout de pb-64 pour que le bouton déconnexion soit toujours visible
   return (
     <div className={`min-h-screen font-sans ${isDark ? 'bg-slate-950 text-white' : 'bg-slate-50 text-slate-800'}`}>
       <div className={`p-6 border-b flex items-center gap-4 sticky top-0 z-50 ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-100'}`}>
@@ -326,7 +326,7 @@ const SettingsView = ({ user, profile, onBack, isDark, toggleDark }) => {
         <h2 className="font-black text-xl italic uppercase text-[#E64545]">Réglages</h2>
       </div>
 
-      <div className="max-w-2xl w-full mx-auto p-6 space-y-8 pb-52"> 
+      <div className="max-w-2xl mx-auto p-6 space-y-8 pb-64"> 
         {status.msg && <div className="p-4 bg-[#E0720F]/10 text-[#E0720F] rounded-2xl font-bold text-center text-xs uppercase">{status.msg}</div>}
 
         <div className={`p-8 rounded-[3rem] border flex justify-between items-center ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-50'}`}>
@@ -353,7 +353,7 @@ const SettingsView = ({ user, profile, onBack, isDark, toggleDark }) => {
             <button disabled={loading} className="w-full bg-[#E64545] text-white py-5 rounded-2xl font-black uppercase shadow-xl hover:brightness-110">Sauvegarder</button>
         </form>
 
-        <div className="space-y-6 pt-8"> {/* Ajout de padding-top pour séparer */}
+        <div className="space-y-6 pt-8"> 
           <a href="mailto:babykeeper.bordais@gmail.com" className="w-full p-5 border-2 border-[#E0720F]/20 text-[#E0720F] rounded-2xl font-black text-xs uppercase flex justify-center gap-2 hover:bg-[#E0720F]/5">Support Technique</a>
           
           <div className="flex justify-center gap-4 text-[10px] text-slate-400 font-bold uppercase tracking-widest pt-4 border-t border-slate-100/50">
@@ -475,14 +475,12 @@ const ChatRoom = ({ offer, currentUser, onBack, isDark }) => {
 
   const sendEmailNotification = async (msgText) => {
       if (!window.emailjs) return; 
-      
       const otherId = currentUser.uid === offer.sitterId ? offer.parentId : offer.sitterId;
       try {
           const userDoc = await getDoc(doc(db, 'artifacts', appId, 'users', otherId, 'settings', 'profile'));
           if (userDoc.exists()) {
               const targetEmail = userDoc.data().email;
               const targetName = userDoc.data().name;
-              
               await window.emailjs.send(
                   "service_hjonpe3", // TON SERVICE ID
                   "template_b2gl0lh", // TON TEMPLATE ID
@@ -650,7 +648,7 @@ const ChatRoom = ({ offer, currentUser, onBack, isDark }) => {
 };
 
 // ==========================================
-// 7. AUTH SCREEN
+// 7. AUTH SCREEN (AVEC MOT DE PASSE OUBLIÉ & DESIGN FIX)
 // ==========================================
 
 const AuthScreen = () => {
@@ -860,7 +858,7 @@ const CompleteProfileScreen = ({ uid, serviceType }) => {
 };
 
 // ==========================================
-// 8. DASHBOARD PARENT (FIX NAVIGATION & EMPTY STATE)
+// 8. DASHBOARD PARENT (MULTI-UNIVERS & FILTRE JOUR & BADGES & DISPO IMMEDIATE)
 // ==========================================
 
 const ParentDashboard = ({ profile, user }) => {
@@ -880,11 +878,12 @@ const ParentDashboard = ({ profile, user }) => {
   const [showFilters, setShowFilters] = useState(false);
   const [sitterReviews, setSitterReviews] = useState([]);
   const [isDark, setIsDark] = useState(localStorage.getItem('dark') === 'true');
-  const [showFAQ, setShowFAQ] = useState(false);
+  const [showFAQ, setShowFAQ] = useState(false); // --- ETAT FAQ MODAL ---
 
   const isPet = profile.serviceType === 'pet';
   const days = ["Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi", "Samedi", "Dimanche"];
 
+  // --- AUTO-ACTIVATION PREMIUM VIA URL ---
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     if (params.get('success') === 'true') {
@@ -906,11 +905,16 @@ const ParentDashboard = ({ profile, user }) => {
     localStorage.setItem('dark', isDark);
     const unsubSitters = onSnapshot(collection(db, 'artifacts', appId, 'public', 'data', 'sitters'), (snap) => {
       // FILTRE PAR UNIVERS (Baby ou Pet)
-      setSitters(snap.docs.map(d => ({ id: d.id, ...d.data() })).filter(s => s.serviceType === profile.serviceType));
+      setSitters(snap.docs.map(d => ({ id: d.id, ...d.data() })).filter(s => s.serviceType === profile.serviceType && s.id !== user.uid)); // CHANGE: Filter out own profile
       setLoading(false);
     });
-    const qOffers = query(collection(db, 'artifacts', appId, 'public', 'data', 'offers'), where("parentId", "==", user.uid));
-    const unsubOffers = onSnapshot(qOffers, (snap) => { setOffers(snap.docs.map(d => ({ id: d.id, ...d.data() }))); });
+    const qOffers = query(
+      collection(db, 'artifacts', appId, 'public', 'data', 'offers'), 
+      where("parentId", "==", user.uid)
+    );
+    const unsubOffers = onSnapshot(qOffers, (snap) => {
+      setOffers(snap.docs.map(d => ({ id: d.id, ...d.data() })));
+    });
     return () => { unsubSitters(); unsubOffers(); };
   }, [user.uid, isDark, profile.serviceType]); 
 
@@ -987,8 +991,9 @@ const ParentDashboard = ({ profile, user }) => {
     setActiveChat(offer);
   };
 
+  // --- NAVIGATION CLAIRE ---
   if (activeChat) return <ChatRoom offer={activeChat} currentUser={user} onBack={() => setActiveChat(null)} isDark={isDark} />;
-  if (activeTab === "profile") return <SettingsView user={user} profile={profile} onBack={() => setActiveTab("search")} isDark={isDark} toggleDark={() => setIsDark(!isDark)} />;
+  if (activeTab === "settings") return <SettingsView user={user} profile={profile} onBack={() => setActiveTab("search")} isDark={isDark} toggleDark={() => setIsDark(!isDark)} />;
   if (activeTab === "premium") return <PremiumView onBack={() => setActiveTab("search")} isDark={isDark} />;
 
   const getSPhoto = (s) => (s.useCustomPhoto && s.photoURL) ? s.photoURL : `https://api.dicebear.com/7.x/${s.avatarStyle || 'avataaars'}/svg?seed=${s.name}`;
@@ -998,20 +1003,22 @@ const ParentDashboard = ({ profile, user }) => {
       <nav className={`p-4 flex justify-between items-center sticky top-0 z-40 border-b shadow-sm ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-100'}`}>
         <div className="flex items-center gap-2"><SitFinderLogo className="w-8 h-8" glow={false} /><span className="font-black italic text-lg md:text-2xl uppercase tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-[#E64545] to-[#E0720F]">BABYKEEPER</span></div>
         <div className="flex items-center gap-1.5">
+          {/* BOUTON SWITCHER D'UNIVERS */}
           <ModeSwitcher currentRole={profile.role} currentService={profile.serviceType || 'baby'} uid={user.uid} />
+          
           <button onClick={() => setShowFAQ(true)} className={`p-2 rounded-2xl transition-all shadow-sm flex items-center justify-center ${isDark ? 'bg-slate-800 text-slate-300' : 'bg-white border border-slate-100 text-slate-400'}`}>
               <HelpCircle size={20} />
           </button>
+
           <button onClick={() => setActiveTab("premium")} className={`p-2 rounded-2xl transition-all shadow-md bg-gradient-to-br from-yellow-400 to-orange-500 text-white animate-pulse`}><Crown size={20} fill="white" /></button>
+          
           <div className="relative p-2 text-slate-400"><Bell size={20}/>{unreadCount > 0 && <span className="absolute top-1 right-1 w-4 h-4 bg-[#E64545] text-white text-[8px] font-black rounded-full flex items-center justify-center border-2 border-white animate-bounce">{unreadCount}</span>}</div>
         </div>
       </nav>
 
       <main className="p-6 max-w-7xl mx-auto space-y-8 animate-in fade-in duration-500">
-        
-        {/* --- VUE RECHERCHE --- */}
         {activeTab === "search" && (
-            <>
+          <>
             <div className={`p-10 md:p-14 rounded-[3.5rem] shadow-2xl relative overflow-hidden group transition-all duration-700 ${isDark ? 'bg-gradient-to-br from-[#E64545] to-slate-900' : 'bg-gradient-to-br from-[#E64545] to-[#E0720F]'}`}>
               <div className="relative z-10 text-white">
                   <h2 className="text-4xl font-black italic tracking-tighter font-sans leading-tight animate-in slide-in-from-left duration-700">Bonjour {profile.name} ! 👋</h2>
@@ -1050,8 +1057,8 @@ const ParentDashboard = ({ profile, user }) => {
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-10">
-              {loading ? <div className="col-span-full py-20 flex justify-center animate-pulse"><Loader2 className="animate-spin text-[#E64545]" size={64} /></div> 
-              : filteredSitters.map((s) => {
+              {loading && <div className="col-span-full py-20 flex justify-center animate-pulse"><Loader2 className="animate-spin text-[#E64545]" size={64} /></div>} 
+              {!loading && filteredSitters.map((s) => {
                   // Vérification Dispo Immédiate
                   const isInstant = s.instantAvailableUntil && new Date(s.instantAvailableUntil) > new Date();
 
@@ -1096,19 +1103,20 @@ const ParentDashboard = ({ profile, user }) => {
               })}
             </div>
             </>
-        )}
+        }
 
         {/* --- VUE MESSAGES --- */}
         {activeTab === "messages" && (
           <div className="space-y-8 animate-in fade-in duration-500">
             <h2 className={`text-4xl font-black italic uppercase font-sans tracking-tight leading-none text-left ${isDark ? 'text-white' : 'text-slate-800'}`}>Discussions</h2>
             <div className="grid gap-6">
-              {offers.length === 0 ? 
+              {offers.length === 0 && (
                  <div className={`py-24 text-center rounded-[4rem] border-2 border-dashed italic text-xl shadow-inner flex flex-col items-center justify-center gap-4 ${isDark ? 'bg-slate-900 border-slate-800 text-slate-500' : 'bg-white border-slate-100 text-slate-400'}`}>
                     <Inbox size={48} className="opacity-20"/>
-                    <p>Aucune offre en cours...</p>
+                    <p>Aucune offre active...</p>
                  </div>
-              : offers.sort((a,b) => (b.lastMsgAt?.seconds || 0) - (a.lastMsgAt?.seconds || 0)).map(o => (
+              )}
+              {offers.length > 0 && offers.sort((a,b) => (b.lastMsgAt?.seconds || 0) - (a.lastMsgAt?.seconds || 0)).map(o => (
                   <div key={o.id} onClick={() => markAsRead(o)} className={`p-10 rounded-[3.5rem] shadow-xl border flex items-center justify-between hover:border-[#E0720F]/30 cursor-pointer transition-all active:scale-[0.99] shadow-md ${isDark ? 'bg-slate-900 border-slate-800 text-white shadow-slate-950' : 'bg-white border-slate-100 text-slate-900 shadow-slate-100'} ${o.hasUnread && o.lastSenderId !== user.uid ? 'ring-2 ring-[#E64545]' : ''}`}>
                     <div className="flex items-center gap-6 text-left">
                         <div className={`w-20 h-20 rounded-3xl overflow-hidden shadow-sm border ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-[#E0720F]/10 border-[#E0720F]/20'}`}>
@@ -1135,7 +1143,7 @@ const ParentDashboard = ({ profile, user }) => {
         <button onClick={() => setActiveTab("search")} className={`flex-1 flex flex-col items-center py-4 rounded-[2.5rem] transition-all duration-300 ${activeTab === "search" ? (isDark ? "bg-[#E64545] text-white" : "bg-[#E64545] text-white") : "text-slate-400 hover:text-white"}`}><Search size={22}/><span className="text-[9px] font-black uppercase mt-1.5 tracking-widest">Trouver</span></button>
         <button onClick={() => setActiveTab("messages")} className={`flex-1 flex flex-col items-center py-4 rounded-[2.5rem] transition-all duration-300 relative ${activeTab === "messages" ? (isDark ? "bg-[#E64545] text-white" : "bg-[#E64545] text-white") : "text-slate-400 hover:text-white"}`}><MessageSquare size={22}/><span className="text-[9px] font-black uppercase mt-1.5 font-sans tracking-widest">Offres</span>{unreadCount > 0 && <div className="absolute top-3 right-1/3 w-2.5 h-2.5 bg-[#E0720F] rounded-full border-2 border-slate-900 animate-pulse"></div>}</button>
         {/* NOUVEAU BOUTON REGLAGES EN BAS QUI OUVRE LES REGLAGES */}
-        <button onClick={() => setActiveTab("profile")} className={`flex-1 flex flex-col items-center py-4 rounded-[2.5rem] transition-all duration-300 ${activeTab === "profile" ? (isDark ? "bg-[#E64545] text-white" : "bg-[#E64545] text-white") : "text-slate-400 hover:text-white"}`}>
+        <button onClick={() => setActiveTab("settings")} className={`flex-1 flex flex-col items-center py-4 rounded-[2.5rem] transition-all duration-300 ${activeTab === "settings" ? (isDark ? "bg-[#E64545] text-white" : "bg-[#E64545] text-white") : "text-slate-400 hover:text-white"}`}>
             <Settings size={22}/>
             <span className="text-[9px] font-black uppercase mt-1.5 tracking-widest font-sans">Réglages</span>
         </button>
@@ -1383,8 +1391,6 @@ const SitterDashboard = ({ user, profile }) => {
 
           <button onClick={() => setActiveTab("premium")} className={`p-2 rounded-2xl transition-all shadow-md bg-gradient-to-br from-yellow-400 to-orange-500 text-white animate-pulse`}><Crown size={20} fill="white" /></button>
           <div className="relative p-2 text-slate-400"><Bell size={20}/>{unreadCount > 0 && <span className="absolute top-1 right-1 w-4 h-4 bg-[#E64545] text-white text-[8px] font-black rounded-full flex items-center justify-center border-2 border-white animate-bounce">{unreadCount}</span>}</div>
-          <button onClick={() => setActiveTab("settings")} className={`p-2 rounded-2xl transition-all ${isDark ? 'bg-slate-800 text-[#E0720F]' : 'bg-slate-50 text-slate-300'}`}><Settings size={20} /></button>
-          <button onClick={() => signOut(auth)} className={`p-2 rounded-2xl transition-all ${isDark ? 'bg-slate-800 text-slate-400' : 'bg-slate-50 text-slate-300'}`}><LogOut size={20} /></button>
         </div>
       </nav>
       <main className="p-6 max-w-4xl mx-auto space-y-12">
@@ -1482,12 +1488,14 @@ const SitterDashboard = ({ user, profile }) => {
           <div className="space-y-8 animate-in fade-in duration-500">
             <h2 className={`text-4xl font-black italic uppercase font-sans tracking-tight leading-none text-left ${isDark ? 'text-white' : 'text-slate-800'}`}>Discussions</h2>
             <div className="grid gap-6">
-              {offers.length === 0 ? 
+              {offers.length === 0 && (
                  <div className={`py-24 text-center rounded-[4rem] border-2 border-dashed italic text-xl shadow-inner flex flex-col items-center justify-center gap-4 ${isDark ? 'bg-slate-900 border-slate-800 text-slate-500' : 'bg-white border-slate-100 text-slate-400'}`}>
                     <Inbox size={48} className="opacity-20"/>
-                    <p>Aucune demande pour le moment...</p>
+                    <p>Aucune offre en cours...</p>
                  </div>
-              : offers.sort((a,b) => (b.lastMsgAt?.seconds || 0) - (a.lastMsgAt?.seconds || 0)).map(o => (
+              )}
+
+              {offers.length > 0 && offers.sort((a,b) => (b.lastMsgAt?.seconds || 0) - (a.lastMsgAt?.seconds || 0)).map(o => (
                   <div key={o.id} onClick={() => markAsRead(o)} className={`p-10 rounded-[3.5rem] shadow-xl border flex items-center justify-between hover:border-[#E0720F]/30 cursor-pointer transition-all active:scale-[0.99] shadow-md ${isDark ? 'bg-slate-900 border-slate-800 text-white shadow-slate-950' : 'bg-white border-slate-100 text-slate-900 shadow-slate-100'} ${o.hasUnread && o.lastSenderId !== user.uid ? 'ring-2 ring-[#E64545]' : ''}`}>
                     <div className="flex items-center gap-6 text-left">
                         <div className={`w-20 h-20 rounded-3xl overflow-hidden shadow-sm border ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-[#E0720F]/10 border-[#E0720F]/20'}`}>
@@ -1505,8 +1513,16 @@ const SitterDashboard = ({ user, profile }) => {
       </main>
 
       <div className={`fixed bottom-10 left-1/2 -translate-x-1/2 w-[90%] max-w-md backdrop-blur-xl p-2.5 rounded-[3rem] shadow-2xl flex items-center justify-between z-50 border ${isDark ? 'bg-slate-900/95 border-slate-800' : 'bg-slate-900/95 border-white/10'}`}>
-        <button onClick={() => setActiveTab("profile")} className={`flex-1 flex flex-col items-center py-4 rounded-[2.5rem] transition-all duration-300 ${activeTab === "profile" ? (isDark ? "bg-[#E64545] text-white" : "bg-[#E64545] text-white") : "text-slate-400 hover:text-white"}`}><User size={22}/><span className="text-[9px] font-black uppercase mt-1.5 tracking-widest font-sans">Profil</span></button><button onClick={() => setActiveTab("messages")} className={`flex-1 flex flex-col items-center py-4 rounded-[2.5rem] transition-all duration-300 relative ${activeTab === "messages" ? (isDark ? "bg-[#E64545] text-white" : "bg-[#E64545] text-white") : "text-slate-400 hover:text-white"}`}><MessageSquare size={22}/><span className="text-[9px] font-black uppercase mt-1.5 font-sans tracking-widest">Offres</span>{unreadCount > 0 && <div className="absolute top-3 right-1/3 w-2.5 h-2.5 bg-[#E0720F] rounded-full border-2 border-slate-900 animate-pulse"></div>}</button></div>
-    
+        <button onClick={() => setActiveTab("profile")} className={`flex-1 flex flex-col items-center py-4 rounded-[2.5rem] transition-all duration-300 ${activeTab === "profile" ? (isDark ? "bg-[#E64545] text-white" : "bg-[#E64545] text-white") : "text-slate-400 hover:text-white"}`}><User size={22}/><span className="text-[9px] font-black uppercase mt-1.5 tracking-widest font-sans">Profil</span></button>
+        <button onClick={() => setActiveTab("messages")} className={`flex-1 flex flex-col items-center py-4 rounded-[2.5rem] transition-all duration-300 relative ${activeTab === "messages" ? (isDark ? "bg-[#E64545] text-white" : "bg-[#E64545] text-white") : "text-slate-400 hover:text-white"}`}><MessageSquare size={22}/><span className="text-[9px] font-black uppercase mt-1.5 font-sans tracking-widest">Offres</span>{unreadCount > 0 && <div className="absolute top-3 right-1/3 w-2.5 h-2.5 bg-[#E0720F] rounded-full border-2 border-slate-900 animate-pulse"></div>}</button>
+        
+        {/* NOUVEAU BOUTON REGLAGES DANS LA BARRE DU BAS POUR LE SITTER */}
+        <button onClick={() => setActiveTab("settings")} className={`flex-1 flex flex-col items-center py-4 rounded-[2.5rem] transition-all duration-300 ${activeTab === "settings" ? (isDark ? "bg-[#E64545] text-white" : "bg-[#E64545] text-white") : "text-slate-400 hover:text-white"}`}>
+            <Settings size={22}/>
+            <span className="text-[9px] font-black uppercase mt-1.5 tracking-widest font-sans">Réglages</span>
+        </button>
+      </div>
+
       {/* --- BANDEAU INSTALLATION PWA --- */}
       <InstallPrompt />
 
@@ -1555,3 +1571,4 @@ export default function App() {
   // Redirection en fonction du ROLE et de l'UNIVERS (Enfant ou Animaux)
   return profile.role === "parent" ? <ParentDashboard profile={profile} user={user} /> : <SitterDashboard user={user} profile={profile} />;
 }
+
