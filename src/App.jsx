@@ -95,7 +95,7 @@ const calculateAge = (birth) => {
   return age;
 };
 
-// --- NOUVEAU : Fonction de compression d'image pour éviter les erreurs Firebase ---
+// Compression d'image
 const compressImage = (file) => {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
@@ -105,27 +105,20 @@ const compressImage = (file) => {
       img.src = event.target.result;
       img.onload = () => {
         const canvas = document.createElement('canvas');
-        const MAX_WIDTH = 500; // Largeur max réduite pour alléger
+        const MAX_WIDTH = 500;
         const scaleSize = MAX_WIDTH / img.width;
-        
-        // Si l'image est plus petite que 500px, on garde la taille originale
         if (scaleSize >= 1) {
-            canvas.width = img.width;
-            canvas.height = img.height;
+            canvas.width = img.width; canvas.height = img.height;
         } else {
-            canvas.width = MAX_WIDTH;
-            canvas.height = img.height * scaleSize;
+            canvas.width = MAX_WIDTH; canvas.height = img.height * scaleSize;
         }
-        
         const ctx = canvas.getContext('2d');
         ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-        
-        // Compression JPEG qualité 0.7
         resolve(canvas.toDataURL('image/jpeg', 0.7)); 
       };
-      img.onerror = (error) => reject(error);
+      img.onerror = (e) => reject(e);
     };
-    reader.onerror = (error) => reject(error);
+    reader.onerror = (e) => reject(e);
   });
 };
 
@@ -299,7 +292,7 @@ const ModeSwitcher = ({ currentRole, currentService, uid }) => {
 };
 
 // ==========================================
-// 4. COMPOSANT PARAMÈTRES (CORRIGÉ & CENTRÉ)
+// 4. COMPOSANT PARAMÈTRES (CORRIGÉ PHOTO PUBLIC)
 // ==========================================
 
 const SettingsView = ({ user, profile, onBack, isDark, toggleDark }) => {
@@ -342,21 +335,27 @@ const SettingsView = ({ user, profile, onBack, isDark, toggleDark }) => {
     setLoading(true);
     try {
       const updateData = { name: newName, phone, photoURL: customPhoto, privateMode };
+      
+      // 1. Mise à jour profil privé
       await updateDoc(doc(db, 'artifacts', appId, 'users', user.uid, 'settings', 'profile'), updateData);
-      if (profile.role === 'sitter') {
-        await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'sitters', user.uid), { 
-            name: newName, 
-            photoURL: customPhoto, 
-            phone,
-            serviceType: profile.serviceType
-        }, { merge: true });
+      
+      // 2. Mise à jour profil public (Sitter) si existant - CORRECTIF PHOTO
+      const publicSitterRef = doc(db, 'artifacts', appId, 'public', 'data', 'sitters', user.uid);
+      const publicDoc = await getDoc(publicSitterRef);
+      if (publicDoc.exists()) {
+          await updateDoc(publicSitterRef, { 
+              name: newName, 
+              photoURL: customPhoto, // La photo est bien envoyée sur l'annonce ici
+              phone,
+              serviceType: profile.serviceType
+          });
       }
+
       setStatus({ type: "success", msg: "Enregistré !" });
-    } catch (err) { setStatus({ type: "error", msg: "Erreur..." }); }
+    } catch (err) { console.error(err); setStatus({ type: "error", msg: "Erreur..." }); }
     finally { setLoading(false); }
   };
 
-  // Ajout de pb-52 (200px env) pour que le bouton déconnexion remonte bien
   return (
     <div className={`min-h-screen font-sans ${isDark ? 'bg-slate-950 text-white' : 'bg-slate-50 text-slate-800'}`}>
       <div className={`p-6 border-b flex items-center gap-4 sticky top-0 z-50 ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-100'}`}>
@@ -391,7 +390,7 @@ const SettingsView = ({ user, profile, onBack, isDark, toggleDark }) => {
             <button disabled={loading} className="w-full bg-[#E64545] text-white py-5 rounded-2xl font-black uppercase shadow-xl hover:brightness-110">Sauvegarder</button>
         </form>
 
-        <div className="space-y-6 pt-8"> {/* Ajout de padding-top pour séparer */}
+        <div className="space-y-6 pt-8"> 
           <a href="mailto:babykeeper.bordais@gmail.com" className="w-full p-5 border-2 border-[#E0720F]/20 text-[#E0720F] rounded-2xl font-black text-xs uppercase flex justify-center gap-2 hover:bg-[#E0720F]/5">Support Technique</a>
           
           <div className="flex justify-center gap-4 text-[10px] text-slate-400 font-bold uppercase tracking-widest pt-4 border-t border-slate-100/50">
@@ -949,11 +948,16 @@ const ParentDashboard = ({ profile, user }) => {
     localStorage.setItem('dark', isDark);
     const unsubSitters = onSnapshot(collection(db, 'artifacts', appId, 'public', 'data', 'sitters'), (snap) => {
       // FILTRE PAR UNIVERS (Baby ou Pet)
+      // J'AI ENLEVÉ LE FILTRE QUI CACHAIT TON PROFIL POUR QUE TU PUISSES TE VOIR
       setSitters(snap.docs.map(d => ({ id: d.id, ...d.data() })).filter(s => s.serviceType === profile.serviceType));
       setLoading(false);
     });
     const qOffers = query(collection(db, 'artifacts', appId, 'public', 'data', 'offers'), where("parentId", "==", user.uid));
-    const unsubOffers = onSnapshot(qOffers, (snap) => { setOffers(snap.docs.map(d => ({ id: d.id, ...d.data() }))); });
+    const unsubOffers = onSnapshot(qOffers, (snap) => { 
+        // Filtre pour ne pas afficher les discussions avec soi-même
+        const list = snap.docs.map(d => ({ id: d.id, ...d.data() })).filter(o => o.sitterId !== o.parentId);
+        setOffers(list); 
+    });
     return () => { unsubSitters(); unsubOffers(); };
   }, [user.uid, isDark, profile.serviceType]); 
 
@@ -1003,6 +1007,9 @@ const ParentDashboard = ({ profile, user }) => {
   }, [sitters, search, locationFilter, maxPrice, onlyVerified, onlyFavorites, profile.favorites, dayFilter]);
 
   const handleBooking = async (s, p, h) => {
+    // SECURITY: Empêcher de réserver si c'est soi-même
+    if (s.id === user.uid) return alert("Vous ne pouvez pas vous auto-réserver !");
+
     try {
       const isPremium = profile?.isPremium === true;
       if (!isPremium) {
@@ -1192,7 +1199,8 @@ const ParentDashboard = ({ profile, user }) => {
       
       {selectedSitter && (
         <div className="fixed inset-0 bg-slate-900/90 backdrop-blur-md z-[100] flex items-center justify-center p-6 text-slate-900">
-          <div className="bg-white w-full max-w-xl rounded-[4rem] overflow-hidden shadow-2xl animate-in slide-in-from-bottom-10 duration-500 p-10 space-y-10">
+          {/* AJOUT DE max-h-[85vh] et overflow-y-auto POUR LE SCROLL SUR MOBILE */}
+          <div className="bg-white w-full max-w-xl rounded-[4rem] overflow-hidden shadow-2xl animate-in slide-in-from-bottom-10 duration-500 p-10 space-y-10 max-h-[85vh] overflow-y-auto custom-scrollbar">
             <div className="flex justify-between items-start">
               <div className="flex gap-8 items-center text-left">
                  <div className="w-28 h-28 rounded-[2.5rem] overflow-hidden border-4 shadow-2xl border-white shadow-slate-200">
@@ -1222,7 +1230,8 @@ const ParentDashboard = ({ profile, user }) => {
                 <button onClick={() => setSelectedSitter(null)} className="p-4 rounded-full transition-all bg-slate-50 text-slate-800 hover:bg-red-50"><X size={24}/></button>
               </div>
             </div>
-            <div className="max-h-[300px] overflow-y-auto space-y-6 pr-2 text-left custom-scrollbar">
+            
+            <div className="space-y-6 pr-2 text-left">
                 <div className="p-10 rounded-[3.5rem] space-y-6 shadow-inner border bg-slate-50 border-slate-100/50 shadow-slate-100">
                     <div className="flex justify-between items-center"><span className="font-black text-slate-500 text-[11px] uppercase tracking-widest italic">Lieu</span><span className="font-black uppercase">{selectedSitter.city || "France"}</span></div>
                     <div className="flex justify-between items-center"><span className="font-black text-slate-500 text-[11px] uppercase tracking-widest italic">Visites</span><span className="font-black uppercase">{selectedSitter.views || 0} 👀</span></div>
@@ -1266,12 +1275,20 @@ const ParentDashboard = ({ profile, user }) => {
                  <div className="flex items-center gap-2 text-xs font-bold text-slate-500"><Car size={16}/> {selectedSitter.hasCar ? "Véhiculé 🚗" : "Non véhiculé"}</div>
               </div>
 
-              {/* BOUTON ENVOYER DEMANDE : ROUGE */}
-              <button onClick={() => {
-                  const p = document.getElementById('neg-p').value;
-                  const h = document.getElementById('neg-h').value;
-                  handleBooking(selectedSitter, p, h);
-              }} className="w-full py-8 rounded-[2.5rem] font-black text-sm shadow-xl shadow-[#E64545]/20 uppercase tracking-[0.2em] active:scale-95 transition-all bg-[#E64545] text-white hover:bg-[#E64545]/90">ENVOYER LA DEMANDE</button>
+              {/* BOUTON ENVOYER DEMANDE : DESACTIVÉ SI C'EST TON PROPRE PROFIL */}
+              {selectedSitter.id === user.uid ? (
+                  <button disabled className="w-full py-8 rounded-[2.5rem] font-black text-sm shadow-inner uppercase tracking-[0.2em] bg-slate-200 text-slate-400 cursor-not-allowed">
+                      C'EST VOTRE PROFIL (APERÇU)
+                  </button>
+              ) : (
+                  <button onClick={() => {
+                      const p = document.getElementById('neg-p').value;
+                      const h = document.getElementById('neg-h').value;
+                      handleBooking(selectedSitter, p, h);
+                  }} className="w-full py-8 rounded-[2.5rem] font-black text-sm shadow-xl shadow-[#E64545]/20 uppercase tracking-[0.2em] active:scale-95 transition-all bg-[#E64545] text-white hover:bg-[#E64545]/90">
+                      ENVOYER LA DEMANDE
+                  </button>
+              )}
             </div>
           </div>
         </div>
@@ -1571,7 +1588,6 @@ export default function App() {
   useEffect(() => {
     let unsubP = null;
     const minSplashTimer = new Promise(resolve => setTimeout(resolve, 800));
-    // J'AI SUPPRIMÉ LA LIGNE 'signOut(auth)' ICI
     
     const unsubA = onAuthStateChanged(auth, async (u) => {
       setUser(u);
@@ -1593,7 +1609,7 @@ export default function App() {
 
   if (!init) return <SplashScreen />;
   if (!user) return <AuthScreen />;
-  if (user && !profile) return <CompleteProfileScreen uid={user.uid} serviceType={profile?.serviceType} />; // Pass serviceType here to keep consistency
+  if (user && !profile) return <CompleteProfileScreen uid={user.uid} serviceType={profile?.serviceType} />; 
   
   // Redirection en fonction du ROLE et de l'UNIVERS (Enfant ou Animaux)
   return profile.role === "parent" ? <ParentDashboard profile={profile} user={user} /> : <SitterDashboard user={user} profile={profile} />;
