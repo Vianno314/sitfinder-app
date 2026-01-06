@@ -95,7 +95,7 @@ const calculateAge = (birth) => {
   return age;
 };
 
-// Compression d'image
+// --- NOUVEAU : Fonction de compression d'image (Fix Firestore limit) ---
 const compressImage = (file) => {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
@@ -105,20 +105,26 @@ const compressImage = (file) => {
       img.src = event.target.result;
       img.onload = () => {
         const canvas = document.createElement('canvas');
-        const MAX_WIDTH = 500;
+        const MAX_WIDTH = 500; // On réduit à 500px pour être léger
         const scaleSize = MAX_WIDTH / img.width;
+        
         if (scaleSize >= 1) {
-            canvas.width = img.width; canvas.height = img.height;
+            canvas.width = img.width;
+            canvas.height = img.height;
         } else {
-            canvas.width = MAX_WIDTH; canvas.height = img.height * scaleSize;
+            canvas.width = MAX_WIDTH;
+            canvas.height = img.height * scaleSize;
         }
+        
         const ctx = canvas.getContext('2d');
         ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-        resolve(canvas.toDataURL('image/jpeg', 0.7)); 
+        
+        // Export en JPEG 80% qualité
+        resolve(canvas.toDataURL('image/jpeg', 0.8)); 
       };
-      img.onerror = (e) => reject(e);
+      img.onerror = (error) => reject(error);
     };
-    reader.onerror = (e) => reject(e);
+    reader.onerror = (error) => reject(error);
   });
 };
 
@@ -137,8 +143,9 @@ const SplashScreen = ({ message = "La recherche en toute confiance" }) => (
   </div>
 );
 
+// Correction UserAvatar pour éviter l'affichage si l'URL est vide ou invalide
 const UserAvatar = ({ photoURL, size = "w-full h-full", className = "" }) => {
-    if (photoURL) {
+    if (photoURL && photoURL.length > 50) {
         return <img src={photoURL} alt="User" className={`${size} object-cover ${className}`} />;
     }
     return (
@@ -292,7 +299,7 @@ const ModeSwitcher = ({ currentRole, currentService, uid }) => {
 };
 
 // ==========================================
-// 4. COMPOSANT PARAMÈTRES (CORRIGÉ PHOTO PUBLIC)
+// 4. COMPOSANT PARAMÈTRES (CORRIGÉ & CENTRÉ)
 // ==========================================
 
 const SettingsView = ({ user, profile, onBack, isDark, toggleDark }) => {
@@ -324,8 +331,8 @@ const SettingsView = ({ user, profile, onBack, isDark, toggleDark }) => {
         const compressedBase64 = await compressImage(file);
         setCustomPhoto(compressedBase64);
       } catch (error) {
-          console.error("Erreur compression image", error);
-          alert("Image invalide ou trop lourde");
+        console.error("Erreur compression", error);
+        alert("Image trop lourde ou format invalide.");
       }
     }
   };
@@ -336,26 +343,28 @@ const SettingsView = ({ user, profile, onBack, isDark, toggleDark }) => {
     try {
       const updateData = { name: newName, phone, photoURL: customPhoto, privateMode };
       
-      // 1. Mise à jour profil privé
+      // 1. Mise à jour profil Privé
       await updateDoc(doc(db, 'artifacts', appId, 'users', user.uid, 'settings', 'profile'), updateData);
       
-      // 2. Mise à jour profil public (Sitter) si existant - CORRECTIF PHOTO
-      const publicSitterRef = doc(db, 'artifacts', appId, 'public', 'data', 'sitters', user.uid);
-      const publicDoc = await getDoc(publicSitterRef);
-      if (publicDoc.exists()) {
-          await updateDoc(publicSitterRef, { 
-              name: newName, 
-              photoURL: customPhoto, // La photo est bien envoyée sur l'annonce ici
+      // 2. Mise à jour profil Public (Sitter) SI il existe
+      // C'est ICI qu'on force l'annonce publique à avoir la même photo
+      const sitterRef = doc(db, 'artifacts', appId, 'public', 'data', 'sitters', user.uid);
+      const sitterDoc = await getDoc(sitterRef);
+      if (sitterDoc.exists()) {
+          await updateDoc(sitterRef, {
+              name: newName,
+              photoURL: customPhoto, // <-- SYNC FORCEE
               phone,
               serviceType: profile.serviceType
           });
       }
 
       setStatus({ type: "success", msg: "Enregistré !" });
-    } catch (err) { console.error(err); setStatus({ type: "error", msg: "Erreur..." }); }
+    } catch (err) { setStatus({ type: "error", msg: "Erreur..." }); }
     finally { setLoading(false); }
   };
 
+  // Ajout de pb-52 (200px env) pour que le bouton déconnexion remonte bien
   return (
     <div className={`min-h-screen font-sans ${isDark ? 'bg-slate-950 text-white' : 'bg-slate-50 text-slate-800'}`}>
       <div className={`p-6 border-b flex items-center gap-4 sticky top-0 z-50 ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-100'}`}>
@@ -390,7 +399,7 @@ const SettingsView = ({ user, profile, onBack, isDark, toggleDark }) => {
             <button disabled={loading} className="w-full bg-[#E64545] text-white py-5 rounded-2xl font-black uppercase shadow-xl hover:brightness-110">Sauvegarder</button>
         </form>
 
-        <div className="space-y-6 pt-8"> 
+        <div className="space-y-6 pt-8"> {/* Ajout de padding-top pour séparer */}
           <a href="mailto:babykeeper.bordais@gmail.com" className="w-full p-5 border-2 border-[#E0720F]/20 text-[#E0720F] rounded-2xl font-black text-xs uppercase flex justify-center gap-2 hover:bg-[#E0720F]/5">Support Technique</a>
           
           <div className="flex justify-center gap-4 text-[10px] text-slate-400 font-bold uppercase tracking-widest pt-4 border-t border-slate-100/50">
@@ -837,7 +846,6 @@ const CompleteProfileScreen = ({ uid, serviceType }) => {
       const file = e.target.files[0];
       if (file) {
           try {
-             // Compression de l'image
              const compressedBase64 = await compressImage(file);
              setPhoto(compressedBase64);
           } catch (error) {
@@ -947,14 +955,13 @@ const ParentDashboard = ({ profile, user }) => {
   useEffect(() => {
     localStorage.setItem('dark', isDark);
     const unsubSitters = onSnapshot(collection(db, 'artifacts', appId, 'public', 'data', 'sitters'), (snap) => {
-      // FILTRE PAR UNIVERS (Baby ou Pet)
-      // J'AI ENLEVÉ LE FILTRE QUI CACHAIT TON PROFIL POUR QUE TU PUISSES TE VOIR
+      // ON AFFICHE TOUS LES SITTERS DE LA CATEGORIE (Y COMPRIS SOI-MEME POUR VERIFIER L'ANNONCE)
       setSitters(snap.docs.map(d => ({ id: d.id, ...d.data() })).filter(s => s.serviceType === profile.serviceType));
       setLoading(false);
     });
     const qOffers = query(collection(db, 'artifacts', appId, 'public', 'data', 'offers'), where("parentId", "==", user.uid));
     const unsubOffers = onSnapshot(qOffers, (snap) => { 
-        // Filtre pour ne pas afficher les discussions avec soi-même
+        // FILTRE ICI : ON NE MONTRE PAS LES OFFRES QU'ON S'EST ENVOYÉ A SOI-MÊME DANS LA LISTE DE DISCUSSION
         const list = snap.docs.map(d => ({ id: d.id, ...d.data() })).filter(o => o.sitterId !== o.parentId);
         setOffers(list); 
     });
@@ -1007,8 +1014,8 @@ const ParentDashboard = ({ profile, user }) => {
   }, [sitters, search, locationFilter, maxPrice, onlyVerified, onlyFavorites, profile.favorites, dayFilter]);
 
   const handleBooking = async (s, p, h) => {
-    // SECURITY: Empêcher de réserver si c'est soi-même
-    if (s.id === user.uid) return alert("Vous ne pouvez pas vous auto-réserver !");
+    // EMPECHER L'AUTO-RESERVATION
+    if (s.id === user.uid) return alert("Vous ne pouvez pas réserver votre propre service !");
 
     try {
       const isPremium = profile?.isPremium === true;
@@ -1123,7 +1130,8 @@ const ParentDashboard = ({ profile, user }) => {
                         {s.level && isPet && <div className="flex items-center gap-2 bg-[#E0720F] text-white px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest w-fit mt-1">NIV {s.level} 🐾</div>}
                       </div>
                       <div className={`w-28 h-28 rounded-[2.5rem] mb-6 overflow-hidden border-4 shadow-xl ring-4 group-hover/card:scale-110 transition-transform duration-500 ${isDark ? 'bg-slate-800 border-slate-700 ring-slate-900' : 'bg-slate-50 border-white ring-slate-50/50'}`}>
-                          <UserAvatar photoURL={getSPhoto(s)} />
+                          {/* --- ICI : Utilisation de la photoURL qui est désormais synchro --- */}
+                          <UserAvatar photoURL={s.photoURL} />
                       </div>
                       <h4 className={`font-black text-4xl font-sans mb-1 leading-none tracking-tighter text-left ${isDark ? 'text-white' : 'text-slate-800'}`}>{s.name}</h4>
                       <div className="flex items-center gap-3 text-slate-400 mb-6"><RatingStars rating={s.rating || 5} size={18}/><span className={`text-[10px] font-black uppercase px-2 py-0.5 rounded-lg border ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-slate-50 border-slate-100'}`}>{s.city}</span></div>
@@ -1197,19 +1205,13 @@ const ParentDashboard = ({ profile, user }) => {
       {/* --- FAQ MODAL --- */}
       {showFAQ && <FAQModal onClose={() => setShowFAQ(false)} />}
       
+      {/* --- FENÊTRE MODALE DETAIL SITTER (CORRIGÉE HEADER MOBILE) --- */}
       {selectedSitter && (
-        <div className="fixed inset-0 bg-slate-900/90 backdrop-blur-md z-[100] flex items-center justify-center p-6 text-slate-900">
-          {/* AJOUT DE max-h-[85vh] et overflow-y-auto POUR LE SCROLL SUR MOBILE */}
-          <div className="bg-white w-full max-w-xl rounded-[4rem] overflow-hidden shadow-2xl animate-in slide-in-from-bottom-10 duration-500 p-10 space-y-10 max-h-[85vh] overflow-y-auto custom-scrollbar">
-            <div className="flex justify-between items-start">
-              <div className="flex gap-8 items-center text-left">
-                 <div className="w-28 h-28 rounded-[2.5rem] overflow-hidden border-4 shadow-2xl border-white shadow-slate-200">
-                     <UserAvatar photoURL={getSPhoto(selectedSitter)} />
-                 </div>
-                 <div className="space-y-1"><h3 className="text-4xl font-black tracking-tighter font-sans leading-none">{selectedSitter.name}</h3><RatingStars rating={selectedSitter.rating || 5} size={20}/></div>
-              </div>
-              <div className="flex gap-2">
-                {/* --- BOUTON PARTAGE --- */}
+        <div className="fixed inset-0 bg-slate-900/90 backdrop-blur-md z-[100] flex items-center justify-center p-4 md:p-6 text-slate-900">
+          <div className="bg-white w-full max-w-xl rounded-[4rem] overflow-hidden shadow-2xl animate-in slide-in-from-bottom-10 duration-500 flex flex-col max-h-[85vh]">
+            
+            {/* --- HEADER FIXE AVEC BOUTONS SEPARÉS --- */}
+            <div className="flex justify-between items-center p-6 border-b border-slate-100 bg-white z-50 shrink-0">
                 <button 
                     onClick={() => {
                         if (navigator.share) {
@@ -1223,72 +1225,93 @@ const ParentDashboard = ({ profile, user }) => {
                             navigator.clipboard.writeText(`Regarde ce profil de ${selectedSitter.name} sur BabyKeeper !`);
                         }
                     }} 
-                    className="p-4 rounded-full transition-all bg-blue-50 text-blue-600 hover:bg-blue-100"
+                    className="p-4 rounded-full transition-all bg-blue-50 text-blue-600 hover:bg-blue-100 shadow-sm"
                 >
                     <Share2 size={24}/>
                 </button>
-                <button onClick={() => setSelectedSitter(null)} className="p-4 rounded-full transition-all bg-slate-50 text-slate-800 hover:bg-red-50"><X size={24}/></button>
-              </div>
+                
+                {/* NOM AU CENTRE */}
+                <h3 className="text-xl font-black italic uppercase tracking-tighter text-slate-800">{selectedSitter.name}</h3>
+
+                <button onClick={() => setSelectedSitter(null)} className="p-4 rounded-full transition-all bg-slate-100 text-slate-400 hover:bg-red-50 hover:text-red-500 shadow-sm">
+                    <X size={24}/>
+                </button>
             </div>
-            
-            <div className="space-y-6 pr-2 text-left">
-                <div className="p-10 rounded-[3.5rem] space-y-6 shadow-inner border bg-slate-50 border-slate-100/50 shadow-slate-100">
-                    <div className="flex justify-between items-center"><span className="font-black text-slate-500 text-[11px] uppercase tracking-widest italic">Lieu</span><span className="font-black uppercase">{selectedSitter.city || "France"}</span></div>
-                    <div className="flex justify-between items-center"><span className="font-black text-slate-500 text-[11px] uppercase tracking-widest italic">Visites</span><span className="font-black uppercase">{selectedSitter.views || 0} 👀</span></div>
-                    {selectedSitter.level && !isPet && <div className="flex justify-between items-center"><span className="font-black text-slate-500 text-[11px] uppercase tracking-widest italic">Niveau</span><span className="font-black uppercase text-[#E0720F]">NIV {selectedSitter.level} 👑</span></div>}
-                    {selectedSitter.level && isPet && <div className="flex justify-between items-center"><span className="font-black text-slate-500 text-[11px] uppercase tracking-widest italic">Niveau</span><span className="font-black uppercase text-[#E0720F]">NIV {selectedSitter.level} 🐾</span></div>}
+
+            {/* --- CONTENU DÉFILANT --- */}
+            <div className="overflow-y-auto p-8 space-y-8 custom-scrollbar">
+                
+                <div className="flex flex-col items-center gap-2">
+                     <div className="w-32 h-32 rounded-[2.5rem] overflow-hidden border-4 shadow-2xl border-white shadow-slate-200">
+                         <UserAvatar photoURL={selectedSitter.photoURL} />
+                     </div>
+                     <RatingStars rating={selectedSitter.rating || 5} size={24}/>
+                </div>
+
+                <div className="space-y-6 text-left">
+                    <div className="p-8 rounded-[3.5rem] space-y-6 shadow-inner border bg-slate-50 border-slate-100/50 shadow-slate-100">
+                        <div className="flex justify-between items-center"><span className="font-black text-slate-500 text-[11px] uppercase tracking-widest italic">Lieu</span><span className="font-black uppercase">{selectedSitter.city || "France"}</span></div>
+                        <div className="flex justify-between items-center"><span className="font-black text-slate-500 text-[11px] uppercase tracking-widest italic">Visites</span><span className="font-black uppercase">{selectedSitter.views || 0} 👀</span></div>
+                        {selectedSitter.level && !isPet && <div className="flex justify-between items-center"><span className="font-black text-slate-500 text-[11px] uppercase tracking-widest italic">Niveau</span><span className="font-black uppercase text-[#E0720F]">NIV {selectedSitter.level} 👑</span></div>}
+                        {selectedSitter.level && isPet && <div className="flex justify-between items-center"><span className="font-black text-slate-500 text-[11px] uppercase tracking-widest italic">Niveau</span><span className="font-black uppercase text-[#E0720F]">NIV {selectedSitter.level} 🐾</span></div>}
+                        
+                        {/* LISTE COMPETENCES DANS PROFIL COMPLET */}
+                        {selectedSitter.skills && (
+                            <div className="flex flex-wrap gap-2 mt-4 pt-4 border-t border-slate-100">
+                                {selectedSitter.skills.map((skill, i) => (
+                                    <span key={i} className="text-[10px] font-bold uppercase bg-slate-100 text-slate-600 px-3 py-1.5 rounded-xl border flex items-center gap-1">✨ {skill}</span>
+                                ))}
+                            </div>
+                        )}
+                    </div>
                     
-                    {/* LISTE COMPETENCES DANS PROFIL COMPLET */}
-                    {selectedSitter.skills && (
-                        <div className="flex flex-wrap gap-2 mt-4 pt-4 border-t border-slate-100">
-                            {selectedSitter.skills.map((skill, i) => (
-                                <span key={i} className="text-[10px] font-bold uppercase bg-slate-100 text-slate-600 px-3 py-1.5 rounded-xl border flex items-center gap-1">✨ {skill}</span>
+                    <div className="space-y-2">
+                        <h4 className="text-[11px] font-black uppercase tracking-[0.3em] text-slate-500 ml-5 italic">Bio</h4>
+                        <p className="p-6 bg-slate-50 rounded-3xl text-sm italic leading-relaxed text-slate-600 border border-slate-100">"{selectedSitter.bio}"</p>
+                    </div>
+
+                    {sitterReviews.length > 0 && (
+                        <div className="space-y-4">
+                            <h4 className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-500 ml-5 italic">Avis de parents</h4>
+                            {sitterReviews.map((r, idx) => (
+                                <div key={idx} className="p-6 rounded-[2rem] shadow-sm space-y-3 border bg-white border-slate-100">
+                                    <div className="flex justify-between items-center"><span className="font-black text-xs">{r.parentName}</span><RatingStars rating={r.rating} size={12} /></div>
+                                    <p className="text-xs italic leading-relaxed text-slate-500">"{r.text}"</p>
+                                </div>
                             ))}
                         </div>
                     )}
                 </div>
-                {sitterReviews.length > 0 && (
-                    <div className="space-y-4">
-                        <h4 className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-500 ml-5 italic">Avis de parents</h4>
-                        {sitterReviews.map((r, idx) => (
-                            <div key={idx} className="p-6 rounded-[2rem] shadow-sm space-y-3 border bg-white border-slate-100">
-                                <div className="flex justify-between items-center"><span className="font-black text-xs">{r.parentName}</span><RatingStars rating={r.rating} size={12} /></div>
-                                <p className="text-xs italic leading-relaxed text-slate-500">"{r.text}"</p>
-                            </div>
-                        ))}
-                    </div>
-                )}
-            </div>
-            <div className="space-y-5">
-              <div className="grid grid-cols-2 gap-4 text-left">
-                  <div className="space-y-2">
-                      <label className="text-[10px] font-black uppercase italic ml-4 text-slate-400 font-sans">Prix (€/H)</label>
-                      <input id="neg-p" type="number" defaultValue={selectedSitter.price} className="w-full p-6 rounded-[2.5rem] outline-none font-black text-2xl shadow-inner bg-slate-50 text-slate-800" />
-                  </div>
-                  <div className="space-y-2">
-                      <label className="text-[10px] font-black uppercase italic ml-4 text-slate-400 font-sans">Temps (H)</label>
-                      <input id="neg-h" type="number" defaultValue="2" className="w-full p-6 rounded-[2.5rem] outline-none font-black text-2xl shadow-inner bg-slate-50 text-slate-800" />
-                  </div>
-              </div>
 
-               <div className="flex justify-between items-center bg-slate-50 p-4 rounded-2xl">
-                 <div className="flex items-center gap-2 text-xs font-bold text-slate-500"><Car size={16}/> {selectedSitter.hasCar ? "Véhiculé 🚗" : "Non véhiculé"}</div>
-              </div>
+                <div className="space-y-5">
+                  <div className="grid grid-cols-2 gap-4 text-left">
+                      <div className="space-y-2">
+                          <label className="text-[10px] font-black uppercase italic ml-4 text-slate-400 font-sans">Prix (€/H)</label>
+                          <input id="neg-p" type="number" defaultValue={selectedSitter.price} className="w-full p-6 rounded-[2.5rem] outline-none font-black text-2xl shadow-inner bg-slate-50 text-slate-800" />
+                      </div>
+                      <div className="space-y-2">
+                          <label className="text-[10px] font-black uppercase italic ml-4 text-slate-400 font-sans">Temps (H)</label>
+                          <input id="neg-h" type="number" defaultValue="2" className="w-full p-6 rounded-[2.5rem] outline-none font-black text-2xl shadow-inner bg-slate-50 text-slate-800" />
+                      </div>
+                  </div>
 
-              {/* BOUTON ENVOYER DEMANDE : DESACTIVÉ SI C'EST TON PROPRE PROFIL */}
-              {selectedSitter.id === user.uid ? (
-                  <button disabled className="w-full py-8 rounded-[2.5rem] font-black text-sm shadow-inner uppercase tracking-[0.2em] bg-slate-200 text-slate-400 cursor-not-allowed">
-                      C'EST VOTRE PROFIL (APERÇU)
-                  </button>
-              ) : (
-                  <button onClick={() => {
-                      const p = document.getElementById('neg-p').value;
-                      const h = document.getElementById('neg-h').value;
-                      handleBooking(selectedSitter, p, h);
-                  }} className="w-full py-8 rounded-[2.5rem] font-black text-sm shadow-xl shadow-[#E64545]/20 uppercase tracking-[0.2em] active:scale-95 transition-all bg-[#E64545] text-white hover:bg-[#E64545]/90">
-                      ENVOYER LA DEMANDE
-                  </button>
-              )}
+                   <div className="flex justify-between items-center bg-slate-50 p-4 rounded-2xl">
+                     <div className="flex items-center gap-2 text-xs font-bold text-slate-500"><Car size={16}/> {selectedSitter.hasCar ? "Véhiculé 🚗" : "Non véhiculé"}</div>
+                  </div>
+
+                  {/* BOUTON ENVOYER DEMANDE : DESACTIVÉ SI C'EST TON PROPRE PROFIL */}
+                  {selectedSitter.id === user.uid ? (
+                      <button disabled className="w-full py-8 rounded-[2.5rem] font-black text-sm shadow-inner uppercase tracking-[0.2em] bg-slate-200 text-slate-400 cursor-not-allowed">
+                          C'EST VOTRE PROFIL (APERÇU)
+                      </button>
+                  ) : (
+                      <button onClick={() => {
+                          const p = document.getElementById('neg-p').value;
+                          const h = document.getElementById('neg-h').value;
+                          handleBooking(selectedSitter, p, h);
+                      }} className="w-full py-8 rounded-[2.5rem] font-black text-sm shadow-xl shadow-[#E64545]/20 uppercase tracking-[0.2em] active:scale-95 transition-all bg-[#E64545] text-white hover:bg-[#E64545]/90">ENVOYER LA DEMANDE</button>
+                  )}
+                </div>
             </div>
           </div>
         </div>
@@ -1412,8 +1435,11 @@ const SitterDashboard = ({ user, profile }) => {
 
     setLoading(true);
     try {
+      // ON FORCE LA MISE A JOUR DE LA PHOTO ICI EGALEMENT POUR ETRE SUR
       await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'sitters', user.uid), {
-        name: profile.name, serviceType: profile.serviceType, photoURL: profile.photoURL || "", views: views || 0,
+        name: profile.name, serviceType: profile.serviceType, 
+        photoURL: profile.photoURL || "", // <-- IMPORTANT : On prend la photo du profil actuel
+        views: views || 0,
         phone: profile.phone || "", bio: bio.trim(), price, birthDate, availability, cvName, hasCV: !!cvName, city, rating: 5, uid: user.uid, level, hasCar, skills, updatedAt: new Date().toISOString()
       }, { merge: true });
       setSaveStatus("PUBLIÉ ! ✨"); setTimeout(() => setSaveStatus(""), 4000);
@@ -1588,6 +1614,7 @@ export default function App() {
   useEffect(() => {
     let unsubP = null;
     const minSplashTimer = new Promise(resolve => setTimeout(resolve, 800));
+    // CORRECTION : J'ai supprimé la déconnexion automatique
     
     const unsubA = onAuthStateChanged(auth, async (u) => {
       setUser(u);
@@ -1609,7 +1636,7 @@ export default function App() {
 
   if (!init) return <SplashScreen />;
   if (!user) return <AuthScreen />;
-  if (user && !profile) return <CompleteProfileScreen uid={user.uid} serviceType={profile?.serviceType} />; 
+  if (user && !profile) return <CompleteProfileScreen uid={user.uid} serviceType={profile?.serviceType} />; // Pass serviceType here to keep consistency
   
   // Redirection en fonction du ROLE et de l'UNIVERS (Enfant ou Animaux)
   return profile.role === "parent" ? <ParentDashboard profile={profile} user={user} /> : <SitterDashboard user={user} profile={profile} />;
