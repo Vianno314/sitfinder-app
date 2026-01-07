@@ -95,7 +95,7 @@ const calculateAge = (birth) => {
   return age;
 };
 
-// --- NOUVEAU : Fonction de compression d'image (Fix Firestore limit) ---
+// Compression d'image
 const compressImage = (file) => {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
@@ -105,26 +105,20 @@ const compressImage = (file) => {
       img.src = event.target.result;
       img.onload = () => {
         const canvas = document.createElement('canvas');
-        const MAX_WIDTH = 500; // On réduit à 500px pour être léger
+        const MAX_WIDTH = 500;
         const scaleSize = MAX_WIDTH / img.width;
-        
         if (scaleSize >= 1) {
-            canvas.width = img.width;
-            canvas.height = img.height;
+            canvas.width = img.width; canvas.height = img.height;
         } else {
-            canvas.width = MAX_WIDTH;
-            canvas.height = img.height * scaleSize;
+            canvas.width = MAX_WIDTH; canvas.height = img.height * scaleSize;
         }
-        
         const ctx = canvas.getContext('2d');
         ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-        
-        // Export en JPEG 80% qualité
         resolve(canvas.toDataURL('image/jpeg', 0.8)); 
       };
-      img.onerror = (error) => reject(error);
+      img.onerror = (e) => reject(e);
     };
-    reader.onerror = (error) => reject(error);
+    reader.onerror = (e) => reject(e);
   });
 };
 
@@ -143,7 +137,6 @@ const SplashScreen = ({ message = "La recherche en toute confiance" }) => (
   </div>
 );
 
-// Correction UserAvatar pour éviter l'affichage si l'URL est vide ou invalide
 const UserAvatar = ({ photoURL, size = "w-full h-full", className = "" }) => {
     if (photoURL && photoURL.length > 50) {
         return <img src={photoURL} alt="User" className={`${size} object-cover ${className}`} />;
@@ -299,7 +292,7 @@ const ModeSwitcher = ({ currentRole, currentService, uid }) => {
 };
 
 // ==========================================
-// 4. COMPOSANT PARAMÈTRES (CORRIGÉ & CENTRÉ)
+// 4. COMPOSANT PARAMÈTRES (CORRIGÉ PHOTO PUBLIC)
 // ==========================================
 
 const SettingsView = ({ user, profile, onBack, isDark, toggleDark }) => {
@@ -331,8 +324,7 @@ const SettingsView = ({ user, profile, onBack, isDark, toggleDark }) => {
         const compressedBase64 = await compressImage(file);
         setCustomPhoto(compressedBase64);
       } catch (error) {
-        console.error("Erreur compression", error);
-        alert("Image trop lourde ou format invalide.");
+          alert("Image invalide ou trop lourde");
       }
     }
   };
@@ -343,28 +335,26 @@ const SettingsView = ({ user, profile, onBack, isDark, toggleDark }) => {
     try {
       const updateData = { name: newName, phone, photoURL: customPhoto, privateMode };
       
-      // 1. Mise à jour profil Privé
+      // 1. Mise à jour profil privé
       await updateDoc(doc(db, 'artifacts', appId, 'users', user.uid, 'settings', 'profile'), updateData);
       
-      // 2. Mise à jour profil Public (Sitter) SI il existe
-      // C'est ICI qu'on force l'annonce publique à avoir la même photo
-      const sitterRef = doc(db, 'artifacts', appId, 'public', 'data', 'sitters', user.uid);
-      const sitterDoc = await getDoc(sitterRef);
-      if (sitterDoc.exists()) {
-          await updateDoc(sitterRef, {
-              name: newName,
-              photoURL: customPhoto, // <-- SYNC FORCEE
+      // 2. Mise à jour FORCEE profil public (Sitter)
+      const publicSitterRef = doc(db, 'artifacts', appId, 'public', 'data', 'sitters', user.uid);
+      const publicDoc = await getDoc(publicSitterRef);
+      if (publicDoc.exists()) {
+          await updateDoc(publicSitterRef, { 
+              name: newName, 
+              photoURL: customPhoto, // ICI : On écrase bien la photo de l'annonce
               phone,
               serviceType: profile.serviceType
           });
       }
 
       setStatus({ type: "success", msg: "Enregistré !" });
-    } catch (err) { setStatus({ type: "error", msg: "Erreur..." }); }
+    } catch (err) { console.error(err); setStatus({ type: "error", msg: "Erreur..." }); }
     finally { setLoading(false); }
   };
 
-  // Ajout de pb-52 (200px env) pour que le bouton déconnexion remonte bien
   return (
     <div className={`min-h-screen font-sans ${isDark ? 'bg-slate-950 text-white' : 'bg-slate-50 text-slate-800'}`}>
       <div className={`p-6 border-b flex items-center gap-4 sticky top-0 z-50 ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-100'}`}>
@@ -399,15 +389,7 @@ const SettingsView = ({ user, profile, onBack, isDark, toggleDark }) => {
             <button disabled={loading} className="w-full bg-[#E64545] text-white py-5 rounded-2xl font-black uppercase shadow-xl hover:brightness-110">Sauvegarder</button>
         </form>
 
-        <div className="space-y-6 pt-8"> {/* Ajout de padding-top pour séparer */}
-          <a href="mailto:babykeeper.bordais@gmail.com" className="w-full p-5 border-2 border-[#E0720F]/20 text-[#E0720F] rounded-2xl font-black text-xs uppercase flex justify-center gap-2 hover:bg-[#E0720F]/5">Support Technique</a>
-          
-          <div className="flex justify-center gap-4 text-[10px] text-slate-400 font-bold uppercase tracking-widest pt-4 border-t border-slate-100/50">
-             <button onClick={() => alert("Mentions Légales : \nBabyKeeper est une plateforme de mise en relation.\nNous ne sommes pas l'employeur des baby-sitters.")} className="hover:text-[#E64545]">CGU</button>
-             <span>•</span>
-             <button onClick={() => alert("Politique de Confidentialité : \nVos données sont sécurisées et ne sont jamais revendues.")} className="hover:text-[#E64545]">Confidentialité</button>
-          </div>
-
+        <div className="space-y-6 pt-8"> 
           <button onClick={() => signOut(auth)} className="w-full p-5 border-2 border-dashed border-red-200 rounded-2xl font-black text-xs uppercase flex justify-center gap-2 text-red-400 hover:bg-red-50">Déconnexion</button>
           <button onClick={handleDeleteAccount} className="w-full p-5 bg-red-50 text-red-500 rounded-2xl font-black text-xs uppercase flex justify-center gap-2">Supprimer le compte</button>
         </div>
@@ -461,7 +443,6 @@ const PremiumView = ({ onBack, isDark }) => {
                  >
                      Je m'abonne (3€)
                  </a>
-                 <p className="text-[10px] text-center opacity-50 font-bold uppercase">Sans engagement • Annulable à tout moment</p>
              </div>
          </div>
       </div>
@@ -1193,7 +1174,7 @@ const ParentDashboard = ({ profile, user }) => {
         <button onClick={() => setActiveTab("search")} className={`flex-1 flex flex-col items-center py-4 rounded-[2.5rem] transition-all duration-300 ${activeTab === "search" ? (isDark ? "bg-[#E64545] text-white" : "bg-[#E64545] text-white") : "text-slate-400 hover:text-white"}`}><Search size={22}/><span className="text-[9px] font-black uppercase mt-1.5 tracking-widest">Trouver</span></button>
         <button onClick={() => setActiveTab("messages")} className={`flex-1 flex flex-col items-center py-4 rounded-[2.5rem] transition-all duration-300 relative ${activeTab === "messages" ? (isDark ? "bg-[#E64545] text-white" : "bg-[#E64545] text-white") : "text-slate-400 hover:text-white"}`}><MessageSquare size={22}/><span className="text-[9px] font-black uppercase mt-1.5 font-sans tracking-widest">Offres</span>{unreadCount > 0 && <div className="absolute top-3 right-1/3 w-2.5 h-2.5 bg-[#E0720F] rounded-full border-2 border-slate-900 animate-pulse"></div>}</button>
         {/* NOUVEAU BOUTON REGLAGES EN BAS QUI OUVRE LES REGLAGES */}
-        <button onClick={() => setActiveTab("profile")} className={`flex-1 flex flex-col items-center py-4 rounded-[2.5rem] transition-all duration-300 ${activeTab === "profile" ? (isDark ? "bg-[#E64545] text-white" : "bg-[#E64545] text-white") : "text-slate-400 hover:text-white"}`}>
+        <button onClick={() => setActiveTab("profile")} className={`flex-1 flex flex-col items-center py-4 rounded-[2.5rem] ${activeTab === "profile" ? (isDark ? "bg-[#E64545] text-white" : "bg-[#E64545] text-white") : "text-slate-400 hover:text-white"}`}>
             <Settings size={22}/>
             <span className="text-[9px] font-black uppercase mt-1.5 tracking-widest font-sans">Réglages</span>
         </button>
@@ -1446,6 +1427,23 @@ const SitterDashboard = ({ user, profile }) => {
     } catch(e) { console.error(e); } finally { setLoading(false); }
   };
 
+  const handleDeleteAd = async () => {
+    if (window.confirm("⚠️ Voulez-vous vraiment supprimer votre annonce ?\nVous n'apparaîtrez plus dans les recherches.")) {
+      setLoading(true);
+      try {
+        await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'sitters', user.uid));
+        setBio(""); setPrice(""); setCity(""); // Reset local state
+        setSaveStatus("");
+        alert("Votre annonce a été supprimée.");
+      } catch (e) {
+        console.error(e);
+        alert("Erreur lors de la suppression.");
+      } finally {
+        setLoading(false);
+      }
+    }
+  };
+
   const markAsRead = async (offer) => {
     if (offer.hasUnread && offer.lastSenderId !== user.uid) {
         await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'offers', offer.id), { hasUnread: false });
@@ -1558,7 +1556,17 @@ const SitterDashboard = ({ user, profile }) => {
                    </div>
                 </div>
 
-                <button onClick={handleSave} disabled={loading} className={`w-full py-10 rounded-[3.5rem] font-black shadow-2xl flex justify-center items-center gap-4 active:scale-95 transition-all uppercase tracking-[0.4em] text-sm hover:brightness-110 shadow-slate-300 ${isDark ? 'bg-indigo-600 text-white' : 'bg-slate-900 text-white'}`}>{loading ? <Loader2 className="animate-spin" size={32}/> : (saveStatus || "PUBLIER MON PROFIL")}</button>
+                {/* --- ZONE BOUTONS ACTION --- */}
+                <div className="flex flex-col gap-4">
+                    <button onClick={handleSave} disabled={loading} className={`w-full py-10 rounded-[3.5rem] font-black shadow-2xl flex justify-center items-center gap-4 active:scale-95 transition-all uppercase tracking-[0.4em] text-sm hover:brightness-110 shadow-slate-300 ${isDark ? 'bg-indigo-600 text-white' : 'bg-slate-900 text-white'}`}>
+                        {loading ? <Loader2 className="animate-spin" size={32}/> : (saveStatus || "METTRE À JOUR / PUBLIER")}
+                    </button>
+                    
+                    <button onClick={handleDeleteAd} className="w-full py-5 rounded-[3.5rem] font-black text-red-500 bg-red-50 border border-red-100 flex justify-center items-center gap-2 active:scale-95 transition-all uppercase tracking-widest text-[10px] hover:bg-red-100">
+                        <Trash2 size={16}/> Supprimer mon annonce
+                    </button>
+                </div>
+
             </div>
           </div>
         )}
