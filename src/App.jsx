@@ -137,9 +137,10 @@ const SplashScreen = ({ message = "La recherche en toute confiance" }) => (
   </div>
 );
 
+// --- CORRECTION CRASH AVATAR ---
 const UserAvatar = ({ photoURL, size = "w-full h-full", className = "" }) => {
-    // Vérification stricte pour éviter l'avatar cassé
-    if (photoURL && photoURL.length > 50) {
+    // Vérification stricte : doit être une chaine de caractères et avoir du contenu
+    if (photoURL && typeof photoURL === 'string' && photoURL.length > 50) {
         return <img src={photoURL} alt="User" className={`${size} object-cover ${className}`} />;
     }
     return (
@@ -340,7 +341,6 @@ const SettingsView = ({ user, profile, onBack, isDark, toggleDark }) => {
       await updateDoc(doc(db, 'artifacts', appId, 'users', user.uid, 'settings', 'profile'), updateData);
       
       // 2. Mise à jour FORCEE profil public (Sitter)
-      // C'est ICI qu'on assure que la photo change aussi dans l'annonce
       const publicSitterRef = doc(db, 'artifacts', appId, 'public', 'data', 'sitters', user.uid);
       const publicDoc = await getDoc(publicSitterRef);
       if (publicDoc.exists()) {
@@ -941,13 +941,14 @@ const ParentDashboard = ({ profile, user }) => {
   useEffect(() => {
     localStorage.setItem('dark', isDark);
     const unsubSitters = onSnapshot(collection(db, 'artifacts', appId, 'public', 'data', 'sitters'), (snap) => {
-      // ON AFFICHE TOUS LES SITTERS DE LA CATEGORIE (Y COMPRIS SOI-MEME POUR VERIFIER L'ANNONCE)
+      // FILTRE PAR UNIVERS (Baby ou Pet)
+      // NOTE: On laisse le sitter se voir lui-même pour vérifier son annonce
       setSitters(snap.docs.map(d => ({ id: d.id, ...d.data() })).filter(s => s.serviceType === profile.serviceType));
       setLoading(false);
     });
     const qOffers = query(collection(db, 'artifacts', appId, 'public', 'data', 'offers'), where("parentId", "==", user.uid));
     const unsubOffers = onSnapshot(qOffers, (snap) => { 
-        // FILTRE ICI : ON NE MONTRE PAS LES OFFRES QU'ON S'EST ENVOYÉ A SOI-MÊME DANS LA LISTE DE DISCUSSION
+        // FILTRE ICI : on ne montre PAS les auto-offres dans le chat
         const list = snap.docs.map(d => ({ id: d.id, ...d.data() })).filter(o => o.sitterId !== o.parentId);
         setOffers(list); 
     });
@@ -1000,8 +1001,7 @@ const ParentDashboard = ({ profile, user }) => {
   }, [sitters, search, locationFilter, maxPrice, onlyVerified, onlyFavorites, profile.favorites, dayFilter]);
 
   const handleBooking = async (s, p, h) => {
-    // EMPECHER L'AUTO-RESERVATION
-    if (s.id === user.uid) return alert("Vous ne pouvez pas réserver votre propre service !");
+    if (s.id === user.uid) return alert("Vous ne pouvez pas vous auto-réserver !");
 
     try {
       const isPremium = profile?.isPremium === true;
@@ -1124,7 +1124,7 @@ const ParentDashboard = ({ profile, user }) => {
                       
                       {s.skills && (
                         <div className="flex flex-wrap gap-1 mb-4">
-                            {s.skills.map((skill, i) => (
+                            {(s.skills || []).map((skill, i) => (
                               <span key={i} className="text-[8px] font-bold uppercase bg-slate-100 text-slate-500 px-2 py-1 rounded-lg border">{skill}</span>
                             ))}
                         </div>
@@ -1244,7 +1244,7 @@ const ParentDashboard = ({ profile, user }) => {
                         {/* LISTE COMPETENCES DANS PROFIL COMPLET */}
                         {selectedSitter.skills && (
                             <div className="flex flex-wrap gap-2 mt-4 pt-4 border-t border-slate-100">
-                                {selectedSitter.skills.map((skill, i) => (
+                                {(selectedSitter.skills || []).map((skill, i) => (
                                     <span key={i} className="text-[10px] font-bold uppercase bg-slate-100 text-slate-600 px-3 py-1.5 rounded-xl border flex items-center gap-1">✨ {skill}</span>
                                 ))}
                             </div>
@@ -1317,7 +1317,7 @@ const SitterDashboard = ({ user, profile }) => {
   const [birthDate, setBirthDate] = useState("");
   const [cvName, setCvName] = useState("");
   const [hasCar, setHasCar] = useState(false);
-  const [skills, setSkills] = useState([]);
+  const [skills, setSkills] = useState([]); // Initialisé à tableau vide pour éviter le crash
   
   const [loading, setLoading] = useState(false);
   const [activeTab, setActiveTab] = useState("profile");
@@ -1362,8 +1362,10 @@ const SitterDashboard = ({ user, profile }) => {
   };
 
   const toggleSkill = (skill) => {
-     if (skills.includes(skill)) setSkills(skills.filter(s => s !== skill));
-     else setSkills([...skills, skill]);
+     // Protection contre null
+     const currentSkills = skills || [];
+     if (currentSkills.includes(skill)) setSkills(currentSkills.filter(s => s !== skill));
+     else setSkills([...currentSkills, skill]);
   };
 
   const handleSave = async () => {
@@ -1394,14 +1396,12 @@ const SitterDashboard = ({ user, profile }) => {
   return (
     <div className={`min-h-screen font-sans pb-32 animate-in fade-in duration-500 ${isDark ? 'bg-slate-950 text-white' : 'bg-slate-50 text-slate-800'}`}>
       <nav className={`p-4 flex justify-between items-center sticky top-0 z-40 border-b shadow-sm ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-100'}`}>
-        <div className="flex items-center gap-2"><SitFinderLogo className="w-8 h-8" glow={false} /><span className="font-black italic text-lg md:text-2xl uppercase tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-[#E64545] to-[#E0720F]">BABYKEEPER</span></div>
+        <div className="flex items-center gap-2"><SitFinderLogo className="w-8 h-8" glow={false} /><span className="font-black italic text-lg uppercase">BABYKEEPER</span></div>
         <div className="flex items-center gap-1.5">
           <ModeSwitcher currentRole={profile.role} currentService={profile.serviceType || 'baby'} uid={user.uid} />
-          
           <button onClick={() => setShowFAQ(true)} className={`p-2 rounded-2xl transition-all shadow-sm flex items-center justify-center ${isDark ? 'bg-slate-800 text-slate-300' : 'bg-white border border-slate-100 text-slate-400'}`}>
               <HelpCircle size={20} />
           </button>
-
           <button onClick={() => setActiveTab("premium")} className={`p-2 rounded-2xl transition-all shadow-md bg-gradient-to-br from-yellow-400 to-orange-500 text-white animate-pulse`}><Crown size={20} fill="white" /></button>
           <div className="relative p-2 text-slate-400"><Bell size={20}/>{unreadCount > 0 && <span className="absolute top-1 right-1 w-4 h-4 bg-[#E64545] text-white text-[8px] font-black rounded-full flex items-center justify-center border-2 border-white animate-bounce">{unreadCount}</span>}</div>
           <button onClick={() => setActiveTab("settings")} className={`p-2 rounded-2xl transition-all ${isDark ? 'bg-slate-800 text-[#E0720F]' : 'bg-slate-50 text-slate-300'}`}><Settings size={20} /></button>
@@ -1471,7 +1471,7 @@ const SitterDashboard = ({ user, profile }) => {
                                 <button 
                                     key={index}
                                     onClick={() => toggleSkill(skill)}
-                                    className={`px-3 py-2 rounded-lg font-bold text-[10px] uppercase transition-all border ${skills.includes(skill) ? 'bg-slate-800 text-white border-slate-800' : 'bg-white text-slate-400 border-slate-200 hover:border-slate-300'}`}
+                                    className={`px-3 py-2 rounded-lg font-bold text-[10px] uppercase transition-all border ${(skills || []).includes(skill) ? 'bg-slate-800 text-white border-slate-800' : 'bg-white text-slate-400 border-slate-200 hover:border-slate-300'}`}
                                 >
                                     {skill}
                                 </button>
