@@ -163,21 +163,21 @@ const FAQModal = ({ onClose }) => {
 
     return (
         <div className="fixed inset-0 bg-slate-900/90 backdrop-blur-md z-[70] flex items-center justify-center p-6 text-slate-900 animate-in fade-in zoom-in duration-300">
-            <div className="bg-white w-full max-w-md rounded-[3rem] p-8 space-y-6 max-h-[80vh] overflow-y-auto">
+            <div className="bg-white w-full max-w-md rounded-[2rem] p-6 space-y-6 max-h-[80vh] overflow-y-auto">
                 <div className="flex justify-between items-center">
-                    <h3 className="text-2xl font-black italic uppercase tracking-tighter text-[#E64545]">Questions Freq.</h3>
-                    <button onClick={onClose} className="p-3 bg-slate-100 rounded-full"><X size={20}/></button>
+                    <h3 className="text-xl font-bold text-[#E64545]">FAQ</h3>
+                    <button onClick={onClose} className="p-2 bg-slate-100 rounded-full hover:bg-slate-200"><X size={20}/></button>
                 </div>
-                <div className="space-y-4">
+                <div className="space-y-3">
                     {faqs.map((item, i) => (
-                        <div key={i} className="p-5 bg-slate-50 rounded-2xl border border-slate-100">
-                            <h4 className="font-black text-xs uppercase mb-2 flex items-center gap-2"><Info size={14} className="text-[#E0720F]"/> {item.q}</h4>
-                            <p className="text-sm text-slate-600 leading-relaxed">{item.r}</p>
+                        <div key={i} className="p-4 bg-slate-50 rounded-xl border border-slate-100">
+                            <h4 className="font-bold text-sm mb-1 flex items-center gap-2 text-slate-800"><Info size={14} className="text-[#E0720F]"/> {item.q}</h4>
+                            <p className="text-xs text-slate-600 leading-relaxed">{item.r}</p>
                         </div>
                     ))}
                 </div>
-                <div className="text-center pt-4 border-t border-slate-100">
-                    <a href="mailto:babykeeper.bordais@gmail.com" className="text-xs font-bold text-slate-400 hover:text-[#E64545] uppercase tracking-widest">Contacter le support</a>
+                <div className="text-center pt-2">
+                    <a href="mailto:babykeeper.bordais@gmail.com" className="text-xs font-bold text-slate-400 hover:text-[#E64545] underline">Contacter le support</a>
                 </div>
             </div>
         </div>
@@ -222,14 +222,14 @@ const InstallPrompt = () => {
     if (!showInstall) return null;
 
     return (
-        <div className="fixed bottom-24 left-4 right-4 bg-slate-900 text-white p-4 rounded-2xl shadow-2xl z-[60] flex items-center justify-between border border-slate-700 animate-in slide-in-from-bottom-10 fade-in duration-700">
+        <div className="fixed bottom-24 left-4 right-4 bg-slate-900 text-white p-4 rounded-xl shadow-2xl z-[60] flex items-center justify-between border border-slate-700 animate-in slide-in-from-bottom-10 fade-in duration-700">
             <div className="flex items-center gap-3">
                 <div className="bg-white p-1 rounded-lg">
                     <img src="/logo.png" alt="Icon" className="w-8 h-8 rounded-md" />
                 </div>
                 <div>
-                    <h4 className="font-bold text-sm">Installer BabyKeeper</h4>
-                    <p className="text-[10px] text-slate-400">Pour un accès plus rapide</p>
+                    <h4 className="font-bold text-sm">Installer l'app</h4>
+                    <p className="text-[10px] text-slate-400">Accès rapide & Notifications</p>
                 </div>
             </div>
             
@@ -240,8 +240,8 @@ const InstallPrompt = () => {
                 </div>
             ) : (
                 <div className="flex gap-2">
-                    <button onClick={handleInstallClick} className="bg-[#E64545] px-4 py-2 rounded-xl text-xs font-black uppercase shadow-lg">Installer</button>
-                    <button onClick={() => setShowInstall(false)} className="bg-slate-800 p-2 rounded-xl"><X size={16}/></button>
+                    <button onClick={handleInstallClick} className="bg-[#E64545] px-3 py-1.5 rounded-lg text-xs font-bold shadow-lg">Installer</button>
+                    <button onClick={() => setShowInstall(false)} className="bg-slate-800 p-2 rounded-lg"><X size={16}/></button>
                 </div>
             )}
         </div>
@@ -261,28 +261,27 @@ const ModeSwitcher = ({ currentRole, currentService, uid }) => {
 
     return (
         <div className="relative z-50">
-            <button onClick={() => setIsOpen(!isOpen)} className="p-2 rounded-2xl bg-slate-100 text-slate-600 border border-slate-200 shadow-sm flex items-center gap-2 active:scale-95 transition-all">
+            <button onClick={() => setIsOpen(!isOpen)} className="p-2 rounded-full bg-slate-100 text-slate-600 border border-slate-200 hover:bg-slate-200 transition-all flex items-center gap-2">
                 <RefreshCw size={18} className={isOpen ? "animate-spin" : ""} />
-                <span className="text-[10px] font-black uppercase hidden md:inline">Mode</span>
             </button>
             
             {isOpen && (
-                <div className="absolute top-12 right-0 w-48 bg-white rounded-2xl shadow-2xl border border-slate-100 p-2 flex flex-col gap-1 animate-in fade-in slide-in-from-top-2">
-                    <div className="text-[9px] font-black uppercase text-slate-300 px-2 py-1">Univers Enfants 👶</div>
-                    <button onClick={() => switchMode('parent', 'baby')} className={`flex items-center gap-3 p-3 rounded-xl text-left transition-colors ${currentRole === 'parent' && currentService === 'baby' ? 'bg-[#E64545] text-white' : 'hover:bg-slate-50 text-slate-600'}`}>
+                <div className="absolute top-12 right-0 w-48 bg-white rounded-xl shadow-xl border border-slate-100 p-2 flex flex-col gap-1 animate-in fade-in slide-in-from-top-2">
+                    <div className="text-[10px] font-bold uppercase text-slate-400 px-2 py-1">Mode Enfant 👶</div>
+                    <button onClick={() => switchMode('parent', 'baby')} className={`flex items-center gap-3 p-2 rounded-lg text-left transition-colors ${currentRole === 'parent' && currentService === 'baby' ? 'bg-[#E64545] text-white' : 'hover:bg-slate-50 text-slate-600'}`}>
                         <Baby size={16} /> <span className="text-xs font-bold">Je suis Parent</span>
                     </button>
-                    <button onClick={() => switchMode('sitter', 'baby')} className={`flex items-center gap-3 p-3 rounded-xl text-left transition-colors ${currentRole === 'sitter' && currentService === 'baby' ? 'bg-[#E0720F] text-white' : 'hover:bg-slate-50 text-slate-600'}`}>
-                        <User size={16} /> <span className="text-xs font-bold">Je suis Baby-Sitter</span>
+                    <button onClick={() => switchMode('sitter', 'baby')} className={`flex items-center gap-3 p-2 rounded-lg text-left transition-colors ${currentRole === 'sitter' && currentService === 'baby' ? 'bg-[#E0720F] text-white' : 'hover:bg-slate-50 text-slate-600'}`}>
+                        <User size={16} /> <span className="text-xs font-bold">Je suis Sitter</span>
                     </button>
                     
                     <div className="h-px bg-slate-100 my-1"></div>
                     
-                    <div className="text-[9px] font-black uppercase text-slate-300 px-2 py-1">Univers Animaux 🐾</div>
-                    <button onClick={() => switchMode('parent', 'pet')} className={`flex items-center gap-3 p-3 rounded-xl text-left transition-colors ${currentRole === 'parent' && currentService === 'pet' ? 'bg-[#E64545] text-white' : 'hover:bg-slate-50 text-slate-600'}`}>
+                    <div className="text-[10px] font-bold uppercase text-slate-400 px-2 py-1">Mode Animaux 🐾</div>
+                    <button onClick={() => switchMode('parent', 'pet')} className={`flex items-center gap-3 p-2 rounded-lg text-left transition-colors ${currentRole === 'parent' && currentService === 'pet' ? 'bg-[#E64545] text-white' : 'hover:bg-slate-50 text-slate-600'}`}>
                         <Dog size={16} /> <span className="text-xs font-bold">Je suis Maître</span>
                     </button>
-                    <button onClick={() => switchMode('sitter', 'pet')} className={`flex items-center gap-3 p-3 rounded-xl text-left transition-colors ${currentRole === 'sitter' && currentService === 'pet' ? 'bg-[#E0720F] text-white' : 'hover:bg-slate-50 text-slate-600'}`}>
+                    <button onClick={() => switchMode('sitter', 'pet')} className={`flex items-center gap-3 p-2 rounded-lg text-left transition-colors ${currentRole === 'sitter' && currentService === 'pet' ? 'bg-[#E0720F] text-white' : 'hover:bg-slate-50 text-slate-600'}`}>
                         <PawPrint size={16} /> <span className="text-xs font-bold">Je suis Pet-Sitter</span>
                     </button>
                 </div>
@@ -292,7 +291,7 @@ const ModeSwitcher = ({ currentRole, currentService, uid }) => {
 };
 
 // ==========================================
-// 4. COMPOSANT PARAMÈTRES (CORRIGÉ PHOTO PUBLIC)
+// 4. COMPOSANT PARAMÈTRES
 // ==========================================
 
 const SettingsView = ({ user, profile, onBack, isDark, toggleDark }) => {
@@ -344,7 +343,7 @@ const SettingsView = ({ user, profile, onBack, isDark, toggleDark }) => {
       if (publicDoc.exists()) {
           await updateDoc(publicSitterRef, { 
               name: newName, 
-              photoURL: customPhoto, // ICI : On écrase bien la photo de l'annonce
+              photoURL: customPhoto,
               phone,
               serviceType: profile.serviceType
           });
@@ -357,41 +356,47 @@ const SettingsView = ({ user, profile, onBack, isDark, toggleDark }) => {
 
   return (
     <div className={`min-h-screen font-sans ${isDark ? 'bg-slate-950 text-white' : 'bg-slate-50 text-slate-800'}`}>
-      <div className={`p-6 border-b flex items-center gap-4 sticky top-0 z-50 ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-100'}`}>
+      <div className={`p-4 border-b flex items-center gap-4 sticky top-0 z-50 ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-100'}`}>
         <button onClick={onBack}><ArrowLeft size={20}/></button>
-        <h2 className="font-black text-xl italic uppercase text-[#E64545]">Réglages</h2>
+        <h2 className="font-bold text-lg">Réglages</h2>
       </div>
 
-      <div className="max-w-2xl w-full mx-auto p-6 space-y-8 pb-52"> 
-        {status.msg && <div className="p-4 bg-[#E0720F]/10 text-[#E0720F] rounded-2xl font-bold text-center text-xs uppercase">{status.msg}</div>}
+      <div className="max-w-xl w-full mx-auto p-4 space-y-6 pb-32"> 
+        {status.msg && <div className="p-3 bg-green-100 text-green-700 rounded-lg font-bold text-center text-xs">{status.msg}</div>}
 
-        <div className={`p-8 rounded-[3rem] border flex justify-between items-center ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-50'}`}>
-           <div className="flex items-center gap-4"><Moon size={24} className="text-[#E0720F]"/><p className="font-black text-xs uppercase">Mode Sombre</p></div>
-           <button onClick={toggleDark} className={`w-14 h-7 rounded-full relative ${isDark ? 'bg-[#E64545]' : 'bg-slate-200'}`}><div className={`absolute top-1 w-5 h-5 bg-white rounded-full shadow ${isDark ? 'right-1' : 'left-1'}`}></div></button>
+        <div className={`p-4 rounded-xl border flex justify-between items-center ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-100'}`}>
+           <div className="flex items-center gap-3"><Moon size={20} className="text-[#E0720F]"/><p className="font-bold text-sm">Mode Sombre</p></div>
+           <button onClick={toggleDark} className={`w-12 h-6 rounded-full relative transition-colors ${isDark ? 'bg-[#E64545]' : 'bg-slate-200'}`}><div className={`absolute top-1 w-4 h-4 bg-white rounded-full shadow transition-all ${isDark ? 'left-7' : 'left-1'}`}></div></button>
         </div>
 
-        <div className="flex flex-col items-center gap-6">
-            <div className="w-32 h-32 rounded-[2rem] overflow-hidden border-4 border-[#E64545]/20 shadow-xl">
+        <div className="flex flex-col items-center gap-4">
+            <div className="w-24 h-24 rounded-full overflow-hidden border-2 border-[#E64545]/20 shadow-lg">
                 <UserAvatar photoURL={customPhoto} />
             </div>
-            <label className="py-3 px-8 rounded-xl font-black text-xs uppercase bg-[#E64545] text-white shadow-lg text-center cursor-pointer hover:bg-red-600 transition-colors">
-                Changer ma photo <input type="file" hidden onChange={handlePhotoUpload} accept="image/*" />
+            <label className="py-2 px-4 rounded-full font-bold text-xs bg-slate-100 text-slate-600 shadow-sm cursor-pointer hover:bg-slate-200 transition-colors">
+                Changer photo <input type="file" hidden onChange={handlePhotoUpload} accept="image/*" />
             </label>
         </div>
 
-        <form onSubmit={handleUpdateProfile} className="space-y-6">
-            <input value={newName} onChange={e=>setNewName(e.target.value)} className={`w-full p-4 rounded-2xl font-bold outline-none border ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-100'}`} placeholder="Prénom" />
-            <input value={phone} onChange={e=>setPhone(e.target.value)} className={`w-full p-4 rounded-2xl font-bold outline-none border ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-100'}`} placeholder="Téléphone" />
-            <div className="flex items-center justify-between p-4 bg-slate-50/50 rounded-2xl">
-                <div className="flex items-center gap-3"><EyeOff size={16} className="text-slate-400"/><p className="text-xs font-black uppercase">Mode Privé</p></div>
-                <button type="button" onClick={() => setPrivateMode(!privateMode)} className={`w-12 h-6 rounded-full relative ${privateMode ? 'bg-[#E64545]' : 'bg-slate-300'}`}><div className={`absolute top-1 w-4 h-4 bg-white rounded-full ${privateMode ? 'right-1' : 'left-1'}`}></div></button>
+        <form onSubmit={handleUpdateProfile} className="space-y-4">
+            <div className="space-y-1">
+                <label className="text-xs font-bold text-slate-400 ml-1">Prénom</label>
+                <input value={newName} onChange={e=>setNewName(e.target.value)} className={`w-full p-3 rounded-xl outline-none border focus:ring-2 focus:ring-[#E64545]/20 font-medium ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-200'}`} placeholder="Prénom" />
             </div>
-            <button disabled={loading} className="w-full bg-[#E64545] text-white py-5 rounded-2xl font-black uppercase shadow-xl hover:brightness-110">Sauvegarder</button>
+            <div className="space-y-1">
+                <label className="text-xs font-bold text-slate-400 ml-1">Téléphone</label>
+                <input value={phone} onChange={e=>setPhone(e.target.value)} className={`w-full p-3 rounded-xl outline-none border focus:ring-2 focus:ring-[#E64545]/20 font-medium ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-200'}`} placeholder="Téléphone" />
+            </div>
+            <div className="flex items-center justify-between p-3 bg-slate-50/50 rounded-xl mt-2">
+                <div className="flex items-center gap-3"><EyeOff size={18} className="text-slate-400"/><p className="text-xs font-bold">Mode Privé</p></div>
+                <button type="button" onClick={() => setPrivateMode(!privateMode)} className={`w-10 h-5 rounded-full relative transition-colors ${privateMode ? 'bg-[#E64545]' : 'bg-slate-300'}`}><div className={`absolute top-1 w-3 h-3 bg-white rounded-full transition-all ${privateMode ? 'left-6' : 'left-1'}`}></div></button>
+            </div>
+            <button disabled={loading} className="w-full bg-[#E64545] text-white py-3 rounded-xl font-bold shadow-md hover:bg-red-600 active:scale-95 transition-all">Sauvegarder</button>
         </form>
 
-        <div className="space-y-6 pt-8"> 
-          <button onClick={() => signOut(auth)} className="w-full p-5 border-2 border-dashed border-red-200 rounded-2xl font-black text-xs uppercase flex justify-center gap-2 text-red-400 hover:bg-red-50">Déconnexion</button>
-          <button onClick={handleDeleteAccount} className="w-full p-5 bg-red-50 text-red-500 rounded-2xl font-black text-xs uppercase flex justify-center gap-2">Supprimer le compte</button>
+        <div className="space-y-3 pt-4 border-t border-slate-100 dark:border-slate-800"> 
+          <button onClick={() => signOut(auth)} className="w-full p-3 border border-red-100 rounded-xl font-bold text-xs text-red-400 hover:bg-red-50 flex justify-center gap-2">Déconnexion</button>
+          <button onClick={handleDeleteAccount} className="w-full p-3 bg-red-50 text-red-500 rounded-xl font-bold text-xs hover:bg-red-100 flex justify-center gap-2">Supprimer mon compte</button>
         </div>
       </div>
     </div>
@@ -407,39 +412,39 @@ const PremiumView = ({ onBack, isDark }) => {
 
   return (
     <div className={`min-h-screen font-sans pb-32 flex flex-col ${isDark ? 'bg-slate-950 text-white' : 'bg-slate-50 text-slate-800'}`}>
-      <div className={`p-6 border-b flex items-center gap-4 sticky top-0 z-50 ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-100'}`}>
+      <div className={`p-4 border-b flex items-center gap-4 sticky top-0 z-50 ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-100'}`}>
         <button onClick={onBack}><ArrowLeft size={20}/></button>
-        <h2 className="font-black text-xl italic uppercase text-[#E0720F]">Offre Premium</h2>
+        <h2 className="font-bold text-lg text-[#E0720F]">Offre Premium</h2>
       </div>
 
       <div className="flex-1 flex flex-col items-center justify-center p-6 space-y-8 animate-in fade-in slide-in-from-bottom-8 duration-700">
-         <div className="text-center space-y-4">
-             <div className="inline-block p-6 bg-yellow-100 rounded-full mb-4 shadow-xl">
-                 <Crown size={48} className="text-[#E0720F]" />
+         <div className="text-center space-y-3">
+             <div className="inline-block p-4 bg-yellow-100 rounded-full mb-2 shadow-lg">
+                 <Crown size={40} className="text-[#E0720F]" />
              </div>
-             <h2 className="text-4xl font-black italic uppercase tracking-tighter">Limite Atteinte 🔒</h2>
-             <p className="text-sm font-bold opacity-60 uppercase tracking-widest max-w-xs mx-auto">Vous avez déjà effectué une réservation cette semaine.</p>
+             <h2 className="text-3xl font-black italic uppercase tracking-tighter">Limite Atteinte 🔒</h2>
+             <p className="text-sm text-slate-500 max-w-xs mx-auto">Vous avez atteint votre quota de réservations gratuites cette semaine.</p>
          </div>
 
-         <div className={`w-full max-w-sm rounded-[3rem] overflow-hidden shadow-2xl border ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-100'}`}>
-             <div className="bg-[#E0720F] p-8 text-center text-white">
-                 <span className="text-sm font-black uppercase tracking-widest bg-white/20 px-3 py-1 rounded-full">Passez en illimité</span>
-                 <div className="mt-4 flex justify-center items-end gap-1">
-                     <span className="text-6xl font-black italic">3€</span>
-                     <span className="text-xl font-bold opacity-80 mb-2">/mois</span>
+         <div className={`w-full max-w-sm rounded-2xl overflow-hidden shadow-xl border ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-100'}`}>
+             <div className="bg-gradient-to-r from-orange-400 to-[#E64545] p-6 text-center text-white">
+                 <span className="text-xs font-bold uppercase tracking-widest bg-white/20 px-3 py-1 rounded-full">Illimité</span>
+                 <div className="mt-2 flex justify-center items-baseline gap-1">
+                     <span className="text-5xl font-black italic">3€</span>
+                     <span className="text-lg font-medium opacity-90">/mois</span>
                  </div>
              </div>
-             <div className="p-8 space-y-6">
-                 <ul className="space-y-4">
-                     <li className="flex items-center gap-3"><CheckCircle2 className="text-green-500" size={24}/><span className="font-bold text-sm">Réservations ILLIMITÉES</span></li>
-                     <li className="flex items-center gap-3"><CheckCircle2 className="text-green-500" size={24}/><span className="font-bold text-sm">Accès aux numéros directs</span></li>
-                     <li className="flex items-center gap-3"><CheckCircle2 className="text-green-500" size={24}/><span className="font-bold text-sm">Badge "Parent Vérifié" ✅</span></li>
-                     <li className="flex items-center gap-3"><CheckCircle2 className="text-green-500" size={24}/><span className="font-bold text-sm">Support Prioritaire 24/7</span></li>
+             <div className="p-6 space-y-4">
+                 <ul className="space-y-3">
+                     <li className="flex items-center gap-3"><CheckCircle2 className="text-green-500" size={20}/><span className="font-medium text-sm">Réservations ILLIMITÉES</span></li>
+                     <li className="flex items-center gap-3"><CheckCircle2 className="text-green-500" size={20}/><span className="font-medium text-sm">Numéros de téléphone directs</span></li>
+                     <li className="flex items-center gap-3"><CheckCircle2 className="text-green-500" size={20}/><span className="font-medium text-sm">Badge "Parent Vérifié" ✅</span></li>
+                     <li className="flex items-center gap-3"><CheckCircle2 className="text-green-500" size={20}/><span className="font-medium text-sm">Support Prioritaire 24/7</span></li>
                  </ul>
                  <a 
                     href={STRIPE_LINK}
                     target="_blank"
-                    className="block w-full py-5 bg-[#E64545] text-white text-center rounded-2xl font-black uppercase shadow-xl hover:scale-105 transition-transform"
+                    className="block w-full py-4 bg-[#E64545] text-white text-center rounded-xl font-bold uppercase shadow-lg hover:scale-[1.02] transition-transform"
                  >
                      Je m'abonne (3€)
                  </a>
@@ -464,8 +469,6 @@ const ChatRoom = ({ offer, currentUser, onBack, isDark }) => {
   const [translations, setTranslations] = useState({});
   const [liveOffer, setLiveOffer] = useState(offer);
   const chatEndRef = useRef(null);
-
-  const scrollToBottom = () => chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
 
   useEffect(() => {
     const q = collection(db, 'artifacts', appId, 'public', 'data', 'offers', offer.id, 'messages');
@@ -502,29 +505,22 @@ const ChatRoom = ({ offer, currentUser, onBack, isDark }) => {
 
   const sendEmailNotification = async (msgText) => {
       if (!window.emailjs) return; 
-      
       const otherId = currentUser.uid === offer.sitterId ? offer.parentId : offer.sitterId;
       try {
           const userDoc = await getDoc(doc(db, 'artifacts', appId, 'users', otherId, 'settings', 'profile'));
           if (userDoc.exists()) {
-              const targetEmail = userDoc.data().email;
-              const targetName = userDoc.data().name;
-              
               await window.emailjs.send(
-                  "service_hjonpe3", // TON SERVICE ID
-                  "template_b2gl0lh", // TON TEMPLATE ID
+                  "service_hjonpe3", 
+                  "template_b2gl0lh", 
                   {
-                      to_email: targetEmail,
-                      to_name: targetName,
+                      to_email: userDoc.data().email,
+                      to_name: userDoc.data().name,
                       from_name: currentUser.displayName || "Un utilisateur",
                       message: msgText
                   }
               );
-              console.log("Notif envoyée");
           }
-      } catch (error) {
-          console.error("Erreur envoi mail:", error);
-      }
+      } catch (error) { console.error("Erreur envoi mail:", error); }
   };
 
   const handleReport = async () => {
@@ -567,21 +563,15 @@ const ChatRoom = ({ offer, currentUser, onBack, isDark }) => {
   const updateOfferStatus = async (status) => {
     try {
       await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'offers', offer.id), { status });
-      let text = "";
-      if (status === 'accepted') text = "🤝 Offre acceptée ! Vous pouvez échanger vos coordonnées. Rappel : Le paiement se fait en direct.";
-      else if (status === 'declined') text = "L'offre a été refusée.";
-      
+      let text = status === 'accepted' ? "🤝 Offre acceptée !" : "L'offre a été refusée.";
       await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'offers', offer.id, 'messages'), { text, senderId: 'system', parentId: offer.parentId, sitterId: offer.sitterId, createdAt: Timestamp.now() });
-
       if(status === 'accepted') sendEmailNotification("Votre offre a été acceptée !");
     } catch (e) { console.error(e); }
   };
 
   const confirmService = async () => {
     if(window.confirm("La garde est terminée ? En validant, vous pourrez noter le Baby-sitter.")) {
-        await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'offers', offer.id), { 
-            status: 'completed', 
-        });
+        await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'offers', offer.id), { status: 'completed' });
         await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'offers', offer.id, 'messages'), { 
             text: "✅ Garde terminée ! Merci d'avoir utilisé BabyKeeper.", 
             senderId: 'system', parentId: offer.parentId, sitterId: offer.sitterId, createdAt: Timestamp.now() 
@@ -596,51 +586,51 @@ const ChatRoom = ({ offer, currentUser, onBack, isDark }) => {
               parentId: currentUser.uid, parentName: currentUser.displayName || "Parent", rating: reviewRating, text: reviewText, createdAt: Timestamp.now()
           });
           await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'offers', offer.id), { status: 'reviewed' });
-          alert("Votre avis a été publié ! ✨");
+          alert("Avis publié !");
           setShowReview(false);
-      } catch (e) { console.error(e); alert("Erreur lors de l'envoi."); }
+      } catch (e) { console.error(e); }
   };
 
   return (
     <div className={`flex flex-col h-screen font-sans animate-in fade-in duration-300 ${isDark ? 'bg-slate-950 text-white' : 'bg-white text-slate-900'}`}>
-      <div className={`p-6 border-b flex items-center justify-between sticky top-0 z-20 shadow-sm ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-100'}`}>
-        <div className="flex items-center gap-4">
-          <button onClick={onBack} className={`p-2 rounded-full ${isDark ? 'hover:bg-slate-800' : 'hover:bg-slate-50'}`}><ArrowLeft size={20}/></button>
-          <div className="text-left"><h3 className="font-black tracking-tight uppercase italic text-xs text-transparent bg-clip-text bg-gradient-to-r from-[#E64545] to-[#E0720F]">BABYKEEPER CHAT</h3><p className="text-[10px] text-[#E0720F] font-black uppercase tracking-widest">{liveOffer.price}€/H • {liveOffer.status}</p></div>
+      <div className={`p-4 border-b flex items-center justify-between sticky top-0 z-20 shadow-sm ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-100'}`}>
+        <div className="flex items-center gap-3">
+          <button onClick={onBack} className="p-2 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800"><ArrowLeft size={20}/></button>
+          <div className="text-left"><h3 className="font-bold text-sm uppercase text-[#E64545]">{liveOffer.status}</h3><p className="text-xs text-slate-400 font-medium">{liveOffer.price}€/H</p></div>
         </div>
         <div className="flex gap-2">
-            <button onClick={handleReport} className="p-3 text-slate-300 hover:text-red-500 transition-colors"><Flag size={18}/></button>
-            {liveOffer.status === 'completed' && currentUser.uid === liveOffer.parentId && <button onClick={() => setShowReview(true)} className="p-3 bg-[#E0720F]/20 text-[#E0720F] rounded-xl"><Star size={18}/></button>}
-            {(liveOffer.status === 'accepted' || liveOffer.status === 'completed' || liveOffer.status === 'reviewed') && otherUserPhone && <a href={`tel:${otherUserPhone}`} className="p-3 bg-[#E64545] text-white rounded-xl"><Phone size={18}/></a>}
+            <button onClick={handleReport} className="p-2 text-slate-300 hover:text-red-500 transition-colors"><Flag size={18}/></button>
+            {liveOffer.status === 'completed' && currentUser.uid === liveOffer.parentId && <button onClick={() => setShowReview(true)} className="p-2 bg-[#E0720F]/20 text-[#E0720F] rounded-lg"><Star size={18}/></button>}
+            {(['accepted', 'completed', 'reviewed'].includes(liveOffer.status)) && otherUserPhone && <a href={`tel:${otherUserPhone}`} className="p-2 bg-[#E64545] text-white rounded-lg"><Phone size={18}/></a>}
         </div>
       </div>
 
       {liveOffer.status === 'accepted' && (
-          <div className="p-4 bg-blue-50 border-b border-blue-100 flex flex-col gap-2 items-center text-center">
-              <div className="flex items-center gap-2 text-blue-600 font-black text-xs uppercase tracking-widest">
-                  <Info size={16} /> Paiement en direct
+          <div className="p-3 bg-blue-50 border-b border-blue-100 flex flex-col gap-2 items-center text-center">
+              <div className="flex items-center gap-2 text-blue-600 font-bold text-xs uppercase">
+                  <Info size={14} /> Paiement direct
               </div>
-              <p className="text-xs font-bold text-blue-900/70 max-w-xs">
-                  BabyKeeper ne prend aucune commission. Réglez votre sitter directement (Espèces, Lydia, Paylib ou CESU).
+              <p className="text-[10px] font-medium text-blue-900/70">
+                  Réglez votre sitter directement (Espèces, Lydia, CESU). Pas de commission.
               </p>
               {currentUser.uid === liveOffer.parentId && (
-                  <button onClick={confirmService} className="mt-2 w-full bg-blue-600 text-white py-3 rounded-xl font-bold flex items-center justify-center gap-2 text-xs uppercase tracking-widest shadow-lg shadow-blue-200">
-                        Confirmer la fin de la garde
+                  <button onClick={confirmService} className="w-full bg-blue-600 text-white py-2 rounded-lg font-bold text-xs shadow-sm">
+                        Terminer la garde
                   </button>
               )}
           </div>
       )}
 
-      <div className={`flex-1 overflow-y-auto p-6 space-y-4 ${isDark ? 'bg-slate-950' : 'bg-slate-50/30'}`}>
+      <div className={`flex-1 overflow-y-auto p-4 space-y-3 ${isDark ? 'bg-slate-950' : 'bg-slate-50'}`}>
         {messages.map((m) => (
           <div key={m.id} className={`flex ${m.senderId === 'system' ? 'justify-center' : m.senderId === currentUser.uid ? 'justify-end' : 'justify-start'}`}>
-            <div className={`max-w-[80%] p-4 rounded-[2rem] text-sm ${
-                m.senderId === 'system' ? 'bg-slate-100 text-slate-500 text-xs text-center border border-slate-200' : 
-                m.senderId === currentUser.uid ? 'bg-[#E64545] text-white rounded-br-none' : 'bg-slate-100 text-slate-800 rounded-bl-none'
+            <div className={`max-w-[80%] p-3 rounded-2xl text-sm ${
+                m.senderId === 'system' ? 'bg-slate-200 text-slate-600 text-xs text-center' : 
+                m.senderId === currentUser.uid ? 'bg-[#E64545] text-white rounded-br-none' : 'bg-white text-slate-800 rounded-bl-none shadow-sm'
             }`}> 
                 {m.text} 
-                {translations[m.id] && <p className="text-[10px] mt-2 opacity-70 italic border-t border-white/20 pt-1">{translations[m.id]}</p>}
-                {m.senderId !== 'system' && m.senderId !== currentUser.uid && <button onClick={() => translateMsg(m.id, m.text)} className="ml-2 opacity-50 hover:opacity-100"><Languages size={12}/></button>}
+                {translations[m.id] && <p className="text-[10px] mt-1 opacity-70 italic border-t border-white/20 pt-1">{translations[m.id]}</p>}
+                {m.senderId !== 'system' && m.senderId !== currentUser.uid && <button onClick={() => translateMsg(m.id, m.text)} className="ml-2 opacity-50 hover:opacity-100"><Languages size={10}/></button>}
             </div>
           </div>
         ))}
@@ -649,28 +639,28 @@ const ChatRoom = ({ offer, currentUser, onBack, isDark }) => {
 
       {showReview && (
           <div className="fixed inset-0 bg-slate-900/90 backdrop-blur-md z-[100] flex items-center justify-center p-6 text-slate-900">
-              <div className="bg-white w-full max-w-md rounded-[3.5rem] p-10 space-y-8 animate-in zoom-in duration-300">
-                  <div className="text-center"><h3 className="text-2xl font-black italic uppercase tracking-tighter">Note la prestation</h3></div>
-                  <div className="flex justify-center"><RatingStars rating={reviewRating} size={40} interactive={true} onRate={setReviewRating} /></div>
-                  <textarea placeholder="Partage ton avis..." className="w-full p-6 bg-slate-50 rounded-3xl h-32 font-bold outline-none shadow-inner text-slate-800" value={reviewText} onChange={(e) => setReviewText(e.target.value)} />
-                  <div className="flex gap-3 pt-4">
-                      <button onClick={() => setShowReview(false)} className="flex-1 py-4 font-black text-[10px] uppercase text-slate-400">Annuler</button>
-                      <button onClick={submitReview} className="flex-[2] bg-[#E64545] text-white py-4 rounded-2xl font-black text-[10px] uppercase">Publier</button>
+              <div className="bg-white w-full max-w-md rounded-2xl p-6 space-y-6 animate-in zoom-in duration-300">
+                  <div className="text-center"><h3 className="text-xl font-bold">Note la prestation</h3></div>
+                  <div className="flex justify-center"><RatingStars rating={reviewRating} size={32} interactive={true} onRate={setReviewRating} /></div>
+                  <textarea placeholder="Votre avis..." className="w-full p-4 bg-slate-50 rounded-xl h-24 text-sm font-medium outline-none resize-none" value={reviewText} onChange={(e) => setReviewText(e.target.value)} />
+                  <div className="flex gap-2">
+                      <button onClick={() => setShowReview(false)} className="flex-1 py-3 font-bold text-xs uppercase text-slate-400">Annuler</button>
+                      <button onClick={submitReview} className="flex-1 bg-[#E64545] text-white py-3 rounded-xl font-bold text-xs uppercase">Publier</button>
                   </div>
               </div>
           </div>
       )}
 
       {liveOffer.status === 'pending' && currentUser.uid === liveOffer.sitterId && (
-        <div className="p-4 bg-white border-t border-slate-50 grid grid-cols-2 gap-4 dark:bg-slate-900 dark:border-slate-800">
-          <button onClick={() => updateOfferStatus('declined')} className="bg-slate-100 text-slate-400 py-4 rounded-2xl font-black text-[10px] uppercase dark:bg-slate-800">Refuser</button>
-          <button onClick={() => updateOfferStatus('accepted')} className="bg-[#E64545] text-white py-4 rounded-2xl font-black text-[10px] uppercase shadow-lg">Accepter</button>
+        <div className="p-4 bg-white border-t border-slate-50 grid grid-cols-2 gap-3 dark:bg-slate-900 dark:border-slate-800">
+          <button onClick={() => updateOfferStatus('declined')} className="bg-slate-100 text-slate-500 py-3 rounded-xl font-bold text-xs uppercase dark:bg-slate-800">Refuser</button>
+          <button onClick={() => updateOfferStatus('accepted')} className="bg-[#E64545] text-white py-3 rounded-xl font-bold text-xs uppercase shadow-md">Accepter</button>
         </div>
       )}
 
-      <form onSubmit={sendMessage} className={`p-4 border-t flex gap-4 pb-12 ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-100'}`}>
-        <input type="text" placeholder="Répondre..." className={`flex-1 p-4 rounded-2xl outline-none font-bold shadow-inner ${isDark ? 'bg-slate-800 text-white' : 'bg-slate-50 text-slate-700'}`} value={newMessage} onChange={(e) => setNewMessage(e.target.value)} />
-        <button type="submit" className="bg-[#E0720F] text-white p-4 rounded-2xl shadow-lg active:scale-95 transition-all"><Send size={20}/></button>
+      <form onSubmit={sendMessage} className={`p-3 border-t flex gap-3 pb-8 ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-100'}`}>
+        <input type="text" placeholder="Message..." className={`flex-1 p-3 rounded-xl outline-none font-medium text-sm ${isDark ? 'bg-slate-800 text-white' : 'bg-slate-100 text-slate-700'}`} value={newMessage} onChange={(e) => setNewMessage(e.target.value)} />
+        <button type="submit" className="bg-[#E0720F] text-white p-3 rounded-xl shadow-md active:scale-95 transition-all"><Send size={18}/></button>
       </form>
     </div>
   );
@@ -744,69 +734,50 @@ const AuthScreen = () => {
   return (
     <div className="min-h-screen bg-white flex flex-col items-center justify-center p-6 relative font-sans text-slate-900">
       <div className="absolute inset-0 bg-gradient-to-br from-[#E64545]/20 to-[#E0720F]/20 -z-10"></div>
-      <div className="w-full max-w-lg bg-white p-10 md:p-12 rounded-[4rem] shadow-2xl border border-white z-10 shadow-slate-100">
-        <div className="flex flex-col items-center mb-10 text-center">
-          <SitFinderLogo className="mb-6 h-24 w-24" />
-          <h2 className="text-4xl font-black italic uppercase tracking-tighter leading-none text-transparent bg-clip-text bg-gradient-to-r from-[#E64545] to-[#E0720F]">BABYKEEPER</h2>
-          <p className="text-[#E64545] text-sm font-bold uppercase tracking-widest mt-2">La recherche en toute confiance</p>
+      <div className="w-full max-w-md bg-white p-8 rounded-[3rem] shadow-2xl border border-white z-10">
+        <div className="flex flex-col items-center mb-8 text-center">
+          <SitFinderLogo className="mb-4 h-20 w-20" />
+          <h2 className="text-3xl font-black italic uppercase tracking-tighter text-transparent bg-clip-text bg-gradient-to-r from-[#E64545] to-[#E0720F]">BABYKEEPER</h2>
         </div>
         
         {isRegister && (
             <div className="flex gap-4 mb-6">
-                <button type="button" onClick={() => setServiceType("baby")} className={`flex-1 py-4 rounded-2xl font-black text-xs uppercase flex flex-col items-center gap-2 border-2 transition-all ${serviceType === "baby" ? "border-[#E64545] bg-[#E64545]/5 text-[#E64545]" : "border-slate-100 text-slate-400"}`}>
-                    <Baby size={24} /> Enfants
+                <button type="button" onClick={() => setServiceType("baby")} className={`flex-1 py-3 rounded-xl font-bold text-xs uppercase flex flex-col items-center gap-1 border-2 transition-all ${serviceType === "baby" ? "border-[#E64545] bg-[#E64545]/5 text-[#E64545]" : "border-slate-100 text-slate-400"}`}>
+                    <Baby size={20} /> Enfants
                 </button>
-                <button type="button" onClick={() => setServiceType("pet")} className={`flex-1 py-4 rounded-2xl font-black text-xs uppercase flex flex-col items-center gap-2 border-2 transition-all ${serviceType === "pet" ? "border-[#E0720F] bg-[#E0720F]/5 text-[#E0720F]" : "border-slate-100 text-slate-400"}`}>
-                    <Dog size={24} /> Animaux
+                <button type="button" onClick={() => setServiceType("pet")} className={`flex-1 py-3 rounded-xl font-bold text-xs uppercase flex flex-col items-center gap-1 border-2 transition-all ${serviceType === "pet" ? "border-[#E0720F] bg-[#E0720F]/5 text-[#E0720F]" : "border-slate-100 text-slate-400"}`}>
+                    <Dog size={20} /> Animaux
                 </button>
             </div>
         )}
 
         <form onSubmit={handleAuth} className="space-y-4">
-          {isRegister && <input required placeholder="Ton Prénom" className="w-full p-5 bg-slate-50 rounded-2xl outline-none font-bold shadow-inner" value={name} onChange={(e) => setName(e.target.value)} />}
-          <input required type="email" placeholder="Email" className="w-full p-5 bg-slate-50 rounded-2xl outline-none font-bold shadow-inner" value={email} onChange={(e) => setEmail(e.target.value)} />
-          <input required type="password" placeholder="Mot de passe" className="w-full p-5 bg-slate-50 rounded-2xl outline-none font-bold shadow-inner" value={password} onChange={(e) => setPassword(e.target.value)} />
+          {isRegister && <input required placeholder="Ton Prénom" className="w-full p-4 bg-slate-50 rounded-xl outline-none font-bold" value={name} onChange={(e) => setName(e.target.value)} />}
+          <input required type="email" placeholder="Email" className="w-full p-4 bg-slate-50 rounded-xl outline-none font-bold" value={email} onChange={(e) => setEmail(e.target.value)} />
+          <input required type="password" placeholder="Mot de passe" className="w-full p-4 bg-slate-50 rounded-xl outline-none font-bold" value={password} onChange={(e) => setPassword(e.target.value)} />
            
           {!isRegister && (
              <div className="flex flex-wrap justify-between items-center pl-2 gap-2">
                  <div className="flex items-center gap-2">
-                     <input type="checkbox" id="rem" checked={remember} onChange={(e) => setRemember(e.target.checked)} className="w-5 h-5 accent-[#E64545] rounded-lg"/>
-                     <label htmlFor="rem" className="text-xs font-bold text-slate-500 uppercase tracking-wide cursor-pointer">Se souvenir</label>
+                     <input type="checkbox" id="rem" checked={remember} onChange={(e) => setRemember(e.target.checked)} className="w-4 h-4 accent-[#E64545] rounded"/>
+                     <label htmlFor="rem" className="text-xs font-bold text-slate-500 uppercase cursor-pointer">Se souvenir</label>
                  </div>
-                 <button type="button" onClick={handleResetPassword} className="text-[10px] font-black uppercase text-[#E0720F] hover:underline whitespace-nowrap">Mot de passe oublié ?</button>
+                 <button type="button" onClick={handleResetPassword} className="text-[10px] font-bold uppercase text-[#E0720F] hover:underline">Mot de passe oublié ?</button>
              </div>
           )}
 
           {isRegister && (
-            <>
-            <div className="grid grid-cols-2 gap-3 p-1 bg-slate-100 rounded-2xl mt-4">
-              <button type="button" onClick={() => setRole("parent")} className={`py-3 rounded-xl font-black text-[10px] ${role === "parent" ? "bg-white shadow text-[#E64545]" : "text-slate-400"}`}>{serviceType === 'baby' ? 'PARENT' : 'MAÎTRE'}</button>
-              <button type="button" onClick={() => setRole("sitter")} className={`py-3 rounded-xl font-black text-[10px] ${role === "sitter" ? "bg-white shadow text-[#E0720F]" : "text-slate-400"}`}>SITTER</button>
+            <div className="grid grid-cols-2 gap-3 p-1 bg-slate-100 rounded-xl mt-4">
+              <button type="button" onClick={() => setRole("parent")} className={`py-3 rounded-lg font-black text-[10px] ${role === "parent" ? "bg-white shadow text-[#E64545]" : "text-slate-400"}`}>{serviceType === 'baby' ? 'PARENT' : 'MAÎTRE'}</button>
+              <button type="button" onClick={() => setRole("sitter")} className={`py-3 rounded-lg font-black text-[10px] ${role === "sitter" ? "bg-white shadow text-[#E0720F]" : "text-slate-400"}`}>SITTER</button>
             </div>
-            
-            {role === "sitter" && serviceType === "baby" && (
-              <div className="grid grid-cols-3 gap-1 mt-2">
-                <button type="button" onClick={() => setLevel("1")} className={`py-2 rounded-lg text-[10px] font-black uppercase transition-all ${level === "1" ? "bg-slate-900 text-white" : "bg-slate-200 text-slate-500"}`}>NIV 1 🍼<br/><span className="text-[8px] opacity-70 font-normal">Garde+Repas</span></button>
-                <button type="button" onClick={() => setLevel("2")} className={`py-2 rounded-lg text-[10px] font-black uppercase transition-all ${level === "2" ? "bg-slate-900 text-white" : "bg-slate-200 text-slate-500"}`}>NIV 2 🧸<br/><span className="text-[8px] opacity-70 font-normal">+ Change</span></button>
-                <button type="button" onClick={() => setLevel("3")} className={`py-2 rounded-lg text-[10px] font-black uppercase transition-all ${level === "3" ? "bg-slate-900 text-white" : "bg-slate-200 text-slate-500"}`}>NIV 3 👑<br/><span className="text-[8px] opacity-70 font-normal">+ Bain/Soins</span></button>
-              </div>
-            )}
-
-            {role === "sitter" && serviceType === "pet" && (
-              <div className="grid grid-cols-3 gap-1 mt-2">
-                <button type="button" onClick={() => setLevel("1")} className={`py-2 rounded-lg text-[10px] font-black uppercase transition-all ${level === "1" ? "bg-slate-900 text-white" : "bg-slate-200 text-slate-500"}`}>NIV 1 🐕<br/><span className="text-[8px] opacity-70 font-normal">Promenade</span></button>
-                <button type="button" onClick={() => setLevel("2")} className={`py-2 rounded-lg text-[10px] font-black uppercase transition-all ${level === "2" ? "bg-slate-900 text-white" : "bg-slate-200 text-slate-500"}`}>NIV 2 🥘<br/><span className="text-[8px] opacity-70 font-normal">Visite/Repas</span></button>
-                <button type="button" onClick={() => setLevel("3")} className={`py-2 rounded-lg text-[10px] font-black uppercase transition-all ${level === "3" ? "bg-slate-900 text-white" : "bg-slate-200 text-slate-500"}`}>NIV 3 🏠<br/><span className="text-[8px] opacity-70 font-normal">Hébergement</span></button>
-              </div>
-            )}
-            </>
           )}
-          <button disabled={loading} className="w-full bg-[#E64545] text-white py-6 rounded-[2rem] font-black text-sm shadow-xl mt-8 flex justify-center items-center gap-3 active:scale-95 transition-all uppercase tracking-widest hover:brightness-110">
-            {loading ? <Loader2 className="animate-spin text-white" /> : (isRegister ? "CRÉER MON COMPTE" : "ME CONNECTER")}
+          <button disabled={loading} className="w-full bg-[#E64545] text-white py-4 rounded-xl font-black text-sm shadow-xl mt-6 active:scale-95 transition-all uppercase tracking-widest hover:brightness-110">
+            {loading ? <Loader2 className="animate-spin text-white mx-auto" /> : (isRegister ? "CRÉER MON COMPTE" : "ME CONNECTER")}
           </button>
         </form>
-        <div className="mt-10 pt-8 border-t border-slate-50 text-center">
-          <button type="button" className="text-[#E0720F] font-black text-xs uppercase tracking-widest underline underline-offset-8" onClick={() => { setIsRegister(!isRegister); }}>
+        <div className="mt-8 pt-6 border-t border-slate-50 text-center">
+          <button type="button" className="text-[#E0720F] font-bold text-xs uppercase tracking-widest underline underline-offset-4" onClick={() => { setIsRegister(!isRegister); }}>
             {isRegister ? "Se connecter" : "Nouveau ? Créer un profil"}
           </button>
         </div>
@@ -815,7 +786,7 @@ const AuthScreen = () => {
   );
 };
 
-// --- ECRAN COMPLÉTION PROFIL AVEC PHOTO OBLIGATOIRE ---
+// --- ECRAN COMPLÉTION PROFIL ---
 const CompleteProfileScreen = ({ uid, serviceType }) => {
   const [name, setName] = useState("");
   const [role, setRole] = useState("parent");
@@ -830,7 +801,6 @@ const CompleteProfileScreen = ({ uid, serviceType }) => {
              const compressedBase64 = await compressImage(file);
              setPhoto(compressedBase64);
           } catch (error) {
-             console.error("Erreur compression image", error);
              alert("Impossible d'utiliser cette image.");
           }
       }
@@ -851,47 +821,31 @@ const CompleteProfileScreen = ({ uid, serviceType }) => {
 
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-center p-6 text-slate-800 font-sans">
-      <div className="bg-white p-12 rounded-[4rem] shadow-2xl max-w-md w-full text-center space-y-8 border border-slate-50 shadow-slate-100">
-        <SitFinderLogo className="mx-auto" /><h2 className="text-3xl font-black italic uppercase tracking-tighter leading-none">Profil & Photo</h2>
+      <div className="bg-white p-8 rounded-[3rem] shadow-2xl max-w-md w-full text-center space-y-6 border border-slate-50">
+        <SitFinderLogo className="mx-auto" /><h2 className="text-2xl font-black italic uppercase">Profil & Photo</h2>
         
-        {/* ZONE PHOTO OBLIGATOIRE */}
         <div className="flex justify-center">
             <label className="cursor-pointer group relative">
-                <div className={`w-32 h-32 rounded-[2rem] border-4 ${photo ? 'border-[#E64545]' : 'border-slate-200 border-dashed'} overflow-hidden flex items-center justify-center bg-slate-50 shadow-inner group-hover:bg-slate-100 transition-colors`}>
-                    {photo ? <img src={photo} className="w-full h-full object-cover" /> : <div className="text-center text-slate-400"><Camera size={32} className="mx-auto mb-1"/><span className="text-[10px] font-black uppercase">Ajouter Photo</span></div>}
+                <div className={`w-28 h-28 rounded-full border-4 ${photo ? 'border-[#E64545]' : 'border-slate-200 border-dashed'} overflow-hidden flex items-center justify-center bg-slate-50 group-hover:bg-slate-100 transition-colors`}>
+                    {photo ? <img src={photo} className="w-full h-full object-cover" /> : <div className="text-center text-slate-400"><Camera size={24} className="mx-auto mb-1"/><span className="text-[9px] font-bold uppercase">Ajouter</span></div>}
                 </div>
                 <input type="file" hidden onChange={handlePhotoSelect} accept="image/*" />
-                {!photo && <div className="absolute -bottom-6 left-0 w-full text-[10px] text-red-500 font-black uppercase animate-pulse">Obligatoire</div>}
             </label>
         </div>
 
-        <input placeholder="Ton Prénom" className="w-full p-6 bg-slate-50 rounded-3xl outline-none font-bold shadow-inner" value={name} onChange={(e) => setName(e.target.value)} />
-        <div className="grid grid-cols-2 gap-2 p-1 bg-slate-100 rounded-2xl shadow-sm">
-          <button onClick={() => setRole("parent")} className={`py-4 rounded-xl font-black text-[10px] ${role === "parent" ? "bg-white shadow text-[#E64545]" : "text-slate-400"}`}>{serviceType === 'baby' ? 'PARENT' : 'MAÎTRE'}</button>
-          <button onClick={() => setRole("sitter")} className={`py-4 rounded-xl font-black text-[10px] ${role === "sitter" ? "bg-white shadow text-[#E0720F]" : "text-slate-400"}`}>SITTER</button>
+        <input placeholder="Ton Prénom" className="w-full p-4 bg-slate-50 rounded-xl outline-none font-bold text-center" value={name} onChange={(e) => setName(e.target.value)} />
+        <div className="grid grid-cols-2 gap-2 p-1 bg-slate-100 rounded-xl">
+          <button onClick={() => setRole("parent")} className={`py-3 rounded-lg font-bold text-[10px] ${role === "parent" ? "bg-white shadow text-[#E64545]" : "text-slate-400"}`}>{serviceType === 'baby' ? 'PARENT' : 'MAÎTRE'}</button>
+          <button onClick={() => setRole("sitter")} className={`py-3 rounded-lg font-bold text-[10px] ${role === "sitter" ? "bg-white shadow text-[#E0720F]" : "text-slate-400"}`}>SITTER</button>
         </div>
-        {role === "sitter" && serviceType === 'baby' && (
-              <div className="grid grid-cols-3 gap-1 mt-2">
-                <button type="button" onClick={() => setLevel("1")} className={`py-2 rounded-lg text-[10px] font-black uppercase transition-all ${level === "1" ? "bg-slate-900 text-white" : "bg-slate-200 text-slate-500"}`}>NIV 1 🍼</button>
-                <button type="button" onClick={() => setLevel("2")} className={`py-2 rounded-lg text-[10px] font-black uppercase transition-all ${level === "2" ? "bg-slate-900 text-white" : "bg-slate-200 text-slate-500"}`}>NIV 2 🧸</button>
-                <button type="button" onClick={() => setLevel("3")} className={`py-2 rounded-lg text-[10px] font-black uppercase transition-all ${level === "3" ? "bg-slate-900 text-white" : "bg-slate-200 text-slate-500"}`}>NIV 3 👑</button>
-              </div>
-        )}
-         {role === "sitter" && serviceType === 'pet' && (
-              <div className="grid grid-cols-3 gap-1 mt-2">
-                <button type="button" onClick={() => setLevel("1")} className={`py-2 rounded-lg text-[10px] font-black uppercase transition-all ${level === "1" ? "bg-slate-900 text-white" : "bg-slate-200 text-slate-500"}`}>NIV 1 🐕</button>
-                <button type="button" onClick={() => setLevel("2")} className={`py-2 rounded-lg text-[10px] font-black uppercase transition-all ${level === "2" ? "bg-slate-900 text-white" : "bg-slate-200 text-slate-500"}`}>NIV 2 🥘</button>
-                <button type="button" onClick={() => setLevel("3")} className={`py-2 rounded-lg text-[10px] font-black uppercase transition-all ${level === "3" ? "bg-slate-900 text-white" : "bg-slate-200 text-slate-500"}`}>NIV 3 🏠</button>
-              </div>
-        )}
-        <button onClick={finish} disabled={loading || !photo} className={`w-full py-6 rounded-[2rem] font-black shadow-lg uppercase transition-all active:scale-95 ${!photo ? 'bg-slate-300 text-slate-500 cursor-not-allowed' : 'bg-[#E64545] text-white hover:brightness-110'}`}>VALIDER</button>
+        <button onClick={finish} disabled={loading || !photo} className={`w-full py-4 rounded-xl font-black shadow-lg uppercase transition-all active:scale-95 ${!photo ? 'bg-slate-300 text-slate-500 cursor-not-allowed' : 'bg-[#E64545] text-white hover:brightness-110'}`}>VALIDER</button>
       </div>
     </div>
   );
 };
 
 // ==========================================
-// 8. DASHBOARD PARENT (FIX NAVIGATION & EMPTY STATE)
+// 8. DASHBOARD PARENT (NOUVEAU DESIGN PRO)
 // ==========================================
 
 const ParentDashboard = ({ profile, user }) => {
@@ -917,32 +871,13 @@ const ParentDashboard = ({ profile, user }) => {
   const days = ["Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi", "Samedi", "Dimanche"];
 
   useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    if (params.get('success') === 'true') {
-        updateDoc(doc(db, 'artifacts', appId, 'users', user.uid, 'settings', 'profile'), { isPremium: true })
-        .then(() => {
-            alert("Félicitations ! Votre abonnement Premium est activé 🌟");
-            window.history.replaceState({}, document.title, window.location.pathname);
-        });
-    }
-  }, [user.uid]); 
-
-  // FONCTION POUR BASCULER ENTRE ENFANT ET ANIMAL
-  const toggleServiceType = async () => {
-      const newType = isPet ? 'baby' : 'pet';
-      await updateDoc(doc(db, 'artifacts', appId, 'users', user.uid, 'settings', 'profile'), { serviceType: newType });
-  };
-
-  useEffect(() => {
     localStorage.setItem('dark', isDark);
     const unsubSitters = onSnapshot(collection(db, 'artifacts', appId, 'public', 'data', 'sitters'), (snap) => {
-      // ON AFFICHE TOUS LES SITTERS DE LA CATEGORIE (Y COMPRIS SOI-MEME POUR VERIFIER L'ANNONCE)
       setSitters(snap.docs.map(d => ({ id: d.id, ...d.data() })).filter(s => s.serviceType === profile.serviceType));
       setLoading(false);
     });
     const qOffers = query(collection(db, 'artifacts', appId, 'public', 'data', 'offers'), where("parentId", "==", user.uid));
     const unsubOffers = onSnapshot(qOffers, (snap) => { 
-        // FILTRE ICI : ON NE MONTRE PAS LES OFFRES QU'ON S'EST ENVOYÉ A SOI-MÊME DANS LA LISTE DE DISCUSSION
         const list = snap.docs.map(d => ({ id: d.id, ...d.data() })).filter(o => o.sitterId !== o.parentId);
         setOffers(list); 
     });
@@ -968,7 +903,6 @@ const ParentDashboard = ({ profile, user }) => {
   };
 
   const filteredSitters = useMemo(() => {
-    // 1. D'abord on filtre
     const filtered = sitters.filter(s => {
       const matchName = s.name?.toLowerCase().includes(search.toLowerCase());
       const matchLocation = !locationFilter || s.city?.toLowerCase().includes(locationFilter.toLowerCase());
@@ -976,40 +910,27 @@ const ParentDashboard = ({ profile, user }) => {
       const matchVerified = !onlyVerified || s.hasCV;
       const matchFav = !onlyFavorites || profile.favorites?.includes(s.id);
       const matchDay = !dayFilter || (s.availability && s.availability[dayFilter]?.active);
-
       return matchName && matchLocation && matchPrice && matchVerified && matchFav && matchDay;
     });
-
-    // 2. Ensuite on trie (DISPO IMMEDIATE EN PREMIER)
+    // Tri par Disponibilité immédiate puis vues
     return filtered.sort((a, b) => {
         const isInstantA = a.instantAvailableUntil && new Date(a.instantAvailableUntil) > new Date();
         const isInstantB = b.instantAvailableUntil && new Date(b.instantAvailableUntil) > new Date();
-        
-        if (isInstantA && !isInstantB) return -1; // A en premier
-        if (!isInstantA && isInstantB) return 1;  // B en premier
-        
-        // Si égalité, on trie par vues (popularité)
+        if (isInstantA && !isInstantB) return -1; 
+        if (!isInstantA && isInstantB) return 1;  
         return (b.views || 0) - (a.views || 0);
     });
-
   }, [sitters, search, locationFilter, maxPrice, onlyVerified, onlyFavorites, profile.favorites, dayFilter]);
 
   const handleBooking = async (s, p, h) => {
-    // EMPECHER L'AUTO-RESERVATION
-    if (s.id === user.uid) return alert("Vous ne pouvez pas réserver votre propre service !");
-
+    if (s.id === user.uid) return alert("C'est votre propre profil !");
     try {
       const isPremium = profile?.isPremium === true;
       if (!isPremium) {
           const oneWeekAgo = new Date();
           oneWeekAgo.setDate(oneWeekAgo.getDate() - 7); 
           const recentOffers = offers.filter(o => { const d = o.createdAt?.toDate ? o.createdAt.toDate() : new Date(o.createdAt); return d > oneWeekAgo; });
-          if (recentOffers.length >= 1) {
-              alert("🔒 Limite atteinte ! Passez Premium.");
-              setSelectedSitter(null); 
-              setActiveTab("premium"); 
-              return; 
-          }
+          if (recentOffers.length >= 1) { alert("🔒 Limite atteinte ! Passez Premium."); setSelectedSitter(null); setActiveTab("premium"); return; }
       }
       const offerText = `Offre : ${h}h à ${p}€/h`;
       const newOffer = await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'offers'), {
@@ -1026,143 +947,112 @@ const ParentDashboard = ({ profile, user }) => {
   };
 
   if (activeChat) return <ChatRoom offer={activeChat} currentUser={user} onBack={() => setActiveChat(null)} isDark={isDark} />;
-  if (activeTab === "profile") return <SettingsView user={user} profile={profile} onBack={() => setActiveTab("search")} isDark={isDark} toggleDark={() => setIsDark(!isDark)} />;
+  if (activeTab === "settings") return <SettingsView user={user} profile={profile} onBack={() => setActiveTab("search")} isDark={isDark} toggleDark={() => setIsDark(!isDark)} />;
   if (activeTab === "premium") return <PremiumView onBack={() => setActiveTab("search")} isDark={isDark} />;
 
-  const getSPhoto = (s) => (s.useCustomPhoto && s.photoURL) ? s.photoURL : `https://api.dicebear.com/7.x/${s.avatarStyle || 'avataaars'}/svg?seed=${s.name}`;
-
   return (
-    <div className={`min-h-screen font-sans pb-32 ${isDark ? 'bg-slate-950 text-white' : 'bg-slate-50 text-slate-800'}`}>
-      <nav className={`p-4 flex justify-between items-center sticky top-0 z-40 border-b shadow-sm ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-100'}`}>
-        <div className="flex items-center gap-2"><SitFinderLogo className="w-8 h-8" glow={false} /><span className="font-black italic text-lg md:text-2xl uppercase tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-[#E64545] to-[#E0720F]">BABYKEEPER</span></div>
-        <div className="flex items-center gap-1.5">
+    <div className={`min-h-screen font-sans pb-24 transition-colors duration-300 ${isDark ? 'bg-slate-950 text-slate-100' : 'bg-slate-50 text-slate-800'}`}>
+      
+      {/* HEADER COMPACT */}
+      <nav className={`px-4 py-3 sticky top-0 z-40 border-b flex justify-between items-center backdrop-blur-md ${isDark ? 'bg-slate-900/90 border-slate-800' : 'bg-white/90 border-slate-200'}`}>
+        <div className="flex items-center gap-2"><SitFinderLogo className="w-8 h-8" glow={false} /><span className="font-bold text-lg hidden md:block">BabyKeeper</span></div>
+        <div className="flex items-center gap-2">
           <ModeSwitcher currentRole={profile.role} currentService={profile.serviceType || 'baby'} uid={user.uid} />
-          <button onClick={() => setShowFAQ(true)} className={`p-2 rounded-2xl transition-all shadow-sm flex items-center justify-center ${isDark ? 'bg-slate-800 text-slate-300' : 'bg-white border border-slate-100 text-slate-400'}`}>
-              <HelpCircle size={20} />
-          </button>
-          <button onClick={() => setActiveTab("premium")} className={`p-2 rounded-2xl transition-all shadow-md bg-gradient-to-br from-yellow-400 to-orange-500 text-white animate-pulse`}><Crown size={20} fill="white" /></button>
-          <div className="relative p-2 text-slate-400"><Bell size={20}/>{unreadCount > 0 && <span className="absolute top-1 right-1 w-4 h-4 bg-[#E64545] text-white text-[8px] font-black rounded-full flex items-center justify-center border-2 border-white animate-bounce">{unreadCount}</span>}</div>
+          <button onClick={() => setShowFAQ(true)} className="p-2 hover:bg-slate-100 rounded-full transition-colors dark:hover:bg-slate-800"><HelpCircle size={18} /></button>
+          <button onClick={() => setActiveTab("premium")} className="p-2 bg-gradient-to-r from-amber-400 to-orange-500 text-white rounded-full shadow-sm hover:scale-105 transition-transform"><Crown size={18} /></button>
+          <button onClick={() => setActiveTab("settings")} className="p-2 hover:bg-slate-100 rounded-full transition-colors dark:hover:bg-slate-800"><Settings size={18} /></button>
         </div>
       </nav>
 
-      <main className="p-6 max-w-7xl mx-auto space-y-8 animate-in fade-in duration-500">
+      <main className="max-w-5xl mx-auto p-4 md:p-6 space-y-6">
         
         {/* --- VUE RECHERCHE --- */}
         {activeTab === "search" && (
-            <>
-            <div className={`p-10 md:p-14 rounded-[3.5rem] shadow-2xl relative overflow-hidden group transition-all duration-700 ${isDark ? 'bg-gradient-to-br from-[#E64545] to-slate-900' : 'bg-gradient-to-br from-[#E64545] to-[#E0720F]'}`}>
-              <div className="relative z-10 text-white">
-                  <h2 className="text-4xl font-black italic tracking-tighter font-sans leading-tight animate-in slide-in-from-left duration-700">Bonjour {profile.name} ! 👋</h2>
-                  <p className="opacity-90 font-bold uppercase tracking-widest text-[10px] mt-2">
-                      {isPet ? "Trouvez le gardien idéal 🐾" : "Trouvez l'aide idéale aujourd'hui"}
-                  </p>
-              </div>
-              {isPet ? <Dog size={400} className="absolute -right-20 -bottom-20 opacity-10 rotate-12 text-white" /> : <Baby size={400} className="absolute -right-20 -bottom-20 opacity-10 rotate-12 text-white" />}
-            </div>
-
-            <div className="space-y-4">
-              <div className="flex gap-4">
-                <div className="relative flex-1 group">
-                  <Search className={`absolute left-6 top-1/2 -translate-y-1/2 transition-colors ${isDark ? 'text-slate-600' : 'text-slate-300'}`} size={24} />
-                  <input type="text" placeholder="Rechercher par prénom..." className={`w-full pl-16 pr-8 py-6 border-none rounded-[2.5rem] shadow-sm outline-none focus:ring-4 font-bold ${isDark ? 'bg-slate-900 text-white focus:ring-[#E64545]/20' : 'bg-white text-slate-900 focus:ring-[#E64545]/10'}`} value={search} onChange={(e) => setSearch(e.target.value)} />
-                </div>
-                <button onClick={() => setShowFilters(!showFilters)} className={`p-6 rounded-[2.5rem] shadow-sm transition-all flex items-center gap-3 ${showFilters ? 'bg-[#E0720F] text-white shadow-orange-200' : (isDark ? 'bg-slate-900 text-slate-400' : 'bg-white text-slate-400')}`}><SlidersHorizontal size={24}/></button>
-              </div>
-              {showFilters && (
-                <div className={`p-10 rounded-[3.5rem] shadow-2xl border grid grid-cols-1 md:grid-cols-3 gap-12 animate-in slide-in-from-top-4 duration-300 relative z-30 ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-100'}`}>
-                   <div className="space-y-4 text-left"><label className="text-[11px] font-black text-slate-400 uppercase italic">Ville</label><input type="text" placeholder="Paris, Lyon..." className={`w-full p-5 rounded-2xl outline-none font-bold ${isDark ? 'bg-slate-800' : 'bg-slate-50'}`} value={locationFilter} onChange={(e) => setLocationFilter(e.target.value)} /></div>
-                   
-                   {/* NOUVEAU : SELECTEUR DE JOUR */}
-                   <div className="space-y-4 text-left">
-                       <label className="text-[11px] font-black text-slate-400 uppercase italic">Disponibilité</label>
-                       <select value={dayFilter} onChange={(e) => setDayFilter(e.target.value)} className={`w-full p-5 rounded-2xl outline-none font-bold appearance-none ${isDark ? 'bg-slate-800 text-white' : 'bg-slate-50 text-slate-800'}`}>
-                           <option value="">Tous les jours</option>
-                           {days.map(d => <option key={d} value={d}>{d}</option>)}
-                       </select>
-                   </div>
-
-                   <div className="space-y-4 text-left"><div className="flex justify-between items-center text-slate-800"><label className="text-[10px] font-black text-slate-400 uppercase italic">Budget ({maxPrice}€)</label><span className="text-xl font-black text-[#E64545] font-sans">{maxPrice}€/H</span></div><input type="range" min="10" max="100" step="5" className="w-full accent-[#E64545]" value={maxPrice} onChange={(e) => setMaxPrice(e.target.value)} /></div>
-                   <div className="flex gap-3 pt-6"><button onClick={() => setOnlyVerified(!onlyVerified)} className={`flex-1 py-4 rounded-2xl text-[10px] font-black uppercase transition-all ${onlyVerified ? 'bg-[#E64545]/10 text-[#E64545]' : (isDark ? 'bg-slate-800' : 'bg-slate-50')}`}>Sitter Pro ✨</button><button onClick={() => setOnlyFavorites(!onlyFavorites)} className={`flex-1 py-4 rounded-2xl text-[10px] font-black uppercase transition-all ${onlyFavorites ? 'bg-red-50 text-red-600' : (isDark ? 'bg-slate-800' : 'bg-slate-50')}`}>❤️</button></div>
-                </div>
-              )}
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-10">
-              {loading ? <div className="col-span-full py-20 flex justify-center animate-pulse"><Loader2 className="animate-spin text-[#E64545]" size={64} /></div> 
-              : filteredSitters.map((s) => {
-                  // Vérification Dispo Immédiate
-                  const isInstant = s.instantAvailableUntil && new Date(s.instantAvailableUntil) > new Date();
-
-                  return (
-                    <div key={s.id} className={`p-10 rounded-[3.5rem] shadow-xl border hover:shadow-2xl transition-all flex flex-col min-h-[520px] group/card relative ${isDark ? 'bg-slate-900 border-slate-800 shadow-slate-950' : 'bg-white border-slate-50 shadow-slate-200'} ${isInstant ? 'ring-4 ring-green-400/50' : ''}`}>
-                      
-                      {/* --- BADGE DISPO IMMEDIATE --- */}
-                      {isInstant && (
-                          <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-green-500 text-white px-6 py-2 rounded-full font-black text-xs uppercase shadow-lg shadow-green-500/30 animate-bounce z-10 flex items-center gap-2">
-                              <span className="w-2 h-2 bg-white rounded-full animate-ping"></span>
-                              DISPO MAINTENANT
-                          </div>
-                      )}
-
-                      <button onClick={() => toggleFavorite(s.id)} className={`absolute top-8 right-8 p-3 rounded-2xl transition-all ${profile.favorites?.includes(s.id) ? 'bg-red-50 text-red-500' : (isDark ? 'bg-slate-800 text-slate-600' : 'bg-slate-50 text-slate-300')} shadow-md`}><Heart size={20} fill={profile.favorites?.includes(s.id) ? "currentColor" : "none"}/></button>
-                      <div className="flex flex-col gap-2.5 mb-8">
-                        {(s.hasCV) && <div className="flex items-center gap-2 bg-[#E64545] text-white px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest w-fit"><ShieldCheck size={10}/> VÉRIFIÉ</div>}
-                        {s.level && !isPet && <div className="flex items-center gap-2 bg-[#E0720F] text-white px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest w-fit mt-1">NIV {s.level} 👑</div>}
-                        {s.level && isPet && <div className="flex items-center gap-2 bg-[#E0720F] text-white px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest w-fit mt-1">NIV {s.level} 🐾</div>}
-                      </div>
-                      <div className={`w-28 h-28 rounded-[2.5rem] mb-6 overflow-hidden border-4 shadow-xl ring-4 group-hover/card:scale-110 transition-transform duration-500 ${isDark ? 'bg-slate-800 border-slate-700 ring-slate-900' : 'bg-slate-50 border-white ring-slate-50/50'}`}>
-                          {/* --- ICI : Utilisation de la photoURL qui est désormais synchro --- */}
-                          <UserAvatar photoURL={s.photoURL} />
-                      </div>
-                      <h4 className={`font-black text-4xl font-sans mb-1 leading-none tracking-tighter text-left ${isDark ? 'text-white' : 'text-slate-800'}`}>{s.name}</h4>
-                      <div className="flex items-center gap-3 text-slate-400 mb-6"><RatingStars rating={s.rating || 5} size={18}/><span className={`text-[10px] font-black uppercase px-2 py-0.5 rounded-lg border ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-slate-50 border-slate-100'}`}>{s.city}</span></div>
-                      
-                      {s.skills && (
-                        <div className="flex flex-wrap gap-1 mb-4">
-                            {s.skills.map((skill, i) => (
-                              <span key={i} className="text-[8px] font-bold uppercase bg-slate-100 text-slate-500 px-2 py-1 rounded-lg border">{skill}</span>
-                            ))}
-                        </div>
-                      )}
-
-                      <p className={`italic mb-8 leading-relaxed text-sm flex-1 line-clamp-3 text-left ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>"{s.bio || "..."}"</p>
-                      <div className={`flex justify-between items-center pt-8 border-t mt-auto ${isDark ? 'border-slate-800' : 'border-slate-50'}`}>
-                        <span className="text-3xl font-black text-[#E64545] font-sans">{s.price || 0}€<span className="text-[10px] text-slate-400 ml-1">/H</span></span>
-                        <button onClick={() => setSelectedSitter(s)} className={`px-10 py-5 rounded-[2.5rem] font-black text-[10px] uppercase shadow-lg active:scale-95 transition-all hover:bg-[#E64545] tracking-widest ${isDark ? 'bg-[#E64545] text-white' : 'bg-slate-900 text-white'}`}>VOIR PROFIL</button>
-                      </div>
+            <div className="animate-in fade-in duration-500">
+                {/* HERO SECTION COMPACTE */}
+                <div className={`rounded-3xl p-6 mb-6 shadow-lg relative overflow-hidden ${isDark ? 'bg-gradient-to-br from-[#E64545] to-slate-900' : 'bg-gradient-to-br from-[#E64545] to-orange-500'}`}>
+                    <div className="relative z-10 text-white">
+                        <h2 className="text-2xl font-bold">Bonjour {profile.name} 👋</h2>
+                        <p className="opacity-90 text-sm font-medium mt-1">Trouvez la perle rare pour {isPet ? "votre animal" : "vos enfants"}.</p>
                     </div>
-                  );
-              })}
+                </div>
+
+                {/* BARRE DE RECHERCHE + FILTRES */}
+                <div className="flex gap-3 mb-6">
+                    <div className="relative flex-1">
+                        <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
+                        <input type="text" placeholder="Rechercher un prénom..." className={`w-full pl-12 pr-4 py-3 rounded-xl border outline-none focus:ring-2 focus:ring-[#E64545]/20 font-medium ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'}`} value={search} onChange={(e) => setSearch(e.target.value)} />
+                    </div>
+                    <button onClick={() => setShowFilters(!showFilters)} className={`p-3 rounded-xl border transition-all ${showFilters ? 'bg-[#E0720F] text-white border-[#E0720F]' : (isDark ? 'bg-slate-900 border-slate-800 text-slate-300' : 'bg-white border-slate-200 text-slate-500')}`}><SlidersHorizontal size={20}/></button>
+                </div>
+
+                {showFilters && (
+                    <div className={`p-5 rounded-2xl border mb-6 grid grid-cols-1 md:grid-cols-3 gap-4 animate-in slide-in-from-top-2 ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'}`}>
+                        <div><label className="text-[10px] font-bold text-slate-400 uppercase">Ville</label><input type="text" placeholder="Paris..." className={`w-full p-2 mt-1 rounded-lg border text-sm ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-slate-50 border-slate-200'}`} value={locationFilter} onChange={(e) => setLocationFilter(e.target.value)} /></div>
+                        <div><label className="text-[10px] font-bold text-slate-400 uppercase">Disponibilité</label><select value={dayFilter} onChange={(e) => setDayFilter(e.target.value)} className={`w-full p-2 mt-1 rounded-lg border text-sm ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-slate-50 border-slate-200'}`}><option value="">Peu importe</option>{days.map(d => <option key={d} value={d}>{d}</option>)}</select></div>
+                        <div className="flex items-end gap-2"><div className="flex-1"><label className="text-[10px] font-bold text-slate-400 uppercase">Max {maxPrice}€/h</label><input type="range" min="10" max="50" step="1" className="w-full accent-[#E64545] mt-2" value={maxPrice} onChange={(e) => setMaxPrice(e.target.value)} /></div><button onClick={() => setOnlyVerified(!onlyVerified)} className={`p-2 rounded-lg text-xs font-bold border ${onlyVerified ? 'bg-green-100 text-green-600 border-green-200' : 'border-slate-200 text-slate-400'}`}>Vérifié</button></div>
+                    </div>
+                )}
+
+                {/* GRILLE DES RESULTATS */}
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+                    {loading ? <div className="col-span-full py-20 flex justify-center"><Loader2 className="animate-spin text-[#E64545]" size={32} /></div> 
+                    : filteredSitters.map((s) => {
+                        const isInstant = s.instantAvailableUntil && new Date(s.instantAvailableUntil) > new Date();
+                        return (
+                            <div key={s.id} onClick={() => setSelectedSitter(s)} className={`p-5 rounded-2xl border shadow-sm hover:shadow-lg transition-all cursor-pointer group relative ${isDark ? 'bg-slate-900 border-slate-800 hover:border-slate-700' : 'bg-white border-slate-200 hover:border-[#E64545]/30'}`}>
+                                {isInstant && <div className="absolute top-4 right-4 flex items-center gap-1.5 bg-green-500 text-white px-2 py-1 rounded-full text-[10px] font-bold uppercase shadow-sm animate-pulse"><Zap size={10} fill="currentColor"/> Dispo</div>}
+                                
+                                <div className="flex items-center gap-4 mb-4">
+                                    <div className="w-16 h-16 rounded-2xl overflow-hidden bg-slate-100 border border-slate-100 shrink-0">
+                                        <UserAvatar photoURL={s.photoURL} />
+                                    </div>
+                                    <div>
+                                        <h3 className="font-bold text-lg leading-tight">{s.name}</h3>
+                                        <div className="flex items-center gap-1 text-[#E0720F] mb-1"><Star size={12} fill="currentColor" /><span className="text-xs font-bold">{s.rating || 5}</span> <span className="text-[10px] text-slate-400 font-normal">({s.views || 0} vues)</span></div>
+                                        <div className="flex flex-wrap gap-1">
+                                            {s.hasCV && <span className="px-1.5 py-0.5 bg-blue-50 text-blue-600 rounded text-[9px] font-bold border border-blue-100">Vérifié</span>}
+                                            {s.hasCar && <span className="px-1.5 py-0.5 bg-slate-100 text-slate-500 rounded text-[9px] font-bold border border-slate-200">Auto</span>}
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <p className="text-xs text-slate-500 line-clamp-2 mb-4 h-8">{s.bio || "Aucune description..."}</p>
+                                
+                                <div className="flex items-center justify-between pt-4 border-t border-slate-50 dark:border-slate-800">
+                                    <span className="font-black text-lg text-slate-800 dark:text-white">{s.price}€<span className="text-xs font-normal text-slate-400">/h</span></span>
+                                    <button className="px-4 py-2 bg-slate-900 text-white text-xs font-bold rounded-lg group-hover:bg-[#E64545] transition-colors">Voir le profil</button>
+                                </div>
+                            </div>
+                        );
+                    })}
+                </div>
             </div>
-            </>
         )}
 
         {/* --- VUE MESSAGES --- */}
         {activeTab === "messages" && (
-          <div className="space-y-8 animate-in fade-in duration-500">
-            <h2 className={`text-4xl font-black italic uppercase font-sans tracking-tight leading-none text-left ${isDark ? 'text-white' : 'text-slate-800'}`}>Discussions</h2>
-            <div className="grid gap-6">
+          <div className="animate-in fade-in duration-500 pb-24">
+            <h2 className="text-2xl font-bold mb-6 px-1">Discussions</h2>
+            <div className="space-y-3">
               {offers.length === 0 ? 
-                 <div className={`py-24 text-center rounded-[4rem] border-2 border-dashed italic text-xl shadow-inner flex flex-col items-center justify-center gap-4 ${isDark ? 'bg-slate-900 border-slate-800 text-slate-500' : 'bg-white border-slate-100 text-slate-400'}`}>
-                    <Inbox size={48} className="opacity-20"/>
-                    <p>Aucune offre en cours...</p>
+                 <div className="py-20 text-center rounded-2xl border-2 border-dashed border-slate-200 text-slate-400 flex flex-col items-center gap-3">
+                    <Inbox size={40} className="opacity-50"/>
+                    <p className="text-sm font-medium">Aucune demande envoyée.</p>
                  </div>
               : offers.sort((a,b) => (b.lastMsgAt?.seconds || 0) - (a.lastMsgAt?.seconds || 0)).map(o => (
-                  <div key={o.id} onClick={() => markAsRead(o)} className={`p-10 rounded-[3.5rem] shadow-xl border flex items-center justify-between hover:border-[#E0720F]/30 cursor-pointer transition-all active:scale-[0.99] shadow-md ${isDark ? 'bg-slate-900 border-slate-800 text-white shadow-slate-950' : 'bg-white border-slate-100 text-slate-900 shadow-slate-100'} ${o.hasUnread && o.lastSenderId !== user.uid ? 'ring-2 ring-[#E64545]' : ''}`}>
-                    <div className="flex items-center gap-6 text-left">
-                        <div className={`w-20 h-20 rounded-3xl overflow-hidden shadow-sm border ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-[#E0720F]/10 border-[#E0720F]/20'}`}>
-                            {/* Récupération de l'image du Sitter */}
-                            <UserAvatar photoURL={sitters.find(x => x.id === o.sitterId)?.photoURL} />
+                  <div key={o.id} onClick={() => markAsRead(o)} className={`p-4 rounded-xl border shadow-sm bg-white dark:bg-slate-900 dark:border-slate-800 hover:shadow-md transition-all cursor-pointer flex items-center gap-4 group ${o.hasUnread && o.lastSenderId !== user.uid ? 'border-l-4 border-l-[#E64545]' : ''}`}>
+                     <div className="w-12 h-12 rounded-full overflow-hidden bg-slate-100 shrink-0 border">
+                        <UserAvatar photoURL={sitters.find(x => x.id === o.sitterId)?.photoURL} />
+                     </div>
+                     <div className="flex-1 min-w-0">
+                        <div className="flex justify-between items-baseline mb-1">
+                            <h4 className="font-bold text-slate-900 dark:text-white truncate">{o.sitterName}</h4>
+                            <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full uppercase ${o.status === 'accepted' ? 'bg-green-100 text-green-700' : 'bg-slate-100 text-slate-500'}`}>{o.status}</span>
                         </div>
-                        <div className="text-left"><h4 className="font-black text-2xl font-sans leading-tight">{o.sitterName}</h4>
-                        <p className={`text-[11px] font-bold truncate max-w-[150px] mt-1 ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>{o.lastMsg}</p>
-                         {/* BADGE PAIEMENT */}
-                        {o.status === 'paid_held' && <span className="text-[9px] bg-yellow-100 text-yellow-600 px-2 rounded-full mt-1 inline-block font-bold">Payé (En attente)</span>}
-                        {o.status === 'completed' && <span className="text-[9px] bg-green-100 text-green-600 px-2 rounded-full mt-1 inline-block font-bold">Terminé</span>}
-                        </div>
-                    </div>
-                    {o.hasUnread && o.lastSenderId !== user.uid && <div className="w-3 h-3 bg-[#E64545] rounded-full animate-pulse shadow-[#E64545]/20"></div>}
-                    <ChevronRight className="text-slate-200" size={24}/>
+                        <p className={`text-sm truncate ${o.hasUnread && o.lastSenderId !== user.uid ? 'font-bold text-slate-800 dark:text-slate-200' : 'text-slate-500'}`}>{o.lastMsg}</p>
+                     </div>
+                     <ChevronRight size={16} className="text-slate-300 group-hover:text-slate-600 transition-colors"/>
                   </div>
               ))}
             </div>
@@ -1170,139 +1060,104 @@ const ParentDashboard = ({ profile, user }) => {
         )}
       </main>
 
-      <div className={`fixed bottom-10 left-1/2 -translate-x-1/2 w-[90%] max-w-md backdrop-blur-xl p-2.5 rounded-[3rem] shadow-2xl flex items-center justify-between z-50 border ${isDark ? 'bg-slate-900/95 border-slate-800' : 'bg-slate-900/95 border-white/10'}`}>
-        <button onClick={() => setActiveTab("search")} className={`flex-1 flex flex-col items-center py-4 rounded-[2.5rem] transition-all duration-300 ${activeTab === "search" ? (isDark ? "bg-[#E64545] text-white" : "bg-[#E64545] text-white") : "text-slate-400 hover:text-white"}`}><Search size={22}/><span className="text-[9px] font-black uppercase mt-1.5 tracking-widest">Trouver</span></button>
-        <button onClick={() => setActiveTab("messages")} className={`flex-1 flex flex-col items-center py-4 rounded-[2.5rem] transition-all duration-300 relative ${activeTab === "messages" ? (isDark ? "bg-[#E64545] text-white" : "bg-[#E64545] text-white") : "text-slate-400 hover:text-white"}`}><MessageSquare size={22}/><span className="text-[9px] font-black uppercase mt-1.5 font-sans tracking-widest">Offres</span>{unreadCount > 0 && <div className="absolute top-3 right-1/3 w-2.5 h-2.5 bg-[#E0720F] rounded-full border-2 border-slate-900 animate-pulse"></div>}</button>
-        {/* NOUVEAU BOUTON REGLAGES EN BAS QUI OUVRE LES REGLAGES */}
-        <button onClick={() => setActiveTab("profile")} className={`flex-1 flex flex-col items-center py-4 rounded-[2.5rem] ${activeTab === "profile" ? (isDark ? "bg-[#E64545] text-white" : "bg-[#E64545] text-white") : "text-slate-400 hover:text-white"}`}>
-            <Settings size={22}/>
-            <span className="text-[9px] font-black uppercase mt-1.5 tracking-widest font-sans">Réglages</span>
-        </button>
-      </div>
-
-      {/* --- BANDEAU INSTALLATION PWA --- */}
-      <InstallPrompt />
-
-      {/* --- FAQ MODAL --- */}
-      {showFAQ && <FAQModal onClose={() => setShowFAQ(false)} />}
-      
-      {/* --- FENÊTRE MODALE DETAIL SITTER (CORRIGÉE HEADER MOBILE) --- */}
+      {/* MODALE DETAIL SITTER */}
       {selectedSitter && (
-        <div className="fixed inset-0 bg-slate-900/90 backdrop-blur-md z-[100] flex items-center justify-center p-4 md:p-6 text-slate-900">
-          <div className="bg-white w-full max-w-xl rounded-[4rem] overflow-hidden shadow-2xl animate-in slide-in-from-bottom-10 duration-500 flex flex-col max-h-[85vh]">
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[100] flex items-end md:items-center justify-center p-0 md:p-6 animate-in fade-in duration-200">
+          <div className="bg-white w-full max-w-lg rounded-t-[2rem] md:rounded-[2rem] overflow-hidden shadow-2xl animate-in slide-in-from-bottom-10 flex flex-col max-h-[90vh]">
             
-            {/* --- HEADER FIXE AVEC BOUTONS SEPARÉS --- */}
-            <div className="flex justify-between items-center p-6 border-b border-slate-100 bg-white z-50 shrink-0">
-                <button 
-                    onClick={() => {
-                        if (navigator.share) {
-                            navigator.share({
-                                title: `Profil de ${selectedSitter.name} sur BabyKeeper`,
-                                text: `Regarde ce profil de Sitter (${selectedSitter.price}€/h) : ${selectedSitter.bio}`,
-                                url: window.location.href
-                            });
-                        } else {
-                            alert("Lien copié dans le presse-papier !"); 
-                            navigator.clipboard.writeText(`Regarde ce profil de ${selectedSitter.name} sur BabyKeeper !`);
-                        }
-                    }} 
-                    className="p-4 rounded-full transition-all bg-blue-50 text-blue-600 hover:bg-blue-100 shadow-sm"
-                >
-                    <Share2 size={24}/>
-                </button>
-                
-                {/* NOM AU CENTRE */}
-                <h3 className="text-xl font-black italic uppercase tracking-tighter text-slate-800">{selectedSitter.name}</h3>
-
-                <button onClick={() => setSelectedSitter(null)} className="p-4 rounded-full transition-all bg-slate-100 text-slate-400 hover:bg-red-50 hover:text-red-500 shadow-sm">
-                    <X size={24}/>
-                </button>
+            {/* Header Modal */}
+            <div className="relative h-32 bg-slate-100">
+                <div className="absolute inset-0 bg-gradient-to-r from-orange-100 to-red-50 opacity-50"></div>
+                <button onClick={() => setSelectedSitter(null)} className="absolute top-4 right-4 p-2 bg-black/10 hover:bg-black/20 rounded-full text-slate-600 transition-colors z-10"><X size={20}/></button>
             </div>
-
-            {/* --- CONTENU DÉFILANT --- */}
-            <div className="overflow-y-auto p-8 space-y-8 custom-scrollbar">
-                
-                <div className="flex flex-col items-center gap-2">
-                     <div className="w-32 h-32 rounded-[2.5rem] overflow-hidden border-4 shadow-2xl border-white shadow-slate-200">
-                         <UserAvatar photoURL={selectedSitter.photoURL} />
-                     </div>
-                     <RatingStars rating={selectedSitter.rating || 5} size={24}/>
+            
+            <div className="px-6 pb-6 -mt-12 overflow-y-auto custom-scrollbar">
+                <div className="flex justify-between items-end mb-4">
+                    <div className="w-24 h-24 rounded-2xl border-4 border-white shadow-lg overflow-hidden bg-white">
+                        <UserAvatar photoURL={selectedSitter.photoURL} />
+                    </div>
+                    <div className="flex gap-2 mb-1">
+                         <button className="p-2 bg-slate-100 rounded-lg text-slate-500 hover:text-blue-500 transition-colors"><Share2 size={18}/></button>
+                         <button onClick={() => toggleFavorite(selectedSitter.id)} className={`p-2 rounded-lg transition-colors ${profile.favorites?.includes(selectedSitter.id) ? 'bg-red-50 text-red-500' : 'bg-slate-100 text-slate-500'}`}><Heart size={18} fill={profile.favorites?.includes(selectedSitter.id) ? "currentColor" : "none"}/></button>
+                    </div>
                 </div>
 
-                <div className="space-y-6 text-left">
-                    <div className="p-8 rounded-[3.5rem] space-y-6 shadow-inner border bg-slate-50 border-slate-100/50 shadow-slate-100">
-                        <div className="flex justify-between items-center"><span className="font-black text-slate-500 text-[11px] uppercase tracking-widest italic">Lieu</span><span className="font-black uppercase">{selectedSitter.city || "France"}</span></div>
-                        <div className="flex justify-between items-center"><span className="font-black text-slate-500 text-[11px] uppercase tracking-widest italic">Visites</span><span className="font-black uppercase">{selectedSitter.views || 0} 👀</span></div>
-                        {selectedSitter.level && !isPet && <div className="flex justify-between items-center"><span className="font-black text-slate-500 text-[11px] uppercase tracking-widest italic">Niveau</span><span className="font-black uppercase text-[#E0720F]">NIV {selectedSitter.level} 👑</span></div>}
-                        {selectedSitter.level && isPet && <div className="flex justify-between items-center"><span className="font-black text-slate-500 text-[11px] uppercase tracking-widest italic">Niveau</span><span className="font-black uppercase text-[#E0720F]">NIV {selectedSitter.level} 🐾</span></div>}
-                        
-                        {/* LISTE COMPETENCES DANS PROFIL COMPLET */}
-                        {selectedSitter.skills && (
-                            <div className="flex flex-wrap gap-2 mt-4 pt-4 border-t border-slate-100">
-                                {selectedSitter.skills.map((skill, i) => (
-                                    <span key={i} className="text-[10px] font-bold uppercase bg-slate-100 text-slate-600 px-3 py-1.5 rounded-xl border flex items-center gap-1">✨ {skill}</span>
-                                ))}
-                            </div>
-                        )}
+                <div className="mb-6">
+                    <h2 className="text-2xl font-bold text-slate-900">{selectedSitter.name}</h2>
+                    <div className="flex items-center gap-2 text-sm text-slate-500 mt-1">
+                        <MapPin size={14}/> {selectedSitter.city} • {calculateAge(selectedSitter.birthDate)} ans
                     </div>
-                    
-                    <div className="space-y-2">
-                        <h4 className="text-[11px] font-black uppercase tracking-[0.3em] text-slate-500 ml-5 italic">Bio</h4>
-                        <p className="p-6 bg-slate-50 rounded-3xl text-sm italic leading-relaxed text-slate-600 border border-slate-100">"{selectedSitter.bio}"</p>
+                    {/* Tags Compétences */}
+                    <div className="flex flex-wrap gap-2 mt-3">
+                         {selectedSitter.skills?.map((s,i) => <span key={i} className="px-2 py-1 bg-slate-100 text-slate-600 rounded-md text-xs font-bold border border-slate-200">{s}</span>)}
+                    </div>
+                </div>
+
+                <div className="space-y-4">
+                    <div className="p-4 bg-slate-50 rounded-xl border border-slate-100">
+                        <h4 className="text-xs font-bold uppercase text-slate-400 mb-2">À propos</h4>
+                        <p className="text-sm text-slate-600 italic leading-relaxed">"{selectedSitter.bio}"</p>
                     </div>
 
                     {sitterReviews.length > 0 && (
-                        <div className="space-y-4">
-                            <h4 className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-500 ml-5 italic">Avis de parents</h4>
-                            {sitterReviews.map((r, idx) => (
-                                <div key={idx} className="p-6 rounded-[2rem] shadow-sm space-y-3 border bg-white border-slate-100">
-                                    <div className="flex justify-between items-center"><span className="font-black text-xs">{r.parentName}</span><RatingStars rating={r.rating} size={12} /></div>
-                                    <p className="text-xs italic leading-relaxed text-slate-500">"{r.text}"</p>
-                                </div>
-                            ))}
+                        <div>
+                            <h4 className="text-xs font-bold uppercase text-slate-400 mb-2">Avis récents</h4>
+                            <div className="space-y-2">
+                                {sitterReviews.slice(0, 2).map((r, i) => (
+                                    <div key={i} className="p-3 bg-white border border-slate-100 rounded-lg text-sm">
+                                        <div className="flex justify-between mb-1"><span className="font-bold">{r.parentName}</span><RatingStars rating={r.rating} size={10}/></div>
+                                        <p className="text-slate-500 text-xs">"{r.text}"</p>
+                                    </div>
+                                ))}
+                            </div>
                         </div>
                     )}
-                </div>
 
-                <div className="space-y-5">
-                  <div className="grid grid-cols-2 gap-4 text-left">
-                      <div className="space-y-2">
-                          <label className="text-[10px] font-black uppercase italic ml-4 text-slate-400 font-sans">Prix (€/H)</label>
-                          <input id="neg-p" type="number" defaultValue={selectedSitter.price} className="w-full p-6 rounded-[2.5rem] outline-none font-black text-2xl shadow-inner bg-slate-50 text-slate-800" />
-                      </div>
-                      <div className="space-y-2">
-                          <label className="text-[10px] font-black uppercase italic ml-4 text-slate-400 font-sans">Temps (H)</label>
-                          <input id="neg-h" type="number" defaultValue="2" className="w-full p-6 rounded-[2.5rem] outline-none font-black text-2xl shadow-inner bg-slate-50 text-slate-800" />
-                      </div>
-                  </div>
-
-                   <div className="flex justify-between items-center bg-slate-50 p-4 rounded-2xl">
-                     <div className="flex items-center gap-2 text-xs font-bold text-slate-500"><Car size={16}/> {selectedSitter.hasCar ? "Véhiculé 🚗" : "Non véhiculé"}</div>
-                  </div>
-
-                  {/* BOUTON ENVOYER DEMANDE : DESACTIVÉ SI C'EST TON PROPRE PROFIL */}
-                  {selectedSitter.id === user.uid ? (
-                      <button disabled className="w-full py-8 rounded-[2.5rem] font-black text-sm shadow-inner uppercase tracking-[0.2em] bg-slate-200 text-slate-400 cursor-not-allowed">
-                          C'EST VOTRE PROFIL (APERÇU)
-                      </button>
-                  ) : (
-                      <button onClick={() => {
+                    {/* Zone Réservation */}
+                    <div className="pt-4 border-t border-slate-100 grid grid-cols-2 gap-3">
+                        <div>
+                            <label className="text-[10px] font-bold uppercase text-slate-400">Prix Proposé</label>
+                            <input id="neg-p" type="number" defaultValue={selectedSitter.price} className="w-full p-3 rounded-xl bg-slate-50 border border-slate-200 font-bold text-slate-800" />
+                        </div>
+                        <div>
+                             <label className="text-[10px] font-bold uppercase text-slate-400">Durée (Heures)</label>
+                             <input id="neg-h" type="number" defaultValue="2" className="w-full p-3 rounded-xl bg-slate-50 border border-slate-200 font-bold text-slate-800" />
+                        </div>
+                    </div>
+                    
+                    <button onClick={() => {
                           const p = document.getElementById('neg-p').value;
                           const h = document.getElementById('neg-h').value;
                           handleBooking(selectedSitter, p, h);
-                      }} className="w-full py-8 rounded-[2.5rem] font-black text-sm shadow-xl shadow-[#E64545]/20 uppercase tracking-[0.2em] active:scale-95 transition-all bg-[#E64545] text-white hover:bg-[#E64545]/90">ENVOYER LA DEMANDE</button>
-                  )}
+                      }} className="w-full py-4 bg-[#E64545] text-white rounded-xl font-bold uppercase shadow-lg hover:brightness-110 active:scale-95 transition-all">Envoyer la demande</button>
                 </div>
             </div>
           </div>
         </div>
       )}
+
+      {/* NAVIGATION MOBILE BAS */}
+      <div className="md:hidden fixed bottom-6 left-4 right-4 bg-slate-900/90 backdrop-blur-lg text-white p-2 rounded-2xl shadow-2xl flex justify-around items-center z-50 border border-slate-700/50">
+          <button onClick={() => setActiveTab("search")} className={`p-3 rounded-xl transition-all ${activeTab === 'search' ? 'bg-[#E64545] text-white' : 'text-slate-400'}`}>
+              <Search size={20} />
+          </button>
+          <button onClick={() => setActiveTab("messages")} className={`p-3 rounded-xl transition-all relative ${activeTab === 'messages' ? 'bg-[#E64545] text-white' : 'text-slate-400'}`}>
+              <MessageSquare size={20} />
+              {unreadCount > 0 && <span className="absolute top-2 right-2 w-2 h-2 bg-[#E0720F] rounded-full"></span>}
+          </button>
+          <button onClick={() => setActiveTab("settings")} className={`p-3 rounded-xl transition-all ${activeTab === 'settings' ? 'bg-[#E64545] text-white' : 'text-slate-400'}`}>
+              <User size={20} />
+          </button>
+      </div>
+
+      <InstallPrompt />
+      {showFAQ && <FAQModal onClose={() => setShowFAQ(false)} />}
     </div>
   );
 };
 
 // ==========================================
-// 7. DASHBOARD SITTER (VERSION PRO & MODERNISÉE)
+// 9. DASHBOARD SITTER (VERSION PRO)
 // ==========================================
 
 const SitterDashboard = ({ user, profile }) => {
@@ -1327,16 +1182,9 @@ const SitterDashboard = ({ user, profile }) => {
   const [views, setViews] = useState(0);
 
   const isPet = profile.serviceType === 'pet';
-
-  // LISTE DES COMPÉTENCES DISPONIBLES
   const AVAILABLE_SKILLS = isPet 
     ? ["🚗 Véhiculé", "💊 Soins", "🏃 Sportif", "🏠 Jardin Clos", "✂️ Toilettage", "🎓 Éducation"]
     : ["🚗 Permis B", "⛑️ PSC1", "🇬🇧 Anglais", "📚 Devoirs", "🎨 Créatif", "🍳 Cuisine"];
-
-  const toggleServiceType = async () => {
-      const newType = isPet ? 'baby' : 'pet';
-      await updateDoc(doc(db, 'artifacts', appId, 'users', user.uid, 'settings', 'profile'), { serviceType: newType });
-  };
 
   useEffect(() => {
     localStorage.setItem('dark', isDark);
@@ -1350,24 +1198,14 @@ const SitterDashboard = ({ user, profile }) => {
         else setIsInstant(false);
       }
     });
-    const qOffers = query(
-      collection(db, 'artifacts', appId, 'public', 'data', 'offers'), 
-      where("sitterId", "==", user.uid)
-    );
-    const unsubOffers = onSnapshot(qOffers, (snap) => {
-      setOffers(snap.docs.map(d => ({ id: d.id, ...d.data() })));
-    });
-    const unsubReviews = onSnapshot(collection(db, 'artifacts', appId, 'public', 'data', 'sitters', user.uid, 'reviews'), (snap) => {
-        setReviews(snap.docs.map(d => d.data()));
-    });
-    return () => { unsubPublic(); unsubOffers(); unsubReviews(); };
+    const qOffers = query(collection(db, 'artifacts', appId, 'public', 'data', 'offers'), where("sitterId", "==", user.uid));
+    const unsubOffers = onSnapshot(qOffers, (snap) => { setOffers(snap.docs.map(d => ({ id: d.id, ...d.data() }))); });
+    return () => { unsubPublic(); unsubOffers(); };
   }, [user.uid, isDark]);
 
   const totalEarnings = useMemo(() => {
-      return offers
-        .filter(o => ['accepted', 'paid_held', 'completed', 'reviewed'].includes(o.status))
-        .reduce((acc, o) => acc + ((parseFloat(o.price) || 0) * (parseFloat(o.hours) || 0)), 0);
-    }, [offers]);
+      return offers.filter(o => ['accepted', 'paid_held', 'completed', 'reviewed'].includes(o.status)).reduce((acc, o) => acc + ((parseFloat(o.price) || 0) * (parseFloat(o.hours) || 0)), 0);
+  }, [offers]);
 
   const [availability, setAvailability] = useState({
     Lundi: { active: false, start: "08:00", end: "18:00" }, Mardi: { active: false, start: "08:00", end: "18:00" },
@@ -1379,19 +1217,16 @@ const SitterDashboard = ({ user, profile }) => {
   const unreadCount = offers.filter(o => o.hasUnread && o.lastSenderId !== user.uid).length;
 
   const toggleSkill = (skill) => {
-     if (skills.includes(skill)) setSkills(skills.filter(s => s !== skill));
-     else setSkills([...skills, skill]);
+     if (skills.includes(skill)) setSkills(skills.filter(s => s !== skill)); else setSkills([...skills, skill]);
   };
 
   const [isInstant, setIsInstant] = useState(false);
-
   useEffect(() => {
      const checkInstant = async () => {
          const docSnap = await getDoc(doc(db, 'artifacts', appId, 'public', 'data', 'sitters', user.uid));
          if (docSnap.exists()) {
             const data = docSnap.data();
-            if (data.instantAvailableUntil && new Date(data.instantAvailableUntil) > new Date()) setIsInstant(true);
-            else setIsInstant(false);
+            if (data.instantAvailableUntil && new Date(data.instantAvailableUntil) > new Date()) setIsInstant(true); else setIsInstant(false);
          }
      }
      checkInstant();
@@ -1401,22 +1236,16 @@ const SitterDashboard = ({ user, profile }) => {
      const newStatus = !isInstant;
      setIsInstant(newStatus);
      const until = newStatus ? new Date(Date.now() + 2 * 60 * 60 * 1000).toISOString() : null;
-     await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'sitters', user.uid), { 
-         instantAvailableUntil: until 
-     });
+     await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'sitters', user.uid), { instantAvailableUntil: until });
   };
 
   const handleSave = async () => {
     if (!bio || !price || !city || !birthDate) return alert("Veuillez remplir : Bio, Tarif, Ville et Date de naissance.");
-    const age = calculateAge(birthDate);
-    if (age < 16) return alert("Age minimum requis : 16 ans.");
-
+    if (calculateAge(birthDate) < 16) return alert("Age minimum requis : 16 ans.");
     setLoading(true);
     try {
       await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'sitters', user.uid), {
-        name: profile.name, serviceType: profile.serviceType, 
-        photoURL: profile.photoURL || "", 
-        views: views || 0,
+        name: profile.name, serviceType: profile.serviceType, photoURL: profile.photoURL || "", views: views || 0,
         phone: profile.phone || "", bio: bio.trim(), price, birthDate, availability, cvName, hasCV: !!cvName, city, rating: 5, uid: user.uid, level, hasCar, skills, updatedAt: new Date().toISOString()
       }, { merge: true });
       setSaveStatus("Enregistré"); setTimeout(() => setSaveStatus(""), 3000);
@@ -1424,20 +1253,17 @@ const SitterDashboard = ({ user, profile }) => {
   };
 
   const handleDeleteAd = async () => {
-    if (window.confirm("⚠️ Supprimer votre annonce des résultats de recherche ?")) {
+    if (window.confirm("⚠️ Supprimer votre annonce ?")) {
       setLoading(true);
       try {
         await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'sitters', user.uid));
-        setBio(""); setPrice(""); setCity(""); 
-        alert("Annonce supprimée.");
+        setBio(""); setPrice(""); setCity(""); alert("Annonce supprimée.");
       } catch (e) { console.error(e); } finally { setLoading(false); }
     }
   };
 
   const markAsRead = async (offer) => {
-    if (offer.hasUnread && offer.lastSenderId !== user.uid) {
-        await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'offers', offer.id), { hasUnread: false });
-    }
+    if (offer.hasUnread && offer.lastSenderId !== user.uid) { await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'offers', offer.id), { hasUnread: false }); }
     setActiveChat(offer);
   };
 
@@ -1447,12 +1273,8 @@ const SitterDashboard = ({ user, profile }) => {
   return (
     <div className={`min-h-screen font-sans pb-24 transition-colors duration-300 ${isDark ? 'bg-slate-950 text-slate-100' : 'bg-slate-50 text-slate-800'}`}>
       
-      {/* NAVBAR COMPACTE ET MODERNE */}
       <nav className={`px-4 py-3 sticky top-0 z-40 border-b flex justify-between items-center backdrop-blur-md ${isDark ? 'bg-slate-900/90 border-slate-800' : 'bg-white/90 border-slate-200'}`}>
-        <div className="flex items-center gap-2">
-            <SitFinderLogo className="w-8 h-8" glow={false} />
-            <span className="font-bold text-lg tracking-tight hidden md:block">BabyKeeper<span className="text-[#E64545]">Pro</span></span>
-        </div>
+        <div className="flex items-center gap-2"><SitFinderLogo className="w-8 h-8" glow={false} /><span className="font-bold text-lg hidden md:block">BabyKeeper<span className="text-[#E64545]">Pro</span></span></div>
         <div className="flex items-center gap-2">
           <ModeSwitcher currentRole={profile.role} currentService={profile.serviceType || 'baby'} uid={user.uid} />
           <button onClick={() => setShowFAQ(true)} className="p-2 hover:bg-slate-100 rounded-full transition-colors dark:hover:bg-slate-800"><HelpCircle size={18} /></button>
@@ -1463,186 +1285,76 @@ const SitterDashboard = ({ user, profile }) => {
       </nav>
 
       <main className="max-w-5xl mx-auto p-4 md:p-6 space-y-6">
-        
         {activeTab === "profile" && (
           <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 space-y-6">
-            
-            {/* EN-TÊTE DASHBOARD : STATS & ACTIONS */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                {/* Carte Profil Mini */}
                 <div className={`p-5 rounded-2xl border flex items-center gap-4 shadow-sm ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'}`}>
-                    <div className="w-16 h-16 rounded-xl overflow-hidden border bg-slate-100 shrink-0">
-                        <UserAvatar photoURL={profile.photoURL} />
-                    </div>
-                    <div>
-                        <h2 className="font-bold text-lg leading-tight">{profile.name}</h2>
-                        <span className={`text-xs font-semibold px-2 py-0.5 rounded-md mt-1 inline-block ${isPet ? 'bg-orange-100 text-orange-600' : 'bg-red-100 text-red-600'}`}>
-                            {isPet ? "Pet Sitter 🐾" : "Baby Sitter 🍼"}
-                        </span>
-                    </div>
+                    <div className="w-16 h-16 rounded-xl overflow-hidden border bg-slate-100 shrink-0"><UserAvatar photoURL={profile.photoURL} /></div>
+                    <div><h2 className="font-bold text-lg leading-tight">{profile.name}</h2><span className={`text-xs font-semibold px-2 py-0.5 rounded-md mt-1 inline-block ${isPet ? 'bg-orange-100 text-orange-600' : 'bg-red-100 text-red-600'}`}>{isPet ? "Pet Sitter 🐾" : "Baby Sitter 🍼"}</span></div>
                 </div>
-
-                {/* Carte Revenus */}
                 <div className={`p-5 rounded-2xl border flex flex-col justify-center shadow-sm relative overflow-hidden group ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'}`}>
                     <div className="absolute right-[-10px] top-[-10px] opacity-5 group-hover:scale-110 transition-transform"><Wallet size={80} /></div>
-                    <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Gains cumulés</p>
-                    <h3 className="text-3xl font-bold tracking-tight mt-1">{totalEarnings}€</h3>
+                    <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Gains cumulés</p><h3 className="text-3xl font-bold tracking-tight mt-1">{totalEarnings}€</h3>
                 </div>
-
-                {/* Bouton Boost (Dispo Immédiate) */}
-                <button 
-                    onClick={toggleInstantAvailability} 
-                    className={`p-5 rounded-2xl border flex items-center justify-between shadow-sm transition-all active:scale-95 ${
-                        isInstant 
-                        ? 'bg-green-600 border-green-500 text-white shadow-green-200' 
-                        : (isDark ? 'bg-slate-900 border-slate-800 hover:bg-slate-800' : 'bg-white border-slate-200 hover:border-green-300')
-                    }`}
-                >
-                    <div className="text-left">
-                        <p className={`text-xs font-bold uppercase tracking-wider ${isInstant ? 'text-green-100' : 'text-slate-400'}`}>Mode Urgence</p>
-                        <h3 className="text-lg font-bold mt-1">{isInstant ? "Activé ⚡" : "Je suis dispo"}</h3>
-                    </div>
-                    <div className={`p-3 rounded-full ${isInstant ? 'bg-white/20' : 'bg-green-50 text-green-600'}`}>
-                        <Power size={20} />
-                    </div>
+                <button onClick={toggleInstantAvailability} className={`p-5 rounded-2xl border flex items-center justify-between shadow-sm transition-all active:scale-95 ${isInstant ? 'bg-green-600 border-green-500 text-white shadow-green-200' : (isDark ? 'bg-slate-900 border-slate-800 hover:bg-slate-800' : 'bg-white border-slate-200 hover:border-green-300')}`}>
+                    <div className="text-left"><p className={`text-xs font-bold uppercase tracking-wider ${isInstant ? 'text-green-100' : 'text-slate-400'}`}>Mode Urgence</p><h3 className="text-lg font-bold mt-1">{isInstant ? "Activé ⚡" : "Je suis dispo"}</h3></div>
+                    <div className={`p-3 rounded-full ${isInstant ? 'bg-white/20' : 'bg-green-50 text-green-600'}`}><Power size={20} /></div>
                 </button>
             </div>
 
-            {/* FORMULAIRE D'EDITION (Compact & Grid) */}
             <div className={`rounded-2xl border shadow-sm overflow-hidden ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'}`}>
                 <div className="p-4 border-b border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/30 flex justify-between items-center">
                     <h3 className="font-bold text-sm uppercase tracking-wide text-slate-500">Mon Annonce</h3>
                     {views > 0 && <span className="text-xs font-bold bg-slate-200 dark:bg-slate-700 px-2 py-1 rounded-md text-slate-600 dark:text-slate-300">{views} Vues</span>}
                 </div>
-
                 <div className="p-6 grid grid-cols-1 md:grid-cols-12 gap-6">
-                    
-                    {/* Colonne Gauche : Infos Clés */}
                     <div className="md:col-span-4 space-y-4">
-                        <div className="space-y-1">
-                            <label className="text-xs font-bold text-slate-400 uppercase ml-1">Tarif horaire (€)</label>
-                            <input type="number" placeholder="10" className={`w-full p-3 rounded-xl border outline-none focus:ring-2 focus:ring-[#E64545]/20 font-bold text-lg transition-all ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-slate-50 border-slate-200'}`} value={price} onChange={(e) => setPrice(e.target.value)} />
-                        </div>
-                        <div className="space-y-1">
-                            <label className="text-xs font-bold text-slate-400 uppercase ml-1">Ville</label>
-                            <input type="text" placeholder="Paris, Lyon..." className={`w-full p-3 rounded-xl border outline-none focus:ring-2 focus:ring-[#E64545]/20 font-semibold transition-all ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-slate-50 border-slate-200'}`} value={city} onChange={(e) => setCity(e.target.value)} />
-                        </div>
-                        <div className="space-y-1">
-                            <label className="text-xs font-bold text-slate-400 uppercase ml-1">Date de naissance</label>
-                            <input type="date" className={`w-full p-3 rounded-xl border outline-none focus:ring-2 focus:ring-[#E64545]/20 font-medium transition-all ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-slate-50 border-slate-200'}`} value={birthDate} onChange={(e) => setBirthDate(e.target.value)} />
-                        </div>
-                        
-                        <div className="pt-2">
-                             <button onClick={() => setHasCar(!hasCar)} className={`w-full py-3 px-4 rounded-xl text-xs font-bold uppercase transition-all flex items-center justify-center gap-2 border ${hasCar ? "bg-[#E0720F]/10 border-[#E0720F] text-[#E0720F]" : "bg-slate-50 border-slate-200 text-slate-400 dark:bg-slate-800 dark:border-slate-700"}`}>
-                                <Car size={16}/> {hasCar ? "Véhiculé" : "Non véhiculé"}
-                            </button>
-                        </div>
+                        <div className="space-y-1"><label className="text-xs font-bold text-slate-400 uppercase ml-1">Tarif (€)</label><input type="number" placeholder="10" className={`w-full p-3 rounded-xl border outline-none font-bold text-lg ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-slate-50 border-slate-200'}`} value={price} onChange={(e) => setPrice(e.target.value)} /></div>
+                        <div className="space-y-1"><label className="text-xs font-bold text-slate-400 uppercase ml-1">Ville</label><input type="text" placeholder="Ville" className={`w-full p-3 rounded-xl border outline-none font-semibold ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-slate-50 border-slate-200'}`} value={city} onChange={(e) => setCity(e.target.value)} /></div>
+                        <div className="space-y-1"><label className="text-xs font-bold text-slate-400 uppercase ml-1">Naissance</label><input type="date" className={`w-full p-3 rounded-xl border outline-none font-medium ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-slate-50 border-slate-200'}`} value={birthDate} onChange={(e) => setBirthDate(e.target.value)} /></div>
+                        <div className="pt-2"><button onClick={() => setHasCar(!hasCar)} className={`w-full py-3 px-4 rounded-xl text-xs font-bold uppercase border ${hasCar ? "bg-[#E0720F]/10 border-[#E0720F] text-[#E0720F]" : "bg-slate-50 border-slate-200 text-slate-400 dark:bg-slate-800 dark:border-slate-700"}`}><Car size={16} className="inline mr-2"/> {hasCar ? "Véhiculé" : "Non véhiculé"}</button></div>
                     </div>
-
-                    {/* Colonne Droite : Bio & Skills */}
                     <div className="md:col-span-8 space-y-4">
-                        <div className="space-y-1">
-                            <label className="text-xs font-bold text-slate-400 uppercase ml-1">Présentation (Bio)</label>
-                            <textarea placeholder="Bonjour, je m'appelle..." className={`w-full p-4 rounded-xl border outline-none focus:ring-2 focus:ring-[#E64545]/20 h-32 resize-none text-sm leading-relaxed transition-all ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-slate-50 border-slate-200'}`} value={bio} onChange={(e) => setBio(e.target.value)} />
-                        </div>
-
-                        <div className="space-y-2">
-                            <label className="text-xs font-bold text-slate-400 uppercase ml-1">Mes Atouts</label>
-                            <div className="flex flex-wrap gap-2">
-                                {AVAILABLE_SKILLS.map((skill, index) => (
-                                    <button 
-                                        key={index}
-                                        onClick={() => toggleSkill(skill)}
-                                        className={`px-3 py-1.5 rounded-lg text-xs font-bold border transition-all ${skills.includes(skill) ? 'bg-slate-800 text-white border-slate-800 dark:bg-white dark:text-slate-900' : 'bg-white text-slate-500 border-slate-200 hover:border-slate-300 dark:bg-slate-800 dark:border-slate-700'}`}
-                                    >
-                                        {skill}
-                                    </button>
-                                ))}
-                            </div>
-                        </div>
-
-                        {/* CV Upload Compact */}
-                         <div className="pt-2">
-                            <input type="file" id="cv-upload" className="hidden" onChange={(e) => setCvName(e.target.files[0]?.name || "")} accept=".pdf,image/*" />
-                            <label htmlFor="cv-upload" className={`flex items-center gap-3 p-3 rounded-xl border border-dashed cursor-pointer transition-colors hover:bg-slate-50 dark:hover:bg-slate-800 ${isDark ? 'border-slate-700' : 'border-slate-300'}`}>
-                                <div className="p-2 bg-blue-50 text-blue-500 rounded-lg"><FileText size={16}/></div>
-                                <span className="text-xs font-semibold text-slate-500 flex-1 truncate">{cvName || "Ajouter un CV (PDF/Image)"}</span>
-                                {cvName && <CheckCircle2 size={16} className="text-green-500"/>}
-                            </label>
-                        </div>
+                        <div className="space-y-1"><label className="text-xs font-bold text-slate-400 uppercase ml-1">Bio</label><textarea placeholder="Votre présentation..." className={`w-full p-4 rounded-xl border outline-none h-32 resize-none text-sm leading-relaxed ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-slate-50 border-slate-200'}`} value={bio} onChange={(e) => setBio(e.target.value)} /></div>
+                        <div className="space-y-2"><label className="text-xs font-bold text-slate-400 uppercase ml-1">Compétences</label><div className="flex flex-wrap gap-2">{AVAILABLE_SKILLS.map((skill, index) => (<button key={index} onClick={() => toggleSkill(skill)} className={`px-3 py-1.5 rounded-lg text-xs font-bold border ${skills.includes(skill) ? 'bg-slate-800 text-white border-slate-800 dark:bg-white dark:text-slate-900' : 'bg-white text-slate-500 border-slate-200'}`}>{skill}</button>))}</div></div>
                     </div>
                 </div>
             </div>
 
-            {/* Disponibilités (Nouveau Design Compact) */}
             <div className={`rounded-2xl border shadow-sm overflow-hidden ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'}`}>
-                <div className="p-4 border-b border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/30">
-                    <h3 className="font-bold text-sm uppercase tracking-wide text-slate-500">Disponibilités Type</h3>
-                </div>
+                <div className="p-4 border-b border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/30"><h3 className="font-bold text-sm uppercase tracking-wide text-slate-500">Disponibilités</h3></div>
                 <div className="divide-y divide-slate-100 dark:divide-slate-800">
                     {Object.entries(availability).map(([day, data]) => (
-                        <div key={day} className="flex items-center justify-between p-3 md:px-6 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
+                        <div key={day} className="flex items-center justify-between p-3 md:px-6 hover:bg-slate-50 dark:hover:bg-slate-800/50">
                             <div className="flex items-center gap-3">
-                                <button 
-                                    onClick={() => setAvailability(p => ({...p, [day]: {...p[day], active: !p[day].active}}))}
-                                    className={`w-10 h-6 rounded-full relative transition-colors ${data.active ? 'bg-[#E64545]' : 'bg-slate-200 dark:bg-slate-700'}`}
-                                >
-                                    <div className={`absolute top-1 w-4 h-4 bg-white rounded-full shadow-sm transition-transform ${data.active ? 'left-5' : 'left-1'}`}></div>
-                                </button>
+                                <button onClick={() => setAvailability(p => ({...p, [day]: {...p[day], active: !p[day].active}}))} className={`w-10 h-6 rounded-full relative transition-colors ${data.active ? 'bg-[#E64545]' : 'bg-slate-200 dark:bg-slate-700'}`}><div className={`absolute top-1 w-4 h-4 bg-white rounded-full shadow-sm transition-transform ${data.active ? 'left-5' : 'left-1'}`}></div></button>
                                 <span className={`text-sm font-bold w-20 ${data.active ? '' : 'text-slate-400'}`}>{day}</span>
                             </div>
-                            
-                            {data.active ? (
-                                <div className="flex items-center gap-2 text-sm bg-slate-100 dark:bg-slate-800 px-3 py-1 rounded-lg border border-slate-200 dark:border-slate-700">
-                                    <input type="time" className="bg-transparent outline-none font-medium w-20 text-center" value={data.start} onChange={(e) => setAvailability(p => ({...p, [day]: {...p[day], start: e.target.value}}))} />
-                                    <span className="text-slate-400">-</span>
-                                    <input type="time" className="bg-transparent outline-none font-medium w-20 text-center" value={data.end} onChange={(e) => setAvailability(p => ({...p, [day]: {...p[day], end: e.target.value}}))} />
-                                </div>
-                            ) : (
-                                <span className="text-xs text-slate-400 italic">Indisponible</span>
-                            )}
+                            {data.active ? (<div className="flex items-center gap-2 text-sm bg-slate-100 dark:bg-slate-800 px-3 py-1 rounded-lg border border-slate-200 dark:border-slate-700"><input type="time" className="bg-transparent outline-none font-medium w-20 text-center" value={data.start} onChange={(e) => setAvailability(p => ({...p, [day]: {...p[day], start: e.target.value}}))} /><span className="text-slate-400">-</span><input type="time" className="bg-transparent outline-none font-medium w-20 text-center" value={data.end} onChange={(e) => setAvailability(p => ({...p, [day]: {...p[day], end: e.target.value}}))} /></div>) : (<span className="text-xs text-slate-400 italic">Indisponible</span>)}
                         </div>
                     ))}
                 </div>
             </div>
 
-            {/* Barre d'action finale */}
             <div className="flex gap-3 pt-2 pb-24">
-                <button onClick={handleDeleteAd} className="px-6 py-3 rounded-xl border border-red-100 text-red-500 font-bold text-sm hover:bg-red-50 transition-colors">
-                   Supprimer
-                </button>
-                <button onClick={handleSave} disabled={loading} className="flex-1 bg-[#E64545] hover:bg-red-700 text-white font-bold py-3 rounded-xl shadow-md active:scale-[0.98] transition-all flex items-center justify-center gap-2">
-                    {loading ? <Loader2 className="animate-spin" size={20} /> : <><Save size={18}/> {saveStatus || "Mettre à jour l'annonce"}</>}
-                </button>
+                <button onClick={handleDeleteAd} className="px-6 py-3 rounded-xl border border-red-100 text-red-500 font-bold text-sm hover:bg-red-50">Supprimer</button>
+                <button onClick={handleSave} disabled={loading} className="flex-1 bg-[#E64545] text-white font-bold py-3 rounded-xl shadow-md active:scale-[0.98] transition-all flex items-center justify-center gap-2">{loading ? <Loader2 className="animate-spin" size={20} /> : <><Save size={18}/> {saveStatus || "Mettre à jour"}</>}</button>
             </div>
           </div>
         )}
 
-        {/* --- VUE MESSAGES --- */}
         {activeTab === "messages" && (
           <div className="animate-in fade-in duration-500 pb-24">
-            <h2 className="text-2xl font-bold mb-6 px-2">Mes Discussions</h2>
+            <h2 className="text-2xl font-bold mb-6 px-2">Discussions</h2>
             <div className="space-y-3">
               {offers.length === 0 ? 
-                 <div className="py-20 text-center rounded-2xl border-2 border-dashed border-slate-200 text-slate-400 flex flex-col items-center gap-3">
-                    <Inbox size={40} className="opacity-50"/>
-                    <p className="text-sm font-medium">Aucune demande reçue pour le moment.</p>
-                 </div>
+                 <div className="py-20 text-center rounded-2xl border-2 border-dashed border-slate-200 text-slate-400 flex flex-col items-center gap-3"><Inbox size={40} className="opacity-50"/><p className="text-sm font-medium">Aucune demande reçue.</p></div>
               : offers.sort((a,b) => (b.lastMsgAt?.seconds || 0) - (a.lastMsgAt?.seconds || 0)).map(o => (
                   <div key={o.id} onClick={() => markAsRead(o)} className={`p-4 rounded-xl border shadow-sm bg-white dark:bg-slate-900 dark:border-slate-800 hover:shadow-md transition-all cursor-pointer flex items-center gap-4 group ${o.hasUnread && o.lastSenderId !== user.uid ? 'border-l-4 border-l-[#E64545]' : ''}`}>
-                     <div className="w-12 h-12 rounded-full overflow-hidden bg-slate-100 shrink-0">
-                        <UserAvatar photoURL={profile.photoURL} className="w-full h-full object-cover" />
-                     </div>
+                     <div className="w-12 h-12 rounded-full overflow-hidden bg-slate-100 shrink-0"><UserAvatar photoURL={profile.photoURL} /></div>
                      <div className="flex-1 min-w-0">
-                        <div className="flex justify-between items-baseline mb-1">
-                            <h4 className="font-bold text-slate-900 dark:text-white truncate">{o.parentName}</h4>
-                            <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full uppercase ${o.status === 'accepted' ? 'bg-green-100 text-green-700' : 'bg-slate-100 text-slate-500'}`}>
-                                {o.status === 'accepted' ? 'Validé' : `${o.price}€/h`}
-                            </span>
-                        </div>
-                        <p className={`text-sm truncate ${o.hasUnread && o.lastSenderId !== user.uid ? 'font-bold text-slate-800 dark:text-slate-200' : 'text-slate-500'}`}>
-                            {o.lastMsg || "Nouvelle demande"}
-                        </p>
+                        <div className="flex justify-between items-baseline mb-1"><h4 className="font-bold text-slate-900 dark:text-white truncate">{o.parentName}</h4><span className={`text-[10px] font-bold px-2 py-0.5 rounded-full uppercase ${o.status === 'accepted' ? 'bg-green-100 text-green-700' : 'bg-slate-100 text-slate-500'}`}>{o.status === 'accepted' ? 'Validé' : `${o.price}€/h`}</span></div>
+                        <p className={`text-sm truncate ${o.hasUnread && o.lastSenderId !== user.uid ? 'font-bold text-slate-800 dark:text-slate-200' : 'text-slate-500'}`}>{o.lastMsg || "Nouvelle demande"}</p>
                      </div>
                      <ChevronRight size={16} className="text-slate-300 group-hover:text-slate-600 transition-colors"/>
                   </div>
@@ -1652,18 +1364,10 @@ const SitterDashboard = ({ user, profile }) => {
         )}
       </main>
 
-      {/* NAVIGATION BASSE (MOBILE) */}
       <div className="md:hidden fixed bottom-6 left-4 right-4 bg-slate-900/90 backdrop-blur-lg text-white p-2 rounded-2xl shadow-2xl flex justify-around items-center z-50 border border-slate-700/50">
-          <button onClick={() => setActiveTab("profile")} className={`p-3 rounded-xl transition-all ${activeTab === 'profile' ? 'bg-[#E64545] text-white' : 'text-slate-400'}`}>
-              <User size={20} />
-          </button>
-          <button onClick={() => setActiveTab("messages")} className={`p-3 rounded-xl transition-all relative ${activeTab === 'messages' ? 'bg-[#E64545] text-white' : 'text-slate-400'}`}>
-              <MessageSquare size={20} />
-              {unreadCount > 0 && <span className="absolute top-2 right-2 w-2 h-2 bg-[#E0720F] rounded-full"></span>}
-          </button>
-          <button onClick={() => setActiveTab("settings")} className={`p-3 rounded-xl transition-all ${activeTab === 'settings' ? 'bg-[#E64545] text-white' : 'text-slate-400'}`}>
-              <Settings size={20} />
-          </button>
+          <button onClick={() => setActiveTab("profile")} className={`p-3 rounded-xl transition-all ${activeTab === 'profile' ? 'bg-[#E64545] text-white' : 'text-slate-400'}`}><User size={20} /></button>
+          <button onClick={() => setActiveTab("messages")} className={`p-3 rounded-xl transition-all relative ${activeTab === 'messages' ? 'bg-[#E64545] text-white' : 'text-slate-400'}`}><MessageSquare size={20} />{unreadCount > 0 && <span className="absolute top-2 right-2 w-2 h-2 bg-[#E0720F] rounded-full"></span>}</button>
+          <button onClick={() => setActiveTab("settings")} className={`p-3 rounded-xl transition-all ${activeTab === 'settings' ? 'bg-[#E64545] text-white' : 'text-slate-400'}`}><Settings size={20} /></button>
       </div>
 
       <InstallPrompt />
@@ -1673,7 +1377,7 @@ const SitterDashboard = ({ user, profile }) => {
 };
 
 // ==========================================
-// 8. LOGIQUE RACINE
+// 10. RACINE
 // ==========================================
 
 export default function App() {
@@ -1684,21 +1388,16 @@ export default function App() {
   useEffect(() => {
     let unsubP = null;
     const minSplashTimer = new Promise(resolve => setTimeout(resolve, 800));
-    // CORRECTION : J'ai supprimé la déconnexion automatique
-    
     const unsubA = onAuthStateChanged(auth, async (u) => {
       setUser(u);
       if (u) {
         unsubP = onSnapshot(doc(db, 'artifacts', appId, 'users', u.uid, 'settings', 'profile'), async (snap) => {
-          if (snap.exists()) { setProfile(snap.data()); } else { setProfile(null); }
+          if (snap.exists()) setProfile(snap.data()); else setProfile(null);
           await minSplashTimer;
           setInit(true);
         });
       } else {
-        setProfile(null);
-        if (unsubP) unsubP();
-        await minSplashTimer;
-        setInit(true);
+        setProfile(null); if (unsubP) unsubP(); await minSplashTimer; setInit(true);
       }
     });
     return () => { unsubA(); if (unsubP) unsubP(); };
@@ -1706,8 +1405,6 @@ export default function App() {
 
   if (!init) return <SplashScreen />;
   if (!user) return <AuthScreen />;
-  if (user && !profile) return <CompleteProfileScreen uid={user.uid} serviceType={profile?.serviceType} />; // Pass serviceType here to keep consistency
-  
-  // Redirection en fonction du ROLE et de l'UNIVERS (Enfant ou Animaux)
+  if (user && !profile) return <CompleteProfileScreen uid={user.uid} serviceType={profile?.serviceType} />; 
   return profile.role === "parent" ? <ParentDashboard profile={profile} user={user} /> : <SitterDashboard user={user} profile={profile} />;
 }
