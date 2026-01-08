@@ -27,12 +27,12 @@ import {
   orderBy,
   where
 } from "firebase/firestore";
-// Importations des icônes
+// Importations des icônes (Sécurisées pour éviter les crashs)
 import { 
   Baby, LogOut, Save, Search, Loader2, AlertCircle, ShieldCheck, 
   Euro, User, Mail, Lock, ChevronRight, Sparkles, Heart, Filter, Calendar,
   Clock, UserPlus, Cake, FileUp, FileText, CheckCircle2, MessageSquare, 
-  Send, X, Check, ArrowLeft, MessageCircle, PartyPopper, Star, MapPin, Camera, SlidersHorizontal, Settings, KeyRound, Phone, Trash2, Palette, Image as ImageIcon, Share2, Quote, TrendingUp, Zap, Trophy, Languages, EyeOff, Moon, Sun, Bell, Flag, Eye, Wallet, Car, CreditCard, LockKeyhole, Crown, Info, Dog, Cat, Bone, PawPrint, RefreshCw, HelpCircle, Power, Inbox, PenLine, Trash, Plus
+  Send, X, Check, ArrowLeft, MessageCircle, PartyPopper, Star, MapPin, Camera, SlidersHorizontal, Settings, KeyRound, Phone, Trash2, Palette, Image as ImageIcon, Share2, Quote, TrendingUp, Zap, Trophy, Languages, EyeOff, Moon, Sun, Bell, Flag, Eye, Wallet, Car, CreditCard, LockKeyhole, Crown, Info, Dog, Cat, Bone, PawPrint, RefreshCw, HelpCircle, Power, Inbox, Edit3
 } from "lucide-react";
 
 // ==========================================
@@ -1398,11 +1398,9 @@ const SitterDashboard = ({ user, profile }) => {
         <div className="flex items-center gap-2"><SitFinderLogo className="w-8 h-8" glow={false} /><span className="font-black italic text-lg uppercase">BABYKEEPER</span></div>
         <div className="flex items-center gap-1.5">
           <ModeSwitcher currentRole={profile.role} currentService={profile.serviceType || 'baby'} uid={user.uid} />
-          
           <button onClick={() => setShowFAQ(true)} className={`p-2 rounded-2xl transition-all shadow-sm flex items-center justify-center ${isDark ? 'bg-slate-800 text-slate-300' : 'bg-white border border-slate-100 text-slate-400'}`}>
               <HelpCircle size={20} />
           </button>
-
           <button onClick={() => setActiveTab("premium")} className={`p-2 rounded-2xl transition-all shadow-md bg-gradient-to-br from-yellow-400 to-orange-500 text-white animate-pulse`}><Crown size={20} fill="white" /></button>
           <div className="relative p-2 text-slate-400"><Bell size={20}/>{unreadCount > 0 && <span className="absolute top-1 right-1 w-4 h-4 bg-[#E64545] text-white text-[8px] font-black rounded-full flex items-center justify-center border-2 border-white animate-bounce">{unreadCount}</span>}</div>
           <button onClick={() => setActiveTab("settings")} className={`p-2 rounded-2xl transition-all ${isDark ? 'bg-slate-800 text-[#E0720F]' : 'bg-slate-50 text-slate-300'}`}><Settings size={20} /></button>
@@ -1437,7 +1435,7 @@ const SitterDashboard = ({ user, profile }) => {
                 {/* --- FORMULAIRE EDITION COMPLET --- */}
                 <div className={`p-8 rounded-[2.5rem] shadow-xl border space-y-8 ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-50'}`}>
                     <div className="flex items-center gap-3 pb-4 border-b border-slate-100">
-                        <PenLine size={20} className="text-slate-400"/>
+                        <Edit3 size={20} className="text-slate-400"/>
                         <h3 className="font-black text-sm uppercase tracking-widest text-slate-500">Éditer mon annonce</h3>
                     </div>
 
@@ -1521,7 +1519,7 @@ const SitterDashboard = ({ user, profile }) => {
                             {loading ? "..." : (saveStatus || "METTRE À JOUR / PUBLIER")}
                         </button>
                         <button onClick={handleDeleteAd} className="w-full py-4 text-red-400 rounded-xl font-black text-[10px] uppercase hover:bg-red-50 transition-colors flex items-center justify-center gap-2">
-                            <Trash size={14}/> Supprimer mon annonce
+                            <Trash2 size={14}/> Supprimer mon annonce
                         </button>
                     </div>
                 </div>
@@ -1569,15 +1567,13 @@ export default function App() {
       setUser(u);
       if (u) {
         unsubP = onSnapshot(doc(db, 'artifacts', appId, 'users', u.uid, 'settings', 'profile'), async (snap) => {
-          if (snap.exists()) { setProfile(snap.data()); } else { setProfile(null); }
+          if (snap.exists()) setProfile(snap.data()); else setProfile(null);
           await minSplashTimer;
           setInit(true);
         });
       } else {
-        setProfile(null);
-        if (unsubP) unsubP();
-        await minSplashTimer;
-        setInit(true);
+        setProfile(null); if (unsubP) unsubP();
+        await minSplashTimer; setInit(true);
       }
     });
     return () => { unsubA(); if (unsubP) unsubP(); };
