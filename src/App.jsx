@@ -27,12 +27,12 @@ import {
   orderBy,
   where
 } from "firebase/firestore";
-// Importations des icônes (Nettoyées et Sécurisées)
+// Importations des icônes (Liste sécurisée pour éviter les crashs)
 import { 
   Baby, LogOut, Save, Search, Loader2, AlertCircle, ShieldCheck, 
   Euro, User, Mail, Lock, ChevronRight, Sparkles, Heart, Filter, Calendar,
   Clock, UserPlus, Cake, FileUp, FileText, CheckCircle2, MessageSquare, 
-  Send, X, Check, ArrowLeft, MessageCircle, PartyPopper, Star, MapPin, Camera, SlidersHorizontal, Settings, KeyRound, Phone, Trash2, Palette, Image as ImageIcon, Share2, Quote, TrendingUp, Zap, Trophy, Languages, EyeOff, Moon, Sun, Bell, Flag, Eye, Wallet, Car, CreditCard, LockKeyhole, Crown, Info, Dog, Cat, Bone, PawPrint, RefreshCw, HelpCircle, Power, Inbox, Edit2
+  Send, X, Check, ArrowLeft, MessageCircle, PartyPopper, Star, MapPin, Camera, SlidersHorizontal, Settings, KeyRound, Phone, Trash2, Palette, Image as ImageIcon, Share2, Quote, TrendingUp, Zap, Trophy, Languages, EyeOff, Moon, Sun, Bell, Flag, Eye, Wallet, Car, CreditCard, LockKeyhole, Crown, Info, Dog, Cat, Bone, PawPrint, RefreshCw, HelpCircle, Power, Inbox, Edit2, Map
 } from "lucide-react";
 
 // ==========================================
@@ -57,6 +57,7 @@ const appId = "sitfinder-prod-v1";
 // 2. UTILITAIRES & CONSTANTES
 // ==========================================
 
+// Valeur par défaut pour éviter l'écran blanc si pas de données
 const DEFAULT_AVAILABILITY = {
   Lundi: { active: false, start: "08:00", end: "18:00" },
   Mardi: { active: false, start: "08:00", end: "18:00" },
@@ -105,7 +106,7 @@ const calculateAge = (birth) => {
   return age;
 };
 
-// Compression d'image (Sécurisée)
+// --- FONCTION COMPRESSION IMAGE (ANTI-CRASH) ---
 const compressImage = (file) => {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
@@ -147,9 +148,10 @@ const SplashScreen = ({ message = "La recherche en toute confiance" }) => (
   </div>
 );
 
+// --- CORRECTION CRASH AVATAR ---
 const UserAvatar = ({ photoURL, size = "w-full h-full", className = "" }) => {
-    // Protection anti-crash
-    if (photoURL && typeof photoURL === 'string' && photoURL.length > 50) {
+    // Vérification stricte pour éviter l'écran blanc si l'URL est malformée
+    if (photoURL && typeof photoURL === 'string' && photoURL.length > 20) {
         return <img src={photoURL} alt="User" className={`${size} object-cover ${className}`} />;
     }
     return (
@@ -303,7 +305,7 @@ const ModeSwitcher = ({ currentRole, currentService, uid }) => {
 };
 
 // ==========================================
-// 4. COMPOSANT PARAMÈTRES
+// 4. COMPOSANT PARAMÈTRES (SYNC PHOTO + DELETE)
 // ==========================================
 
 const SettingsView = ({ user, profile, onBack, isDark, toggleDark }) => {
@@ -335,7 +337,7 @@ const SettingsView = ({ user, profile, onBack, isDark, toggleDark }) => {
         const compressedBase64 = await compressImage(file);
         setCustomPhoto(compressedBase64);
       } catch (error) {
-          alert("Image invalide");
+          alert("Image invalide ou trop lourde");
       }
     }
   };
@@ -346,21 +348,23 @@ const SettingsView = ({ user, profile, onBack, isDark, toggleDark }) => {
     try {
       const updateData = { name: newName, phone, photoURL: customPhoto, privateMode };
       
+      // 1. Mise à jour profil privé
       await updateDoc(doc(db, 'artifacts', appId, 'users', user.uid, 'settings', 'profile'), updateData);
       
+      // 2. Mise à jour FORCEE profil public (Sitter)
       const publicSitterRef = doc(db, 'artifacts', appId, 'public', 'data', 'sitters', user.uid);
       const publicDoc = await getDoc(publicSitterRef);
       if (publicDoc.exists()) {
           await updateDoc(publicSitterRef, { 
               name: newName, 
-              photoURL: customPhoto, 
+              photoURL: customPhoto, // ICI : On écrase bien la photo de l'annonce
               phone,
               serviceType: profile.serviceType
           });
       }
 
       setStatus({ type: "success", msg: "Enregistré !" });
-    } catch (err) { setStatus({ type: "error", msg: "Erreur..." }); }
+    } catch (err) { console.error(err); setStatus({ type: "error", msg: "Erreur..." }); }
     finally { setLoading(false); }
   };
 
@@ -476,6 +480,8 @@ const ChatRoom = ({ offer, currentUser, onBack, isDark }) => {
   const [liveOffer, setLiveOffer] = useState(offer);
   const chatEndRef = useRef(null);
 
+  const scrollToBottom = () => chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
+
   useEffect(() => {
     const q = collection(db, 'artifacts', appId, 'public', 'data', 'offers', offer.id, 'messages');
     const unsubMsg = onSnapshot(q, (snap) => {
@@ -529,8 +535,11 @@ const ChatRoom = ({ offer, currentUser, onBack, isDark }) => {
                       message: msgText
                   }
               );
+              console.log("Notif envoyée");
           }
-      } catch (error) { console.error(error); }
+      } catch (error) {
+          console.error("Erreur envoi mail:", error);
+      }
   };
 
   const handleReport = async () => {
@@ -833,9 +842,11 @@ const CompleteProfileScreen = ({ uid, serviceType }) => {
       const file = e.target.files[0];
       if (file) {
           try {
+             // Compression de l'image
              const compressedBase64 = await compressImage(file);
              setPhoto(compressedBase64);
           } catch (error) {
+             console.error("Erreur compression image", error);
              alert("Impossible d'utiliser cette image.");
           }
       }
@@ -941,6 +952,7 @@ const ParentDashboard = ({ profile, user }) => {
   useEffect(() => {
     localStorage.setItem('dark', isDark);
     const unsubSitters = onSnapshot(collection(db, 'artifacts', appId, 'public', 'data', 'sitters'), (snap) => {
+      // ON AFFICHE TOUS LES SITTERS DE LA CATEGORIE (Y COMPRIS SOI-MEME POUR VERIFIER L'ANNONCE)
       setSitters(snap.docs.map(d => ({ id: d.id, ...d.data() })).filter(s => s.serviceType === profile.serviceType));
       setLoading(false);
     });
@@ -1315,7 +1327,7 @@ const SitterDashboard = ({ user, profile }) => {
   const [birthDate, setBirthDate] = useState("");
   const [cvName, setCvName] = useState("");
   const [hasCar, setHasCar] = useState(false);
-  const [skills, setSkills] = useState([]); // Initialisé à tableau vide pour éviter le crash
+  const [skills, setSkills] = useState([]); // Initialisé à tableau vide
   
   const [loading, setLoading] = useState(false);
   const [activeTab, setActiveTab] = useState("profile");
@@ -1324,6 +1336,8 @@ const SitterDashboard = ({ user, profile }) => {
   const [isDark, setIsDark] = useState(localStorage.getItem('dark') === 'true');
   const [saveStatus, setSaveStatus] = useState("");
   const [isInstant, setIsInstant] = useState(false);
+  
+  // Utilisation de la constante DEFAULT_AVAILABILITY pour initialiser
   const [availability, setAvailability] = useState(DEFAULT_AVAILABILITY);
 
   const isPet = profile.serviceType === 'pet';
@@ -1337,7 +1351,7 @@ const SitterDashboard = ({ user, profile }) => {
       if (snap.exists()) {
         const d = snap.data(); setBio(d.bio || ""); setPrice(d.price || ""); setCity(d.city || "");
         setBirthDate(d.birthDate || ""); setCvName(d.cvName || ""); setHasCar(d.hasCar || false);
-        // SECURITE : Utilisation de || [] et || {} pour éviter les erreurs si données manquantes
+        // SECURITE : Utilisation de || [] et || DEFAULT pour éviter les erreurs si données manquantes
         if (d.skills) setSkills(d.skills); else setSkills([]);
         if (d.availability) setAvailability(d.availability); else setAvailability(DEFAULT_AVAILABILITY);
         if(d.instantAvailableUntil && new Date(d.instantAvailableUntil) > new Date()) setIsInstant(true);
@@ -1356,6 +1370,7 @@ const SitterDashboard = ({ user, profile }) => {
   };
 
   const toggleSkill = (skill) => {
+     // Protection contre null
      const currentSkills = skills || [];
      if (currentSkills.includes(skill)) setSkills(currentSkills.filter(s => s !== skill));
      else setSkills([...currentSkills, skill]);
@@ -1392,14 +1407,17 @@ const SitterDashboard = ({ user, profile }) => {
         <div className="flex items-center gap-2"><SitFinderLogo className="w-8 h-8" glow={false} /><span className="font-black italic text-lg uppercase">BABYKEEPER</span></div>
         <div className="flex items-center gap-1.5">
           <ModeSwitcher currentRole={profile.role} currentService={profile.serviceType || 'baby'} uid={user.uid} />
+          
           <button onClick={() => setShowFAQ(true)} className={`p-2 rounded-2xl transition-all shadow-sm flex items-center justify-center ${isDark ? 'bg-slate-800 text-slate-300' : 'bg-white border border-slate-100 text-slate-400'}`}>
               <HelpCircle size={20} />
           </button>
+
           <button onClick={() => setActiveTab("premium")} className={`p-2 rounded-2xl transition-all shadow-md bg-gradient-to-br from-yellow-400 to-orange-500 text-white animate-pulse`}><Crown size={20} fill="white" /></button>
           <div className="relative p-2 text-slate-400"><Bell size={20}/>{unreadCount > 0 && <span className="absolute top-1 right-1 w-4 h-4 bg-[#E64545] text-white text-[8px] font-black rounded-full flex items-center justify-center border-2 border-white animate-bounce">{unreadCount}</span>}</div>
+          <button onClick={() => setActiveTab("settings")} className={`p-2 rounded-2xl transition-all ${isDark ? 'bg-slate-800 text-[#E0720F]' : 'bg-slate-50 text-slate-300'}`}><Settings size={20} /></button>
+          <button onClick={() => signOut(auth)} className={`p-2 rounded-2xl transition-all ${isDark ? 'bg-slate-800 text-slate-400' : 'bg-slate-50 text-slate-300'}`}><LogOut size={20} /></button>
         </div>
       </nav>
-
       <main className="p-6 max-w-4xl mx-auto space-y-8 animate-in fade-in duration-500">
         {activeTab === "profile" && (
             <div className="space-y-6">
