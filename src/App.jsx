@@ -1637,4 +1637,15 @@ export default function App() {
         if (unsubP) unsubP();
         await minSplashTimer;
         setInit(true);
-   
+      }
+    });
+    return () => { unsubA(); if (unsubP) unsubP(); };
+  }, []);
+
+  if (!init) return <SplashScreen />;
+  if (!user) return <AuthScreen />;
+  if (user && !profile) return <CompleteProfileScreen uid={user.uid} serviceType={profile?.serviceType} />; // Pass serviceType here to keep consistency
+  
+  // Redirection en fonction du ROLE et de l'UNIVERS (Enfant ou Animaux)
+  return profile.role === "parent" ? <ParentDashboard profile={profile} user={user} /> : <SitterDashboard user={user} profile={profile} />;
+}
