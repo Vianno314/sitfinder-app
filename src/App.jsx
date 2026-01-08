@@ -32,7 +32,7 @@ import {
   Baby, LogOut, Save, Search, Loader2, AlertCircle, ShieldCheck, 
   Euro, User, Mail, Lock, ChevronRight, Sparkles, Heart, Filter, Calendar,
   Clock, UserPlus, Cake, FileUp, FileText, CheckCircle2, MessageSquare, 
-  Send, X, Check, ArrowLeft, MessageCircle, PartyPopper, Star, MapPin, Camera, SlidersHorizontal, Settings, KeyRound, Phone, Trash2, Palette, Image as ImageIcon, Share2, Quote, TrendingUp, Zap, Trophy, Languages, EyeOff, Moon, Sun, Bell, Flag, Eye, Wallet, Car, CreditCard, LockKeyhole, Crown, Info, Dog, Cat, Bone, PawPrint, RefreshCw, HelpCircle, Power, Inbox, Edit3
+  Send, X, Check, ArrowLeft, MessageCircle, PartyPopper, Star, MapPin, Camera, SlidersHorizontal, Settings, KeyRound, Phone, Trash2, Palette, Image as ImageIcon, Share2, Quote, TrendingUp, Zap, Trophy, Languages, EyeOff, Moon, Sun, Bell, Flag, Eye, Wallet, Car, CreditCard, LockKeyhole, Crown, Info, Dog, Cat, Bone, PawPrint, RefreshCw, HelpCircle, Power, Inbox, PenLine, Trash, Plus
 } from "lucide-react";
 
 // ==========================================
@@ -54,7 +54,7 @@ const db = getFirestore(app, "default");
 const appId = "sitfinder-prod-v1";
 
 // ==========================================
-// 2. UTILITAIRES DE DESIGN
+// 2. UTILITAIRES DE DESIGN & LOGIQUE
 // ==========================================
 
 const SitFinderLogo = ({ className = "w-16 h-16", glow = true }) => (
@@ -95,15 +95,31 @@ const calculateAge = (birth) => {
   return age;
 };
 
-const UserAvatar = ({ photoURL, size = "w-full h-full", className = "" }) => {
-    if (photoURL) {
-        return <img src={photoURL} alt="User" className={`${size} object-cover ${className}`} />;
-    }
-    return (
-        <div className={`${size} bg-slate-200 flex items-center justify-center text-slate-400 ${className}`}>
-            <User size="50%" />
-        </div>
-    );
+// --- FONCTION COMPRESSION IMAGE ---
+const compressImage = (file) => {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.readAsDataURL(file);
+    reader.onload = (event) => {
+      const img = new Image();
+      img.src = event.target.result;
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        const MAX_WIDTH = 500;
+        const scaleSize = MAX_WIDTH / img.width;
+        if (scaleSize >= 1) {
+            canvas.width = img.width; canvas.height = img.height;
+        } else {
+            canvas.width = MAX_WIDTH; canvas.height = img.height * scaleSize;
+        }
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+        resolve(canvas.toDataURL('image/jpeg', 0.8)); 
+      };
+      img.onerror = (e) => reject(e);
+    };
+    reader.onerror = (e) => reject(e);
+  });
 };
 
 const SplashScreen = ({ message = "La recherche en toute confiance" }) => (
@@ -121,13 +137,25 @@ const SplashScreen = ({ message = "La recherche en toute confiance" }) => (
   </div>
 );
 
+const UserAvatar = ({ photoURL, size = "w-full h-full", className = "" }) => {
+    // Vérification stricte pour éviter l'avatar cassé
+    if (photoURL && photoURL.length > 50) {
+        return <img src={photoURL} alt="User" className={`${size} object-cover ${className}`} />;
+    }
+    return (
+        <div className={`${size} bg-slate-200 flex items-center justify-center text-slate-400 ${className}`}>
+            <User size="50%" />
+        </div>
+    );
+};
+
 // ==========================================
 // 3. COMPOSANTS GLOBAUX
 // ==========================================
 
 const FAQModal = ({ onClose }) => {
     const faqs = [
-        { q: "Comment payer le Sitter ?", r: "Le paiement se fait en direct (Espèces, Lydia, CESU) à la fin de la garde. BabyKeeper ne prend aucune commission sur les gardes." },
+        { q: "Comment payer le Sitter ?", r: "Le paiement se fait en direct (Espèces, Lydia, CESU) à la fin de la garde. BabyKeeper ne prend aucune commission." },
         { q: "C'est quoi le point vert ?", r: "C'est le mode 'Dispo Immédiate'. Le Sitter est prêt à intervenir tout de suite (urgence)." },
         { q: "Je veux garder des animaux aussi !", r: "Cliquez sur le bouton 'Mode' en haut à droite et choisissez 'Pet-Sitter'." },
         { q: "Comment avoir le badge Vérifié ?", r: "Remplissez votre profil à 100% et ajoutez une photo claire." },
@@ -265,7 +293,7 @@ const ModeSwitcher = ({ currentRole, currentService, uid }) => {
 };
 
 // ==========================================
-// 4. COMPOSANT PARAMÈTRES (AVEC PADDING ENORME POUR MOBILE)
+// 4. COMPOSANT PARAMÈTRES (SYNC PHOTO + DELETE)
 // ==========================================
 
 const SettingsView = ({ user, profile, onBack, isDark, toggleDark }) => {
@@ -290,12 +318,15 @@ const SettingsView = ({ user, profile, onBack, isDark, toggleDark }) => {
     }
   };
 
-  const handlePhotoUpload = (e) => {
+  const handlePhotoUpload = async (e) => {
     const file = e.target.files[0];
     if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => { setCustomPhoto(reader.result); };
-      reader.readAsDataURL(file);
+      try {
+        const compressedBase64 = await compressImage(file);
+        setCustomPhoto(compressedBase64);
+      } catch (error) {
+          alert("Image invalide ou trop lourde");
+      }
     }
   };
 
@@ -304,21 +335,28 @@ const SettingsView = ({ user, profile, onBack, isDark, toggleDark }) => {
     setLoading(true);
     try {
       const updateData = { name: newName, phone, photoURL: customPhoto, privateMode };
+      
+      // 1. Mise à jour profil privé
       await updateDoc(doc(db, 'artifacts', appId, 'users', user.uid, 'settings', 'profile'), updateData);
-      if (profile.role === 'sitter') {
-        await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'sitters', user.uid), { 
-            name: newName, 
-            photoURL: customPhoto, 
-            phone,
-            serviceType: profile.serviceType
-        }, { merge: true });
+      
+      // 2. Mise à jour FORCEE profil public (Sitter)
+      // C'est ICI qu'on assure que la photo change aussi dans l'annonce
+      const publicSitterRef = doc(db, 'artifacts', appId, 'public', 'data', 'sitters', user.uid);
+      const publicDoc = await getDoc(publicSitterRef);
+      if (publicDoc.exists()) {
+          await updateDoc(publicSitterRef, { 
+              name: newName, 
+              photoURL: customPhoto, 
+              phone,
+              serviceType: profile.serviceType
+          });
       }
+
       setStatus({ type: "success", msg: "Enregistré !" });
-    } catch (err) { setStatus({ type: "error", msg: "Erreur..." }); }
+    } catch (err) { console.error(err); setStatus({ type: "error", msg: "Erreur..." }); }
     finally { setLoading(false); }
   };
 
-  // Ajout de pb-64 pour que le bouton déconnexion soit toujours visible
   return (
     <div className={`min-h-screen font-sans ${isDark ? 'bg-slate-950 text-white' : 'bg-slate-50 text-slate-800'}`}>
       <div className={`p-6 border-b flex items-center gap-4 sticky top-0 z-50 ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-100'}`}>
@@ -356,12 +394,6 @@ const SettingsView = ({ user, profile, onBack, isDark, toggleDark }) => {
         <div className="space-y-6 pt-8"> 
           <a href="mailto:babykeeper.bordais@gmail.com" className="w-full p-5 border-2 border-[#E0720F]/20 text-[#E0720F] rounded-2xl font-black text-xs uppercase flex justify-center gap-2 hover:bg-[#E0720F]/5">Support Technique</a>
           
-          <div className="flex justify-center gap-4 text-[10px] text-slate-400 font-bold uppercase tracking-widest pt-4 border-t border-slate-100/50">
-             <button onClick={() => alert("Mentions Légales : \nBabyKeeper est une plateforme de mise en relation.\nNous ne sommes pas l'employeur des baby-sitters.")} className="hover:text-[#E64545]">CGU</button>
-             <span>•</span>
-             <button onClick={() => alert("Politique de Confidentialité : \nVos données sont sécurisées et ne sont jamais revendues.")} className="hover:text-[#E64545]">Confidentialité</button>
-          </div>
-
           <button onClick={() => signOut(auth)} className="w-full p-5 border-2 border-dashed border-red-200 rounded-2xl font-black text-xs uppercase flex justify-center gap-2 text-red-400 hover:bg-red-50">Déconnexion</button>
           <button onClick={handleDeleteAccount} className="w-full p-5 bg-red-50 text-red-500 rounded-2xl font-black text-xs uppercase flex justify-center gap-2">Supprimer le compte</button>
         </div>
@@ -415,7 +447,6 @@ const PremiumView = ({ onBack, isDark }) => {
                  >
                      Je m'abonne (3€)
                  </a>
-                 <p className="text-[10px] text-center opacity-50 font-bold uppercase">Sans engagement • Annulable à tout moment</p>
              </div>
          </div>
       </div>
@@ -475,12 +506,14 @@ const ChatRoom = ({ offer, currentUser, onBack, isDark }) => {
 
   const sendEmailNotification = async (msgText) => {
       if (!window.emailjs) return; 
+      
       const otherId = currentUser.uid === offer.sitterId ? offer.parentId : offer.sitterId;
       try {
           const userDoc = await getDoc(doc(db, 'artifacts', appId, 'users', otherId, 'settings', 'profile'));
           if (userDoc.exists()) {
               const targetEmail = userDoc.data().email;
               const targetName = userDoc.data().name;
+              
               await window.emailjs.send(
                   "service_hjonpe3", // TON SERVICE ID
                   "template_b2gl0lh", // TON TEMPLATE ID
@@ -648,7 +681,7 @@ const ChatRoom = ({ offer, currentUser, onBack, isDark }) => {
 };
 
 // ==========================================
-// 7. AUTH SCREEN (AVEC MOT DE PASSE OUBLIÉ & DESIGN FIX)
+// 7. AUTH SCREEN
 // ==========================================
 
 const AuthScreen = () => {
@@ -794,12 +827,17 @@ const CompleteProfileScreen = ({ uid, serviceType }) => {
   const [photo, setPhoto] = useState(null);
   const [loading, setLoading] = useState(false);
 
-  const handlePhotoSelect = (e) => {
+  const handlePhotoSelect = async (e) => {
       const file = e.target.files[0];
       if (file) {
-          const reader = new FileReader();
-          reader.onloadend = () => { setPhoto(reader.result); };
-          reader.readAsDataURL(file);
+          try {
+             // Compression de l'image
+             const compressedBase64 = await compressImage(file);
+             setPhoto(compressedBase64);
+          } catch (error) {
+             console.error("Erreur compression image", error);
+             alert("Impossible d'utiliser cette image.");
+          }
       }
   };
 
@@ -858,7 +896,7 @@ const CompleteProfileScreen = ({ uid, serviceType }) => {
 };
 
 // ==========================================
-// 8. DASHBOARD PARENT (MULTI-UNIVERS & FILTRE JOUR & BADGES & DISPO IMMEDIATE)
+// 8. DASHBOARD PARENT (FIX NAVIGATION & EMPTY STATE)
 // ==========================================
 
 const ParentDashboard = ({ profile, user }) => {
@@ -878,12 +916,11 @@ const ParentDashboard = ({ profile, user }) => {
   const [showFilters, setShowFilters] = useState(false);
   const [sitterReviews, setSitterReviews] = useState([]);
   const [isDark, setIsDark] = useState(localStorage.getItem('dark') === 'true');
-  const [showFAQ, setShowFAQ] = useState(false); // --- ETAT FAQ MODAL ---
+  const [showFAQ, setShowFAQ] = useState(false);
 
   const isPet = profile.serviceType === 'pet';
   const days = ["Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi", "Samedi", "Dimanche"];
 
-  // --- AUTO-ACTIVATION PREMIUM VIA URL ---
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     if (params.get('success') === 'true') {
@@ -904,16 +941,15 @@ const ParentDashboard = ({ profile, user }) => {
   useEffect(() => {
     localStorage.setItem('dark', isDark);
     const unsubSitters = onSnapshot(collection(db, 'artifacts', appId, 'public', 'data', 'sitters'), (snap) => {
-      // FILTRE PAR UNIVERS (Baby ou Pet) et EXCLURE SON PROPRE PROFIL SI ON EST SITTER
-      setSitters(snap.docs.map(d => ({ id: d.id, ...d.data() })).filter(s => s.serviceType === profile.serviceType && s.id !== user.uid));
+      // ON AFFICHE TOUS LES SITTERS DE LA CATEGORIE (Y COMPRIS SOI-MEME POUR VERIFIER L'ANNONCE)
+      setSitters(snap.docs.map(d => ({ id: d.id, ...d.data() })).filter(s => s.serviceType === profile.serviceType));
       setLoading(false);
     });
-    const qOffers = query(
-      collection(db, 'artifacts', appId, 'public', 'data', 'offers'), 
-      where("parentId", "==", user.uid)
-    );
-    const unsubOffers = onSnapshot(qOffers, (snap) => {
-      setOffers(snap.docs.map(d => ({ id: d.id, ...d.data() })));
+    const qOffers = query(collection(db, 'artifacts', appId, 'public', 'data', 'offers'), where("parentId", "==", user.uid));
+    const unsubOffers = onSnapshot(qOffers, (snap) => { 
+        // FILTRE ICI : ON NE MONTRE PAS LES OFFRES QU'ON S'EST ENVOYÉ A SOI-MÊME DANS LA LISTE DE DISCUSSION
+        const list = snap.docs.map(d => ({ id: d.id, ...d.data() })).filter(o => o.sitterId !== o.parentId);
+        setOffers(list); 
     });
     return () => { unsubSitters(); unsubOffers(); };
   }, [user.uid, isDark, profile.serviceType]); 
@@ -964,6 +1000,9 @@ const ParentDashboard = ({ profile, user }) => {
   }, [sitters, search, locationFilter, maxPrice, onlyVerified, onlyFavorites, profile.favorites, dayFilter]);
 
   const handleBooking = async (s, p, h) => {
+    // EMPECHER L'AUTO-RESERVATION
+    if (s.id === user.uid) return alert("Vous ne pouvez pas réserver votre propre service !");
+
     try {
       const isPremium = profile?.isPremium === true;
       if (!isPremium) {
@@ -992,7 +1031,7 @@ const ParentDashboard = ({ profile, user }) => {
   };
 
   if (activeChat) return <ChatRoom offer={activeChat} currentUser={user} onBack={() => setActiveChat(null)} isDark={isDark} />;
-  if (activeTab === "settings") return <SettingsView user={user} profile={profile} onBack={() => setActiveTab("search")} isDark={isDark} toggleDark={() => setIsDark(!isDark)} />;
+  if (activeTab === "profile") return <SettingsView user={user} profile={profile} onBack={() => setActiveTab("search")} isDark={isDark} toggleDark={() => setIsDark(!isDark)} />;
   if (activeTab === "premium") return <PremiumView onBack={() => setActiveTab("search")} isDark={isDark} />;
 
   const getSPhoto = (s) => (s.useCustomPhoto && s.photoURL) ? s.photoURL : `https://api.dicebear.com/7.x/${s.avatarStyle || 'avataaars'}/svg?seed=${s.name}`;
@@ -1003,13 +1042,10 @@ const ParentDashboard = ({ profile, user }) => {
         <div className="flex items-center gap-2"><SitFinderLogo className="w-8 h-8" glow={false} /><span className="font-black italic text-lg md:text-2xl uppercase tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-[#E64545] to-[#E0720F]">BABYKEEPER</span></div>
         <div className="flex items-center gap-1.5">
           <ModeSwitcher currentRole={profile.role} currentService={profile.serviceType || 'baby'} uid={user.uid} />
-          
           <button onClick={() => setShowFAQ(true)} className={`p-2 rounded-2xl transition-all shadow-sm flex items-center justify-center ${isDark ? 'bg-slate-800 text-slate-300' : 'bg-white border border-slate-100 text-slate-400'}`}>
               <HelpCircle size={20} />
           </button>
-
           <button onClick={() => setActiveTab("premium")} className={`p-2 rounded-2xl transition-all shadow-md bg-gradient-to-br from-yellow-400 to-orange-500 text-white animate-pulse`}><Crown size={20} fill="white" /></button>
-          
           <div className="relative p-2 text-slate-400"><Bell size={20}/>{unreadCount > 0 && <span className="absolute top-1 right-1 w-4 h-4 bg-[#E64545] text-white text-[8px] font-black rounded-full flex items-center justify-center border-2 border-white animate-bounce">{unreadCount}</span>}</div>
         </div>
       </nav>
@@ -1080,7 +1116,8 @@ const ParentDashboard = ({ profile, user }) => {
                         {s.level && isPet && <div className="flex items-center gap-2 bg-[#E0720F] text-white px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest w-fit mt-1">NIV {s.level} 🐾</div>}
                       </div>
                       <div className={`w-28 h-28 rounded-[2.5rem] mb-6 overflow-hidden border-4 shadow-xl ring-4 group-hover/card:scale-110 transition-transform duration-500 ${isDark ? 'bg-slate-800 border-slate-700 ring-slate-900' : 'bg-slate-50 border-white ring-slate-50/50'}`}>
-                          <UserAvatar photoURL={getSPhoto(s)} />
+                          {/* --- ICI : Utilisation de la photoURL qui est désormais synchro --- */}
+                          <UserAvatar photoURL={s.photoURL} />
                       </div>
                       <h4 className={`font-black text-4xl font-sans mb-1 leading-none tracking-tighter text-left ${isDark ? 'text-white' : 'text-slate-800'}`}>{s.name}</h4>
                       <div className="flex items-center gap-3 text-slate-400 mb-6"><RatingStars rating={s.rating || 5} size={18}/><span className={`text-[10px] font-black uppercase px-2 py-0.5 rounded-lg border ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-slate-50 border-slate-100'}`}>{s.city}</span></div>
@@ -1103,7 +1140,7 @@ const ParentDashboard = ({ profile, user }) => {
               })}
             </div>
             </>
-        }
+        )}
 
         {/* --- VUE MESSAGES --- */}
         {activeTab === "messages" && (
@@ -1141,9 +1178,8 @@ const ParentDashboard = ({ profile, user }) => {
       <div className={`fixed bottom-10 left-1/2 -translate-x-1/2 w-[90%] max-w-md backdrop-blur-xl p-2.5 rounded-[3rem] shadow-2xl flex items-center justify-between z-50 border ${isDark ? 'bg-slate-900/95 border-slate-800' : 'bg-slate-900/95 border-white/10'}`}>
         <button onClick={() => setActiveTab("search")} className={`flex-1 flex flex-col items-center py-4 rounded-[2.5rem] transition-all duration-300 ${activeTab === "search" ? (isDark ? "bg-[#E64545] text-white" : "bg-[#E64545] text-white") : "text-slate-400 hover:text-white"}`}><Search size={22}/><span className="text-[9px] font-black uppercase mt-1.5 tracking-widest">Trouver</span></button>
         <button onClick={() => setActiveTab("messages")} className={`flex-1 flex flex-col items-center py-4 rounded-[2.5rem] transition-all duration-300 relative ${activeTab === "messages" ? (isDark ? "bg-[#E64545] text-white" : "bg-[#E64545] text-white") : "text-slate-400 hover:text-white"}`}><MessageSquare size={22}/><span className="text-[9px] font-black uppercase mt-1.5 font-sans tracking-widest">Offres</span>{unreadCount > 0 && <div className="absolute top-3 right-1/3 w-2.5 h-2.5 bg-[#E0720F] rounded-full border-2 border-slate-900 animate-pulse"></div>}</button>
-        
-        {/* BOUTON REGLAGES (REMPLACE PROFIL) */}
-        <button onClick={() => setActiveTab("settings")} className={`flex-1 flex flex-col items-center py-4 rounded-[2.5rem] transition-all duration-300 ${activeTab === "settings" ? (isDark ? "bg-[#E64545] text-white" : "bg-[#E64545] text-white") : "text-slate-400 hover:text-white"}`}>
+        {/* NOUVEAU BOUTON REGLAGES EN BAS QUI OUVRE LES REGLAGES */}
+        <button onClick={() => setActiveTab("profile")} className={`flex-1 flex flex-col items-center py-4 rounded-[2.5rem] ${activeTab === "profile" ? (isDark ? "bg-[#E64545] text-white" : "bg-[#E64545] text-white") : "text-slate-400 hover:text-white"}`}>
             <Settings size={22}/>
             <span className="text-[9px] font-black uppercase mt-1.5 tracking-widest font-sans">Réglages</span>
         </button>
@@ -1155,18 +1191,13 @@ const ParentDashboard = ({ profile, user }) => {
       {/* --- FAQ MODAL --- */}
       {showFAQ && <FAQModal onClose={() => setShowFAQ(false)} />}
       
+      {/* --- FENÊTRE MODALE DETAIL SITTER (CORRIGÉE HEADER MOBILE) --- */}
       {selectedSitter && (
-        <div className="fixed inset-0 bg-slate-900/90 backdrop-blur-md z-[100] flex items-center justify-center p-6 text-slate-900">
-          <div className="bg-white w-full max-w-xl rounded-[4rem] overflow-hidden shadow-2xl animate-in slide-in-from-bottom-10 duration-500 p-10 space-y-10">
-            <div className="flex justify-between items-start">
-              <div className="flex gap-8 items-center text-left">
-                 <div className="w-28 h-28 rounded-[2.5rem] overflow-hidden border-4 shadow-2xl border-white shadow-slate-200">
-                     <UserAvatar photoURL={getSPhoto(selectedSitter)} />
-                 </div>
-                 <div className="space-y-1"><h3 className="text-4xl font-black tracking-tighter font-sans leading-none">{selectedSitter.name}</h3><RatingStars rating={selectedSitter.rating || 5} size={20}/></div>
-              </div>
-              <div className="flex gap-2">
-                {/* --- BOUTON PARTAGE --- */}
+        <div className="fixed inset-0 bg-slate-900/90 backdrop-blur-md z-[100] flex items-center justify-center p-4 md:p-6 text-slate-900">
+          <div className="bg-white w-full max-w-xl rounded-[4rem] overflow-hidden shadow-2xl animate-in slide-in-from-bottom-10 duration-500 flex flex-col max-h-[85vh]">
+            
+            {/* --- HEADER FIXE AVEC BOUTONS SEPARÉS --- */}
+            <div className="flex justify-between items-center p-6 border-b border-slate-100 bg-white z-50 shrink-0">
                 <button 
                     onClick={() => {
                         if (navigator.share) {
@@ -1180,63 +1211,93 @@ const ParentDashboard = ({ profile, user }) => {
                             navigator.clipboard.writeText(`Regarde ce profil de ${selectedSitter.name} sur BabyKeeper !`);
                         }
                     }} 
-                    className="p-4 rounded-full transition-all bg-blue-50 text-blue-600 hover:bg-blue-100"
+                    className="p-4 rounded-full transition-all bg-blue-50 text-blue-600 hover:bg-blue-100 shadow-sm"
                 >
                     <Share2 size={24}/>
                 </button>
-                <button onClick={() => setSelectedSitter(null)} className="p-4 rounded-full transition-all bg-slate-50 text-slate-800 hover:bg-red-50"><X size={24}/></button>
-              </div>
+                
+                {/* NOM AU CENTRE */}
+                <h3 className="text-xl font-black italic uppercase tracking-tighter text-slate-800">{selectedSitter.name}</h3>
+
+                <button onClick={() => setSelectedSitter(null)} className="p-4 rounded-full transition-all bg-slate-100 text-slate-400 hover:bg-red-50 hover:text-red-500 shadow-sm">
+                    <X size={24}/>
+                </button>
             </div>
-            <div className="max-h-[300px] overflow-y-auto space-y-6 pr-2 text-left custom-scrollbar">
-                <div className="p-10 rounded-[3.5rem] space-y-6 shadow-inner border bg-slate-50 border-slate-100/50 shadow-slate-100">
-                    <div className="flex justify-between items-center"><span className="font-black text-slate-500 text-[11px] uppercase tracking-widest italic">Lieu</span><span className="font-black uppercase">{selectedSitter.city || "France"}</span></div>
-                    <div className="flex justify-between items-center"><span className="font-black text-slate-500 text-[11px] uppercase tracking-widest italic">Visites</span><span className="font-black uppercase">{selectedSitter.views || 0} 👀</span></div>
-                    {selectedSitter.level && !isPet && <div className="flex justify-between items-center"><span className="font-black text-slate-500 text-[11px] uppercase tracking-widest italic">Niveau</span><span className="font-black uppercase text-[#E0720F]">NIV {selectedSitter.level} 👑</span></div>}
-                    {selectedSitter.level && isPet && <div className="flex justify-between items-center"><span className="font-black text-slate-500 text-[11px] uppercase tracking-widest italic">Niveau</span><span className="font-black uppercase text-[#E0720F]">NIV {selectedSitter.level} 🐾</span></div>}
+
+            {/* --- CONTENU DÉFILANT --- */}
+            <div className="overflow-y-auto p-8 space-y-8 custom-scrollbar">
+                
+                <div className="flex flex-col items-center gap-2">
+                     <div className="w-32 h-32 rounded-[2.5rem] overflow-hidden border-4 shadow-2xl border-white shadow-slate-200">
+                         <UserAvatar photoURL={selectedSitter.photoURL} />
+                     </div>
+                     <RatingStars rating={selectedSitter.rating || 5} size={24}/>
+                </div>
+
+                <div className="space-y-6 text-left">
+                    <div className="p-8 rounded-[3.5rem] space-y-6 shadow-inner border bg-slate-50 border-slate-100/50 shadow-slate-100">
+                        <div className="flex justify-between items-center"><span className="font-black text-slate-500 text-[11px] uppercase tracking-widest italic">Lieu</span><span className="font-black uppercase">{selectedSitter.city || "France"}</span></div>
+                        <div className="flex justify-between items-center"><span className="font-black text-slate-500 text-[11px] uppercase tracking-widest italic">Visites</span><span className="font-black uppercase">{selectedSitter.views || 0} 👀</span></div>
+                        {selectedSitter.level && !isPet && <div className="flex justify-between items-center"><span className="font-black text-slate-500 text-[11px] uppercase tracking-widest italic">Niveau</span><span className="font-black uppercase text-[#E0720F]">NIV {selectedSitter.level} 👑</span></div>}
+                        {selectedSitter.level && isPet && <div className="flex justify-between items-center"><span className="font-black text-slate-500 text-[11px] uppercase tracking-widest italic">Niveau</span><span className="font-black uppercase text-[#E0720F]">NIV {selectedSitter.level} 🐾</span></div>}
+                        
+                        {/* LISTE COMPETENCES DANS PROFIL COMPLET */}
+                        {selectedSitter.skills && (
+                            <div className="flex flex-wrap gap-2 mt-4 pt-4 border-t border-slate-100">
+                                {selectedSitter.skills.map((skill, i) => (
+                                    <span key={i} className="text-[10px] font-bold uppercase bg-slate-100 text-slate-600 px-3 py-1.5 rounded-xl border flex items-center gap-1">✨ {skill}</span>
+                                ))}
+                            </div>
+                        )}
+                    </div>
                     
-                    {/* LISTE COMPETENCES DANS PROFIL COMPLET */}
-                    {selectedSitter.skills && (
-                        <div className="flex flex-wrap gap-2 mt-4 pt-4 border-t border-slate-100">
-                            {selectedSitter.skills.map((skill, i) => (
-                                <span key={i} className="text-[10px] font-bold uppercase bg-slate-100 text-slate-600 px-3 py-1.5 rounded-xl border flex items-center gap-1">✨ {skill}</span>
+                    <div className="space-y-2">
+                        <h4 className="text-[11px] font-black uppercase tracking-[0.3em] text-slate-500 ml-5 italic">Bio</h4>
+                        <p className="p-6 bg-slate-50 rounded-3xl text-sm italic leading-relaxed text-slate-600 border border-slate-100">"{selectedSitter.bio}"</p>
+                    </div>
+
+                    {sitterReviews.length > 0 && (
+                        <div className="space-y-4">
+                            <h4 className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-500 ml-5 italic">Avis de parents</h4>
+                            {sitterReviews.map((r, idx) => (
+                                <div key={idx} className="p-6 rounded-[2rem] shadow-sm space-y-3 border bg-white border-slate-100">
+                                    <div className="flex justify-between items-center"><span className="font-black text-xs">{r.parentName}</span><RatingStars rating={r.rating} size={12} /></div>
+                                    <p className="text-xs italic leading-relaxed text-slate-500">"{r.text}"</p>
+                                </div>
                             ))}
                         </div>
                     )}
                 </div>
-                {sitterReviews.length > 0 && (
-                    <div className="space-y-4">
-                        <h4 className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-500 ml-5 italic">Avis de parents</h4>
-                        {sitterReviews.map((r, idx) => (
-                            <div key={idx} className="p-6 rounded-[2rem] shadow-sm space-y-3 border bg-white border-slate-100">
-                                <div className="flex justify-between items-center"><span className="font-black text-xs">{r.parentName}</span><RatingStars rating={r.rating} size={12} /></div>
-                                <p className="text-xs italic leading-relaxed text-slate-500">"{r.text}"</p>
-                            </div>
-                        ))}
-                    </div>
-                )}
-            </div>
-            <div className="space-y-5">
-              <div className="grid grid-cols-2 gap-4 text-left">
-                  <div className="space-y-2">
-                      <label className="text-[10px] font-black uppercase italic ml-4 text-slate-400 font-sans">Prix (€/H)</label>
-                      <input id="neg-p" type="number" defaultValue={selectedSitter.price} className="w-full p-6 rounded-[2.5rem] outline-none font-black text-2xl shadow-inner bg-slate-50 text-slate-800" />
-                  </div>
-                  <div className="space-y-2">
-                      <label className="text-[10px] font-black uppercase italic ml-4 text-slate-400 font-sans">Temps (H)</label>
-                      <input id="neg-h" type="number" defaultValue="2" className="w-full p-6 rounded-[2.5rem] outline-none font-black text-2xl shadow-inner bg-slate-50 text-slate-800" />
-                  </div>
-              </div>
 
-               <div className="flex justify-between items-center bg-slate-50 p-4 rounded-2xl">
-                 <div className="flex items-center gap-2 text-xs font-bold text-slate-500"><Car size={16}/> {selectedSitter.hasCar ? "Véhiculé 🚗" : "Non véhiculé"}</div>
-              </div>
+                <div className="space-y-5">
+                  <div className="grid grid-cols-2 gap-4 text-left">
+                      <div className="space-y-2">
+                          <label className="text-[10px] font-black uppercase italic ml-4 text-slate-400 font-sans">Prix (€/H)</label>
+                          <input id="neg-p" type="number" defaultValue={selectedSitter.price} className="w-full p-6 rounded-[2.5rem] outline-none font-black text-2xl shadow-inner bg-slate-50 text-slate-800" />
+                      </div>
+                      <div className="space-y-2">
+                          <label className="text-[10px] font-black uppercase italic ml-4 text-slate-400 font-sans">Temps (H)</label>
+                          <input id="neg-h" type="number" defaultValue="2" className="w-full p-6 rounded-[2.5rem] outline-none font-black text-2xl shadow-inner bg-slate-50 text-slate-800" />
+                      </div>
+                  </div>
 
-              {/* BOUTON ENVOYER DEMANDE : ROUGE */}
-              <button onClick={() => {
-                  const p = document.getElementById('neg-p').value;
-                  const h = document.getElementById('neg-h').value;
-                  handleBooking(selectedSitter, p, h);
-              }} className="w-full py-8 rounded-[2.5rem] font-black text-sm shadow-xl shadow-[#E64545]/20 uppercase tracking-[0.2em] active:scale-95 transition-all bg-[#E64545] text-white hover:bg-[#E64545]/90">ENVOYER LA DEMANDE</button>
+                   <div className="flex justify-between items-center bg-slate-50 p-4 rounded-2xl">
+                     <div className="flex items-center gap-2 text-xs font-bold text-slate-500"><Car size={16}/> {selectedSitter.hasCar ? "Véhiculé 🚗" : "Non véhiculé"}</div>
+                  </div>
+
+                  {/* BOUTON ENVOYER DEMANDE : DESACTIVÉ SI C'EST TON PROPRE PROFIL */}
+                  {selectedSitter.id === user.uid ? (
+                      <button disabled className="w-full py-8 rounded-[2.5rem] font-black text-sm shadow-inner uppercase tracking-[0.2em] bg-slate-200 text-slate-400 cursor-not-allowed">
+                          C'EST VOTRE PROFIL (APERÇU)
+                      </button>
+                  ) : (
+                      <button onClick={() => {
+                          const p = document.getElementById('neg-p').value;
+                          const h = document.getElementById('neg-h').value;
+                          handleBooking(selectedSitter, p, h);
+                      }} className="w-full py-8 rounded-[2.5rem] font-black text-sm shadow-xl shadow-[#E64545]/20 uppercase tracking-[0.2em] active:scale-95 transition-all bg-[#E64545] text-white hover:bg-[#E64545]/90">ENVOYER LA DEMANDE</button>
+                  )}
+                </div>
             </div>
           </div>
         </div>
@@ -1246,74 +1307,25 @@ const ParentDashboard = ({ profile, user }) => {
 };
 
 // ==========================================
-// 7. DASHBOARD SITTER (MULTI-UNIVERS & SWITCH & DISPO IMMEDIATE)
+// 9. DASHBOARD SITTER (DESIGN MODERNE + COMPLET)
 // ==========================================
 
 const SitterDashboard = ({ user, profile }) => {
   const [bio, setBio] = useState("");
   const [price, setPrice] = useState("");
+  const [city, setCity] = useState("");
   const [birthDate, setBirthDate] = useState("");
   const [cvName, setCvName] = useState("");
-  const [city, setCity] = useState("");
-  const [level, setLevel] = useState(profile?.level || "1");
   const [hasCar, setHasCar] = useState(false);
-  const [showFAQ, setShowFAQ] = useState(false); // --- ETAT FAQ MODAL ---
+  const [skills, setSkills] = useState([]);
   
-  // --- NOUVEAU : GESTION DES COMPETENCES ---
-  const [skills, setSkills] = useState([]); // Tableau des compétences sélectionnées
-
   const [loading, setLoading] = useState(false);
   const [activeTab, setActiveTab] = useState("profile");
   const [offers, setOffers] = useState([]);
   const [activeChat, setActiveChat] = useState(null);
-  const [saveStatus, setSaveStatus] = useState("");
-  const [reviews, setReviews] = useState([]);
   const [isDark, setIsDark] = useState(localStorage.getItem('dark') === 'true');
-  const [views, setViews] = useState(0);
-
-  const isPet = profile.serviceType === 'pet';
-
-  // LISTE DES COMPÉTENCES DISPONIBLES (Selon Mode)
-  const AVAILABLE_SKILLS = isPet 
-    ? ["🚗 Véhiculé", "💊 Soins", "🏃 Sportif", "🏠 Jardin Clos", "✂️ Toilettage", "🎓 Éducation"]
-    : ["🚗 Permis B", "⛑️ PSC1", "🇬🇧 Anglais", "📚 Devoirs", "🎨 Créatif", "🍳 Cuisine"];
-
-  const toggleServiceType = async () => {
-      const newType = isPet ? 'baby' : 'pet';
-      await updateDoc(doc(db, 'artifacts', appId, 'users', user.uid, 'settings', 'profile'), { serviceType: newType });
-  };
-
-  useEffect(() => {
-    localStorage.setItem('dark', isDark);
-    const unsubPublic = onSnapshot(doc(db, 'artifacts', appId, 'public', 'data', 'sitters', user.uid), (snap) => {
-      if (snap.exists()) {
-        const d = snap.data(); setBio(d.bio || ""); setPrice(d.price || ""); setBirthDate(d.birthDate || ""); setCity(d.city || ""); setCvName(d.cvName || ""); setViews(d.views || 0); setHasCar(d.hasCar || false);
-        if (d.level) setLevel(d.level);
-        if (d.skills) setSkills(d.skills); 
-        if (d.availability) setAvailability(d.availability);
-        if (d.instantAvailableUntil && new Date(d.instantAvailableUntil) > new Date()) setIsInstant(true);
-        else setIsInstant(false);
-      }
-    });
-    const qOffers = query(
-      collection(db, 'artifacts', appId, 'public', 'data', 'offers'), 
-      where("sitterId", "==", user.uid)
-    );
-    const unsubOffers = onSnapshot(qOffers, (snap) => {
-      setOffers(snap.docs.map(d => ({ id: d.id, ...d.data() })));
-    });
-    const unsubReviews = onSnapshot(collection(db, 'artifacts', appId, 'public', 'data', 'sitters', user.uid, 'reviews'), (snap) => {
-        setReviews(snap.docs.map(d => d.data()));
-    });
-    return () => { unsubPublic(); unsubOffers(); unsubReviews(); };
-  }, [user.uid, isDark]);
-
-  const totalEarnings = useMemo(() => {
-      return offers
-        .filter(o => ['accepted', 'paid_held', 'completed', 'reviewed'].includes(o.status))
-        .reduce((acc, o) => acc + ((parseFloat(o.price) || 0) * (parseFloat(o.hours) || 0)), 0);
-    }, [offers]);
-
+  const [saveStatus, setSaveStatus] = useState("");
+  const [isInstant, setIsInstant] = useState(false);
   const [availability, setAvailability] = useState({
     Lundi: { active: false, start: "08:00", end: "18:00" }, Mardi: { active: false, start: "08:00", end: "18:00" },
     Mercredi: { active: false, start: "08:00", end: "18:00" }, Jeudi: { active: false, start: "08:00", end: "18:00" },
@@ -1321,58 +1333,59 @@ const SitterDashboard = ({ user, profile }) => {
     Dimanche: { active: false, start: "08:00", end: "18:00" },
   });
 
-  const unreadCount = offers.filter(o => o.hasUnread && o.lastSenderId !== user.uid).length;
+  const isPet = profile.serviceType === 'pet';
+  const AVAILABLE_SKILLS = isPet 
+    ? ["🚗 Véhiculé", "💊 Soins", "🏃 Sportif", "🏠 Jardin Clos", "✂️ Toilettage", "🎓 Éducation"]
+    : ["🚗 Permis B", "⛑️ PSC1", "🇬🇧 Anglais", "📚 Devoirs", "🎨 Créatif", "🍳 Cuisine"];
+
+  useEffect(() => {
+    localStorage.setItem('dark', isDark);
+    const unsubPublic = onSnapshot(doc(db, 'artifacts', appId, 'public', 'data', 'sitters', user.uid), (snap) => {
+      if (snap.exists()) {
+        const d = snap.data(); setBio(d.bio || ""); setPrice(d.price || ""); setCity(d.city || "");
+        setBirthDate(d.birthDate || ""); setCvName(d.cvName || ""); setHasCar(d.hasCar || false);
+        if (d.skills) setSkills(d.skills);
+        if (d.availability) setAvailability(d.availability);
+        if(d.instantAvailableUntil && new Date(d.instantAvailableUntil) > new Date()) setIsInstant(true);
+      }
+    });
+    const qOffers = query(collection(db, 'artifacts', appId, 'public', 'data', 'offers'), where("sitterId", "==", user.uid));
+    const unsubOffers = onSnapshot(qOffers, (snap) => { setOffers(snap.docs.map(d => ({ id: d.id, ...d.data() }))); });
+    return () => { unsubPublic(); unsubOffers(); };
+  }, [user.uid, isDark]);
+
+  const toggleInstantAvailability = async () => {
+     const newStatus = !isInstant;
+     setIsInstant(newStatus);
+     const until = newStatus ? new Date(Date.now() + 2 * 60 * 60 * 1000).toISOString() : null;
+     await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'sitters', user.uid), { instantAvailableUntil: until });
+  };
 
   const toggleSkill = (skill) => {
      if (skills.includes(skill)) setSkills(skills.filter(s => s !== skill));
      else setSkills([...skills, skill]);
   };
 
-  // --- NOUVEAU : ACTIVATION DISPO IMMEDIATE ---
-  const [isInstant, setIsInstant] = useState(false);
-
-  useEffect(() => {
-     const checkInstant = async () => {
-         const docSnap = await getDoc(doc(db, 'artifacts', appId, 'public', 'data', 'sitters', user.uid));
-         if (docSnap.exists()) {
-            const data = docSnap.data();
-            if (data.instantAvailableUntil && new Date(data.instantAvailableUntil) > new Date()) setIsInstant(true);
-            else setIsInstant(false);
-         }
-     }
-     checkInstant();
-  }, []);
-
-  const toggleInstantAvailability = async () => {
-     const newStatus = !isInstant;
-     setIsInstant(newStatus);
-     const until = newStatus ? new Date(Date.now() + 2 * 60 * 60 * 1000).toISOString() : null;
-     await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'sitters', user.uid), { 
-         instantAvailableUntil: until 
-     });
-  };
-  // --------------------------------------------
-
   const handleSave = async () => {
-    if (!bio || !price || !city || !birthDate) return alert("Champs requis : Bio, Tarif, Ville, Naissance.");
+    if (!bio || !price || !city || !birthDate) return alert("Champs requis manquants (Bio, Prix, Ville, Naissance)");
     const age = calculateAge(birthDate);
-    if (age < 16) return alert("Désolé, vous devez avoir au moins 16 ans pour vous inscrire comme Baby-sitter.");
+    if (age < 16) return alert("Vous devez avoir au moins 16 ans.");
 
     setLoading(true);
-    try {
-      await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'sitters', user.uid), {
-        name: profile.name, serviceType: profile.serviceType, photoURL: profile.photoURL || "", views: views || 0,
-        phone: profile.phone || "", bio: bio.trim(), price, birthDate, availability, cvName, hasCV: !!cvName, city, rating: 5, uid: user.uid, level, hasCar, skills, updatedAt: new Date().toISOString()
-      }, { merge: true });
-      setSaveStatus("PUBLIÉ ! ✨"); setTimeout(() => setSaveStatus(""), 4000);
-    } catch(e) { console.error(e); } finally { setLoading(false); }
+    await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'sitters', user.uid), {
+        name: profile.name, photoURL: profile.photoURL || "", bio, price, city, birthDate, availability, cvName, hasCV: !!cvName, hasCar, skills, serviceType: profile.serviceType, uid: user.uid, updatedAt: new Date().toISOString()
+    }, { merge: true });
+    setSaveStatus("PUBLIÉ ! ✨"); setTimeout(() => setSaveStatus(""), 3000);
+    setLoading(false);
   };
 
-  const markAsRead = async (offer) => {
-    if (offer.hasUnread && offer.lastSenderId !== user.uid) {
-        await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'offers', offer.id), { hasUnread: false });
+  const handleDeleteAd = async () => {
+    if(window.confirm("⚠️ Supprimer votre annonce ? Vous n'apparaîtrez plus dans les résultats.")) {
+        setLoading(true);
+        await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'sitters', user.uid));
+        setBio(""); setPrice(""); setCity(""); setSaveStatus(""); 
+        setLoading(false); alert("Annonce supprimée.");
     }
-    setActiveChat(offer);
   };
 
   if (activeChat) return <ChatRoom offer={activeChat} currentUser={user} onBack={() => setActiveChat(null)} isDark={isDark} />;
@@ -1391,137 +1404,157 @@ const SitterDashboard = ({ user, profile }) => {
 
           <button onClick={() => setActiveTab("premium")} className={`p-2 rounded-2xl transition-all shadow-md bg-gradient-to-br from-yellow-400 to-orange-500 text-white animate-pulse`}><Crown size={20} fill="white" /></button>
           <div className="relative p-2 text-slate-400"><Bell size={20}/>{unreadCount > 0 && <span className="absolute top-1 right-1 w-4 h-4 bg-[#E64545] text-white text-[8px] font-black rounded-full flex items-center justify-center border-2 border-white animate-bounce">{unreadCount}</span>}</div>
+          <button onClick={() => setActiveTab("settings")} className={`p-2 rounded-2xl transition-all ${isDark ? 'bg-slate-800 text-[#E0720F]' : 'bg-slate-50 text-slate-300'}`}><Settings size={20} /></button>
+          <button onClick={() => signOut(auth)} className={`p-2 rounded-2xl transition-all ${isDark ? 'bg-slate-800 text-slate-400' : 'bg-slate-50 text-slate-300'}`}><LogOut size={20} /></button>
         </div>
       </nav>
-      <main className="p-6 max-w-4xl mx-auto space-y-12">
-        {activeTab === "profile" ? (
-          <div className="space-y-10 text-left animate-in fade-in slide-in-from-bottom-6 duration-700">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className={`p-8 rounded-[3rem] shadow-xl border flex flex-col items-center text-center space-y-4 ${isDark ? 'bg-slate-900 border-slate-800 shadow-slate-950' : 'bg-white'}`}>
-                    <div className="relative">
-                        <div className={`w-28 h-28 rounded-[2.5rem] border-4 shadow-2xl overflow-hidden ring-4 ${isDark ? 'bg-slate-800 border-slate-700 ring-slate-950' : 'bg-white'}`}>
-                            <UserAvatar photoURL={profile.photoURL} />
+      <main className="p-6 max-w-4xl mx-auto space-y-8 animate-in fade-in duration-500">
+        {activeTab === "profile" && (
+            <div className="space-y-6">
+                
+                {/* --- HEADER CARDS --- */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {/* CARD PROFIL */}
+                    <div className={`p-6 rounded-3xl shadow-sm border flex items-center gap-6 ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-100'}`}>
+                        <div className="w-20 h-20 rounded-2xl overflow-hidden border-2 border-slate-100 shadow-sm"><UserAvatar photoURL={profile.photoURL} /></div>
+                        <div>
+                            <h2 className="text-xl font-black italic">{profile.name}</h2>
+                            <p className="text-[10px] font-black uppercase tracking-widest text-[#E64545]">{profile.serviceType === 'baby' ? 'Baby-Sitter' : 'Pet-Sitter'}</p>
                         </div>
-                        <button onClick={() => setActiveTab("settings")} className="absolute -bottom-1 -right-1 p-3 bg-slate-900 text-white rounded-xl shadow-xl active:scale-95 transition-all"><Camera size={16}/></button>
                     </div>
-                    <div><h2 className={`text-2xl font-black italic ${isDark ? 'text-white' : 'text-slate-800'}`}>{profile.name}</h2><p className="text-[9px] font-black text-white uppercase tracking-widest mt-1 bg-[#E64545] px-3 py-1 rounded-full inline-block">{isPet ? "Pet Sitter 🐾" : "Sitter Pro ✨"}</p></div>
-                </div>
-                
-                {/* --- BLOC DISPO IMMEDIATE --- */}
-                <button 
-                    onClick={toggleInstantAvailability} 
-                    className={`p-8 rounded-[3rem] shadow-xl flex flex-col items-center justify-center space-y-2 transition-all active:scale-95 duration-300 ${isInstant ? 'bg-green-500 text-white animate-pulse' : (isDark ? 'bg-slate-800 text-white' : 'bg-white text-slate-800')}`}
-                >
-                     <div className={`p-4 rounded-full ${isInstant ? 'bg-white/20' : 'bg-green-100'}`}>
-                        <Power size={32} className={isInstant ? "text-white" : "text-green-500"} />
-                     </div>
-                     <h3 className="text-xl font-black uppercase italic tracking-tighter">{isInstant ? "MODE URGENCE ACTIF" : "ACTIVER DISPO IMMÉDIATE"}</h3>
-                     <p className="text-[9px] font-bold uppercase tracking-widest opacity-70">{isInstant ? "Visible en tête de liste (2h)" : "Valable 2h • Booster de visibilité"}</p>
-                </button>
 
-                <div className={`p-8 rounded-[3rem] shadow-xl text-white flex flex-col justify-center space-y-2 transition-all ${isDark ? 'bg-indigo-600' : 'bg-gradient-to-br from-[#E64545] to-[#E0720F]'}`}>
-                    <Wallet className="mb-1" size={24}/><p className="text-[10px] font-black uppercase tracking-widest opacity-70">Mon Revenu</p>
-                    <h3 className="text-4xl font-black italic tracking-tighter">{totalEarnings}€</h3>
-                    <p className="text-[8px] font-bold opacity-50 uppercase tracking-widest font-sans italic">Total cumulé</p>
-                </div>
-            </div>
-
-            <div className={`p-12 md:p-16 rounded-[4.5rem] shadow-2xl border space-y-12 relative overflow-hidden ${isDark ? 'bg-slate-900 border-slate-800 shadow-slate-950' : 'bg-white border-white shadow-slate-200'}`}>
-                <div className="absolute top-0 left-0 w-full h-3 bg-gradient-to-r from-[#E64545] to-[#E0720F] shadow-md shadow-rose-400/20"></div>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-10 text-slate-800">
-                    <div className="space-y-3 text-left"><label className="text-[11px] font-black text-blue-300 uppercase tracking-widest ml-4 font-sans italic">Tarif (€/H)</label><input type="number" className={`w-full p-8 rounded-[2.5rem] font-black text-4xl outline-none shadow-inner border border-transparent ${isDark ? 'bg-slate-800 text-white' : 'bg-slate-50 text-slate-800'}`} value={price} onChange={(e) => setPrice(e.target.value)} /></div>
-                    <div className="space-y-3 text-left"><label className="text-[11px] font-black text-blue-300 uppercase tracking-widest ml-4 font-sans italic">Ma Ville</label><input type="text" placeholder="Ville" className={`w-full p-8 rounded-[2.5rem] font-bold outline-none shadow-inner border border-transparent ${isDark ? 'bg-slate-800 text-white' : 'bg-slate-50 text-slate-800'}`} value={city} onChange={(e) => setCity(e.target.value)} /></div>
-                </div>
-                <div className="space-y-3 text-left"><label className="text-[11px] font-black text-blue-300 uppercase tracking-widest ml-4 font-sans italic">Naissance</label><input type="date" className={`w-full p-8 rounded-[2.5rem] font-bold outline-none shadow-inner border border-transparent ${isDark ? 'bg-slate-800 text-white' : 'bg-slate-50 text-slate-800'}`} value={birthDate} onChange={(e) => setBirthDate(e.target.value)} /></div>
-                <div className="space-y-3 text-left"><label className="text-[11px] font-black text-blue-300 uppercase tracking-widest ml-4 font-sans italic">Ma Bio Professionnelle</label><textarea placeholder="Expériences..." className={`w-full p-10 rounded-[3.5rem] h-64 font-bold outline-none shadow-inner resize-none leading-relaxed ${isDark ? 'bg-slate-800 text-white' : 'bg-slate-50 text-slate-800'}`} value={bio} onChange={(e) => setBio(e.target.value)} /></div>
-                
-                {/* --- SELECTION DES BADGES DE COMPETENCES --- */}
-                <div className="space-y-3 text-left">
-                    <label className="text-[11px] font-black text-blue-300 uppercase tracking-widest ml-4 font-sans italic">Mes Compétences & Atouts</label>
-                    <div className="flex flex-wrap gap-2">
-                        {AVAILABLE_SKILLS.map((skill, index) => (
-                            <button 
-                                key={index}
-                                onClick={() => toggleSkill(skill)}
-                                className={`px-4 py-3 rounded-2xl font-black text-[10px] uppercase transition-all border-2 ${skills.includes(skill) ? 'bg-[#E64545] text-white border-[#E64545] shadow-lg scale-105' : 'bg-transparent text-slate-400 border-slate-100 hover:border-slate-300'}`}
-                            >
-                                {skill}
-                            </button>
-                        ))}
-                    </div>
-                </div>
-
-                <div className="space-y-3 text-left"><label className="text-[11px] font-black text-blue-300 uppercase tracking-widest ml-4 font-sans italic">Mon CV</label><input type="file" id="cv-f" className="hidden" onChange={(e) => setCvName(e.target.files[0]?.name || "")} accept=".pdf,image/*" /><label htmlFor="cv-f" className={`w-full flex items-center justify-between p-8 border-2 border-dashed rounded-[2.5rem] cursor-pointer hover:bg-emerald-500/5 transition-all shadow-inner ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-slate-50 border-slate-200'}`}><div className="flex items-center gap-6"><div className="p-5 bg-white rounded-3xl text-blue-400 shadow-md transition-transform group-hover:scale-110"><FileUp size={32}/></div><p className={`text-sm font-black ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>{cvName || "Joindre CV"}</p></div>{cvName && <CheckCircle2 className="text-emerald-500" size={32}/>}</label></div>
-                
-                <div className="space-y-3 text-left">
-                    <label className="text-[11px] font-black text-blue-300 uppercase tracking-widest ml-4 font-sans italic">Véhicule</label>
-                    <button onClick={() => setHasCar(!hasCar)} className={`w-full py-4 rounded-2xl font-black uppercase text-xs flex items-center justify-center gap-2 transition-all ${hasCar ? "bg-[#E0720F] text-white shadow-xl" : "bg-slate-100 text-slate-400"}`}>
-                        <Car size={18}/> {hasCar ? "Je suis véhiculé 🚗" : "Je ne suis pas véhiculé"}
+                    {/* CARD DISPO IMMEDIATE */}
+                    <button onClick={toggleInstantAvailability} className={`p-6 rounded-3xl shadow-sm border flex items-center justify-between gap-4 transition-all active:scale-[0.98] ${isInstant ? 'bg-green-500 text-white border-green-600' : (isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-100')}`}>
+                        <div className="text-left">
+                            <h3 className="font-black uppercase text-sm">{isInstant ? "MODE URGENCE : ON" : "DISPO IMMÉDIATE"}</h3>
+                            <p className="text-[10px] opacity-70">Boost de visibilité (2h)</p>
+                        </div>
+                        <Power size={24} className={isInstant ? "animate-pulse" : "opacity-30"}/>
                     </button>
                 </div>
 
-                <div className="space-y-8 pt-4">
-                   <div className="flex items-center gap-4 px-2"><div className="p-3 bg-blue-50 rounded-2xl text-blue-500 shadow-sm"><Calendar size={26}/></div><h3 className={`text-sm font-black uppercase tracking-widest italic font-sans leading-none ${isDark ? 'text-white' : 'text-slate-800'}`}>Mes Disponibilités Bientôt</h3></div>
-                   <div className="grid gap-5">
-                       {Object.entries(availability).map(([day, data]) => (
-                           <div key={day} className={`flex flex-col md:flex-row items-center gap-6 p-8 rounded-[3rem] border transition-all duration-300 ${data.active ? (isDark ? 'bg-slate-800 border-indigo-500/30 shadow-2xl' : 'bg-white border-blue-100 shadow-xl') : 'bg-transparent border-transparent opacity-40'}`}>
-                               <button onClick={() => setAvailability(p => ({...p, [day]: {...p[day], active: !p[day].active}}))} className={`w-full md:w-40 py-5 rounded-2xl font-black text-[10px] uppercase tracking-widest ${data.active ? 'bg-[#E64545] text-white shadow-lg' : 'bg-slate-200 text-slate-400 hover:bg-slate-300'}`}>{day}</button>
-                               {data.active && (
-                                   <div className="flex items-center gap-5 animate-in slide-in-from-left-4 duration-300 flex-1">
-                                           <div className={`flex items-center gap-4 px-8 py-4 rounded-3xl text-[11px] font-black border shadow-inner ${isDark ? 'bg-slate-900 border-slate-700 text-slate-300' : 'bg-blue-50/50 border-blue-50 text-slate-600'}`}>
-                                               <Clock size={18} className="text-[#E0720F]" /><input type="time" className="bg-transparent border-none outline-none" value={data.start} onChange={(e) => setAvailability(p => ({...p, [day]: {...p[day], start: e.target.value}}))} /><span className="text-slate-300 mx-3 text-sm">à</span><input type="time" className="bg-transparent border-none outline-none" value={data.end} onChange={(e) => setAvailability(p => ({...p, [day]: {...p[day], end: e.target.value}}))} />
-                                           </div>
-                                   </div>
-                               )}
-                           </div>
-                       ))}
-                   </div>
+                {/* --- FORMULAIRE EDITION COMPLET --- */}
+                <div className={`p-8 rounded-[2.5rem] shadow-xl border space-y-8 ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-50'}`}>
+                    <div className="flex items-center gap-3 pb-4 border-b border-slate-100">
+                        <PenLine size={20} className="text-slate-400"/>
+                        <h3 className="font-black text-sm uppercase tracking-widest text-slate-500">Éditer mon annonce</h3>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div className="space-y-2 text-left">
+                            <label className="text-[11px] font-black uppercase text-slate-400 ml-2">Tarif horaire (€)</label>
+                            <input type="number" placeholder="ex: 15" className={`w-full p-4 rounded-xl font-black text-xl outline-none border transition-all focus:ring-2 focus:ring-[#E64545]/20 ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-slate-50 border-slate-200'}`} value={price} onChange={(e) => setPrice(e.target.value)} />
+                        </div>
+                        <div className="space-y-2 text-left">
+                            <label className="text-[11px] font-black uppercase text-slate-400 ml-2">Ville</label>
+                            <input type="text" placeholder="ex: Paris" className={`w-full p-4 rounded-xl font-bold text-lg outline-none border transition-all focus:ring-2 focus:ring-[#E64545]/20 ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-slate-50 border-slate-200'}`} value={city} onChange={(e) => setCity(e.target.value)} />
+                        </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div className="space-y-2 text-left">
+                            <label className="text-[11px] font-black uppercase text-slate-400 ml-2">Naissance</label>
+                            <input type="date" className={`w-full p-4 rounded-xl font-bold text-sm outline-none border transition-all ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-slate-50 border-slate-200'}`} value={birthDate} onChange={(e) => setBirthDate(e.target.value)} />
+                        </div>
+                        <div className="space-y-2 text-left">
+                            <label className="text-[11px] font-black uppercase text-slate-400 ml-2">Véhicule</label>
+                            <button onClick={() => setHasCar(!hasCar)} className={`w-full p-4 rounded-xl font-bold text-xs uppercase flex items-center justify-center gap-2 border transition-all ${hasCar ? "bg-[#E0720F] text-white border-[#E0720F]" : "bg-slate-50 text-slate-400 border-slate-200"}`}>
+                                <Car size={16}/> {hasCar ? "Je suis véhiculé" : "Pas de véhicule"}
+                            </button>
+                        </div>
+                    </div>
+
+                    <div className="space-y-2 text-left">
+                        <label className="text-[11px] font-black uppercase text-slate-400 ml-2">Mes Compétences</label>
+                        <div className="flex flex-wrap gap-2">
+                            {AVAILABLE_SKILLS.map((skill, index) => (
+                                <button 
+                                    key={index}
+                                    onClick={() => toggleSkill(skill)}
+                                    className={`px-3 py-2 rounded-lg font-bold text-[10px] uppercase transition-all border ${skills.includes(skill) ? 'bg-slate-800 text-white border-slate-800' : 'bg-white text-slate-400 border-slate-200 hover:border-slate-300'}`}
+                                >
+                                    {skill}
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+
+                    <div className="space-y-2 text-left">
+                        <label className="text-[11px] font-black uppercase text-slate-400 ml-2">Ma Présentation</label>
+                        <textarea placeholder="Présentez-vous aux parents..." className={`w-full p-5 rounded-2xl h-32 font-medium text-sm outline-none border resize-none transition-all focus:ring-2 focus:ring-[#E64545]/20 ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-slate-50 border-slate-200'}`} value={bio} onChange={(e) => setBio(e.target.value)} />
+                    </div>
+
+                    {/* --- DISPONIBILITES RESTAUREES --- */}
+                    <div className="space-y-4 pt-4 border-t border-slate-100">
+                        <h3 className="font-black text-xs uppercase tracking-widest text-slate-400">Mes Disponibilités</h3>
+                        <div className="grid gap-3">
+                           {Object.entries(availability).map(([day, data]) => (
+                               <div key={day} className={`flex items-center justify-between p-4 rounded-2xl border transition-all ${data.active ? 'bg-white border-blue-200 shadow-sm' : 'bg-slate-50 border-transparent opacity-60'}`}>
+                                   <button onClick={() => setAvailability(p => ({...p, [day]: {...p[day], active: !p[day].active}}))} className={`px-4 py-2 rounded-xl font-black text-[10px] uppercase w-24 ${data.active ? 'bg-blue-500 text-white' : 'bg-slate-200 text-slate-400'}`}>{day}</button>
+                                   {data.active && (
+                                       <div className="flex items-center gap-2">
+                                           <input type="time" className="bg-transparent text-xs font-bold" value={data.start} onChange={(e) => setAvailability(p => ({...p, [day]: {...p[day], start: e.target.value}}))} />
+                                           <span className="text-slate-300">-</span>
+                                           <input type="time" className="bg-transparent text-xs font-bold" value={data.end} onChange={(e) => setAvailability(p => ({...p, [day]: {...p[day], end: e.target.value}}))} />
+                                       </div>
+                                   )}
+                               </div>
+                           ))}
+                       </div>
+                    </div>
+
+                    <div className="space-y-3 pt-6 border-t border-slate-100">
+                        <label className="text-[11px] font-black uppercase text-slate-400 ml-2">Joindre un CV (Optionnel)</label>
+                        <input type="file" id="cv-f" className="hidden" onChange={(e) => setCvName(e.target.files[0]?.name || "")} accept=".pdf,image/*" />
+                        <label htmlFor="cv-f" className={`w-full flex items-center justify-between p-4 border rounded-xl cursor-pointer hover:bg-slate-50 transition-all ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-200'}`}>
+                            <div className="flex items-center gap-3">
+                                <FileUp size={18} className="text-slate-400"/>
+                                <span className="text-xs font-bold text-slate-600">{cvName || "Choisir un fichier..."}</span>
+                            </div>
+                            {cvName && <CheckCircle2 className="text-emerald-500" size={18}/>}
+                        </label>
+                    </div>
+
+                    <div className="flex flex-col gap-3 pt-4">
+                        <button onClick={handleSave} disabled={loading} className="w-full py-5 bg-[#E64545] text-white rounded-2xl font-black uppercase tracking-widest shadow-lg shadow-red-100 active:scale-[0.98] transition-all hover:bg-red-600">
+                            {loading ? "..." : (saveStatus || "METTRE À JOUR / PUBLIER")}
+                        </button>
+                        <button onClick={handleDeleteAd} className="w-full py-4 text-red-400 rounded-xl font-black text-[10px] uppercase hover:bg-red-50 transition-colors flex items-center justify-center gap-2">
+                            <Trash size={14}/> Supprimer mon annonce
+                        </button>
+                    </div>
                 </div>
-
-                <button onClick={handleSave} disabled={loading} className={`w-full py-10 rounded-[3.5rem] font-black shadow-2xl flex justify-center items-center gap-4 active:scale-95 transition-all uppercase tracking-[0.4em] text-sm hover:brightness-110 shadow-slate-300 ${isDark ? 'bg-indigo-600 text-white' : 'bg-slate-900 text-white'}`}>{loading ? <Loader2 className="animate-spin" size={32}/> : (saveStatus || "PUBLIER MON PROFIL")}</button>
             </div>
-          </div>
-        ) : (
-          <div className="space-y-8 animate-in fade-in duration-500">
-              <h2 className="text-4xl font-black italic uppercase tracking-tighter leading-none text-left">Missions</h2>
-              <div className="grid gap-6">
-                  {offers.length === 0 && (
-                     <div className={`py-24 text-center rounded-[4rem] border-2 border-dashed italic text-xl shadow-inner flex flex-col items-center justify-center gap-4 ${isDark ? 'bg-slate-900 border-slate-800 text-slate-500' : 'bg-white border-slate-100 text-slate-400'}`}>
-                        <Inbox size={48} className="opacity-20"/>
-                        <p>Aucune offre active...</p>
-                     </div>
-                  )}
-
-                  {offers.sort((a,b) => (b.lastMsgAt?.seconds || 0) - (a.lastMsgAt?.seconds || 0)).map(o => (
-                      <div key={o.id} onClick={() => markAsRead(o)} className={`p-10 rounded-[3.5rem] shadow-xl border flex items-center justify-between hover:border-[#E0720F]/30 cursor-pointer active:scale-[0.99] shadow-md ${isDark ? 'bg-slate-900 border-slate-800 shadow-slate-950' : 'bg-white border-slate-100 shadow-slate-50'}`}>
-                          <div className="flex items-center gap-8 text-slate-800">
-                              <div className={`w-24 h-24 rounded-[2.5rem] overflow-hidden shadow-sm border ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-[#E64545] border-[#E64545]'}`}>
-                                  <UserAvatar photoURL={profile.photoURL} />
-                              </div>
-                              <div className="text-left"><h4 className={`font-black text-3xl italic leading-tight ${isDark ? 'text-white' : ''}`}>{o.parentName}</h4><p className={`text-[11px] font-black uppercase tracking-[0.3em] mt-1 ${isDark ? 'text-indigo-400' : 'text-[#E0720F]'}`}>{o.status === 'accepted' ? 'Validé ✨' : `Offre : ${o.price}€/H`}</p></div>
-                          </div>
-                          {o.hasUnread && o.lastSenderId !== user.uid && <div className="w-4 h-4 bg-[#E64545] rounded-full animate-pulse shadow-xl"></div>}
-                      </div>
-                  ))}
-              </div>
-          </div>
+        )}
+        
+        {activeTab === "messages" && (
+            <div className="space-y-4">
+                <h2 className="text-3xl font-black italic uppercase">Demandes</h2>
+                {offers.length === 0 ? <div className="py-20 text-center text-slate-400 italic">Aucune demande reçue</div> : 
+                 offers.map(o => (
+                    <div key={o.id} onClick={() => setActiveChat(o)} className={`p-6 rounded-3xl shadow-sm border flex items-center justify-between cursor-pointer active:scale-[0.98] transition-all ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-100'}`}>
+                        <div className="flex items-center gap-4 text-left">
+                            <div className="w-12 h-12 bg-[#E64545]/10 rounded-xl flex items-center justify-center text-[#E64545] font-black italic">BK</div>
+                            <div><h4 className="font-black italic text-lg">{o.parentName}</h4><p className="text-[10px] text-slate-400 font-bold uppercase">{o.lastMsg}</p></div>
+                        </div>
+                        <ChevronRight className="text-slate-200" />
+                    </div>
+                ))}
+            </div>
         )}
       </main>
-      <div className={`fixed bottom-10 left-1/2 -translate-x-1/2 w-[90%] max-w-md backdrop-blur-xl p-2.5 rounded-[3.5rem] shadow-2xl flex items-center justify-between z-50 border ${isDark ? 'bg-slate-900/95 border-slate-800' : 'bg-slate-900/95 border-white/10'}`}>
-          <button onClick={() => setActiveTab("profile")} className={`flex-1 flex flex-col items-center py-4 rounded-[2.5rem] transition-all duration-300 ${activeTab === "profile" ? (isDark ? "bg-[#E64545] text-white" : "bg-[#E64545] text-white") : "text-slate-400 hover:text-white"}`}><User size={22}/><span className="text-[9px] font-black uppercase mt-1.5 tracking-widest font-sans">Profil</span></button>
-          <button onClick={() => setActiveTab("messages")} className={`flex-1 flex flex-col items-center py-4 rounded-[2.5rem] transition-all duration-300 relative ${activeTab === "messages" ? (isDark ? "bg-[#E64545] text-white" : "bg-[#E64545] text-white") : "text-slate-400 hover:text-white"}`}><MessageSquare size={22}/><span className="text-[9px] font-black uppercase mt-1.5 font-sans tracking-widest">Offres</span>{unreadCount > 0 && <div className="absolute top-3 right-1/3 w-2.5 h-2.5 bg-[#E0720F] rounded-full border-2 border-slate-900 animate-pulse"></div>}</button>
-          {/* BOUTON REGLAGES DANS LA BARRE DU BAS POUR LE SITTER */}
-          <button onClick={() => setActiveTab("settings")} className={`flex-1 flex flex-col items-center py-4 rounded-[2.5rem] transition-all duration-300 ${activeTab === "settings" ? (isDark ? "bg-[#E64545] text-white" : "bg-[#E64545] text-white") : "text-slate-400 hover:text-white"}`}>
-            <Settings size={22}/>
-            <span className="text-[9px] font-black uppercase mt-1.5 tracking-widest font-sans">Réglages</span>
-        </button>
+
+      <div className={`fixed bottom-10 left-1/2 -translate-x-1/2 w-[90%] max-w-md backdrop-blur-xl p-2.5 rounded-[3rem] shadow-2xl flex items-center justify-between z-50 border ${isDark ? 'bg-slate-900/95 border-slate-800' : 'bg-slate-900/95 border-white/10'}`}>
+        <button onClick={() => setActiveTab("profile")} className={`flex-1 flex flex-col items-center py-4 rounded-[2.5rem] ${activeTab === "profile" ? "bg-[#E64545] text-white" : "text-slate-400"}`}><User size={22}/><span className="text-[9px] font-black uppercase mt-1.5 tracking-widest font-sans">Annonce</span></button>
+        <button onClick={() => setActiveTab("messages")} className={`flex-1 flex flex-col items-center py-4 rounded-[2.5rem] ${activeTab === "messages" ? "bg-[#E64545] text-white" : "text-slate-400"}`}><MessageSquare size={22}/><span className="text-[9px] font-black uppercase mt-1.5 font-sans tracking-widest">Demandes</span></button>
+        <button onClick={() => setActiveTab("settings")} className={`flex-1 flex flex-col items-center py-4 rounded-[2.5rem] ${activeTab === "settings" ? "bg-[#E64545] text-white" : "text-slate-400"}`}><Settings size={22}/><span className="text-[9px] font-black uppercase mt-1.5 tracking-widest font-sans">Réglages</span></button>
       </div>
     </div>
   );
 };
 
 // ==========================================
-// 8. LOGIQUE RACINE
+// 10. LOGIQUE RACINE
 // ==========================================
 
 export default function App() {
@@ -1532,21 +1565,16 @@ export default function App() {
   useEffect(() => {
     let unsubP = null;
     const minSplashTimer = new Promise(resolve => setTimeout(resolve, 800));
-    signOut(auth);
-    
     const unsubA = onAuthStateChanged(auth, async (u) => {
       setUser(u);
       if (u) {
         unsubP = onSnapshot(doc(db, 'artifacts', appId, 'users', u.uid, 'settings', 'profile'), async (snap) => {
-          if (snap.exists()) { setProfile(snap.data()); } else { setProfile(null); }
-          await minSplashTimer;
-          setInit(true);
+          if (snap.exists()) setProfile(snap.data()); else setProfile(null);
+          await minSplashTimer; setInit(true);
         });
       } else {
-        setProfile(null);
-        if (unsubP) unsubP();
-        await minSplashTimer;
-        setInit(true);
+        setProfile(null); if (unsubP) unsubP();
+        await minSplashTimer; setInit(true);
       }
     });
     return () => { unsubA(); if (unsubP) unsubP(); };
@@ -1554,8 +1582,7 @@ export default function App() {
 
   if (!init) return <SplashScreen />;
   if (!user) return <AuthScreen />;
-  if (user && !profile) return <CompleteProfileScreen uid={user.uid} serviceType={profile?.serviceType} />; // Pass serviceType here to keep consistency
+  if (user && !profile) return <CompleteProfileScreen uid={user.uid} />;
   
-  // Redirection en fonction du ROLE et de l'UNIVERS (Enfant ou Animaux)
   return profile.role === "parent" ? <ParentDashboard profile={profile} user={user} /> : <SitterDashboard user={user} profile={profile} />;
 }
