@@ -27,12 +27,12 @@ import {
   orderBy,
   where
 } from "firebase/firestore";
-// Importations des icônes
+// Importations des icônes (Nettoyées et Sécurisées)
 import { 
   Baby, LogOut, Save, Search, Loader2, AlertCircle, ShieldCheck, 
   Euro, User, Mail, Lock, ChevronRight, Sparkles, Heart, Filter, Calendar,
   Clock, UserPlus, Cake, FileUp, FileText, CheckCircle2, MessageSquare, 
-  Send, X, Check, ArrowLeft, MessageCircle, PartyPopper, Star, MapPin, Camera, SlidersHorizontal, Settings, KeyRound, Phone, Trash2, Palette, Image as ImageIcon, Share2, Quote, TrendingUp, Zap, Trophy, Languages, EyeOff, Moon, Sun, Bell, Flag, Eye, Wallet, Car, CreditCard, LockKeyhole, Crown, Info, Dog, Cat, Bone, PawPrint, RefreshCw, HelpCircle, Power, Inbox, PenLine
+  Send, X, Check, ArrowLeft, MessageCircle, PartyPopper, Star, MapPin, Camera, SlidersHorizontal, Settings, KeyRound, Phone, Trash2, Palette, Image as ImageIcon, Share2, Quote, TrendingUp, Zap, Trophy, Languages, EyeOff, Moon, Sun, Bell, Flag, Eye, Wallet, Car, CreditCard, LockKeyhole, Crown, Info, Dog, Cat, Bone, PawPrint, RefreshCw, HelpCircle, Power, Inbox, Edit2
 } from "lucide-react";
 
 // ==========================================
@@ -54,8 +54,18 @@ const db = getFirestore(app, "default");
 const appId = "sitfinder-prod-v1";
 
 // ==========================================
-// 2. UTILITAIRES DE DESIGN & LOGIQUE
+// 2. UTILITAIRES & CONSTANTES
 // ==========================================
+
+const DEFAULT_AVAILABILITY = {
+  Lundi: { active: false, start: "08:00", end: "18:00" },
+  Mardi: { active: false, start: "08:00", end: "18:00" },
+  Mercredi: { active: false, start: "08:00", end: "18:00" },
+  Jeudi: { active: false, start: "08:00", end: "18:00" },
+  Vendredi: { active: false, start: "08:00", end: "18:00" },
+  Samedi: { active: false, start: "08:00", end: "18:00" },
+  Dimanche: { active: false, start: "08:00", end: "18:00" },
+};
 
 const SitFinderLogo = ({ className = "w-16 h-16", glow = true }) => (
   <div className={`relative flex items-center justify-center ${className}`}>
@@ -95,7 +105,7 @@ const calculateAge = (birth) => {
   return age;
 };
 
-// --- FONCTION COMPRESSION IMAGE (ANTI-CRASH) ---
+// Compression d'image (Sécurisée)
 const compressImage = (file) => {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
@@ -137,8 +147,8 @@ const SplashScreen = ({ message = "La recherche en toute confiance" }) => (
   </div>
 );
 
-// --- CORRECTION CRASH AVATAR ---
 const UserAvatar = ({ photoURL, size = "w-full h-full", className = "" }) => {
+    // Protection anti-crash
     if (photoURL && typeof photoURL === 'string' && photoURL.length > 50) {
         return <img src={photoURL} alt="User" className={`${size} object-cover ${className}`} />;
     }
@@ -150,7 +160,7 @@ const UserAvatar = ({ photoURL, size = "w-full h-full", className = "" }) => {
 };
 
 // ==========================================
-// 3. COMPOSANT GLOBAL : FAQ
+// 3. COMPOSANTS GLOBAUX
 // ==========================================
 
 const FAQModal = ({ onClose }) => {
@@ -164,7 +174,7 @@ const FAQModal = ({ onClose }) => {
 
     return (
         <div className="fixed inset-0 bg-slate-900/90 backdrop-blur-md z-[70] flex items-center justify-center p-6 text-slate-900 animate-in fade-in zoom-in duration-300">
-            <div className="bg-white w-full max-w-md rounded-[3rem] p-8 space-y-6 max-h-[80vh] overflow-y-auto">
+            <div className="bg-white w-full max-w-md rounded-[2rem] p-8 space-y-6 max-h-[80vh] overflow-y-auto shadow-2xl">
                 <div className="flex justify-between items-center">
                     <h3 className="text-2xl font-black italic uppercase tracking-tighter text-[#E64545]">Questions Freq.</h3>
                     <button onClick={onClose} className="p-3 bg-slate-100 rounded-full"><X size={20}/></button>
@@ -262,7 +272,7 @@ const ModeSwitcher = ({ currentRole, currentService, uid }) => {
 
     return (
         <div className="relative z-50">
-            <button onClick={() => setIsOpen(!isOpen)} className="p-2 rounded-2xl bg-slate-100 text-slate-600 border border-slate-200 shadow-sm flex items-center gap-2 active:scale-95 transition-all">
+            <button onClick={() => setIsOpen(!isOpen)} className="p-2 rounded-xl bg-slate-100 text-slate-600 border border-slate-200 shadow-sm flex items-center gap-2 active:scale-95 transition-all">
                 <RefreshCw size={18} className={isOpen ? "animate-spin" : ""} />
                 <span className="text-[10px] font-black uppercase hidden md:inline">Mode</span>
             </button>
@@ -293,7 +303,7 @@ const ModeSwitcher = ({ currentRole, currentService, uid }) => {
 };
 
 // ==========================================
-// 4. COMPOSANT PARAMÈTRES (SYNC PHOTO + DELETE)
+// 4. COMPOSANT PARAMÈTRES
 // ==========================================
 
 const SettingsView = ({ user, profile, onBack, isDark, toggleDark }) => {
@@ -325,7 +335,7 @@ const SettingsView = ({ user, profile, onBack, isDark, toggleDark }) => {
         const compressedBase64 = await compressImage(file);
         setCustomPhoto(compressedBase64);
       } catch (error) {
-          alert("Image invalide ou trop lourde");
+          alert("Image invalide");
       }
     }
   };
@@ -336,10 +346,8 @@ const SettingsView = ({ user, profile, onBack, isDark, toggleDark }) => {
     try {
       const updateData = { name: newName, phone, photoURL: customPhoto, privateMode };
       
-      // 1. Mise à jour profil privé
       await updateDoc(doc(db, 'artifacts', appId, 'users', user.uid, 'settings', 'profile'), updateData);
       
-      // 2. Mise à jour FORCEE profil public (Sitter)
       const publicSitterRef = doc(db, 'artifacts', appId, 'public', 'data', 'sitters', user.uid);
       const publicDoc = await getDoc(publicSitterRef);
       if (publicDoc.exists()) {
@@ -352,7 +360,7 @@ const SettingsView = ({ user, profile, onBack, isDark, toggleDark }) => {
       }
 
       setStatus({ type: "success", msg: "Enregistré !" });
-    } catch (err) { console.error(err); setStatus({ type: "error", msg: "Erreur..." }); }
+    } catch (err) { setStatus({ type: "error", msg: "Erreur..." }); }
     finally { setLoading(false); }
   };
 
@@ -366,7 +374,7 @@ const SettingsView = ({ user, profile, onBack, isDark, toggleDark }) => {
       <div className="max-w-2xl w-full mx-auto p-6 space-y-8 pb-52"> 
         {status.msg && <div className="p-4 bg-[#E0720F]/10 text-[#E0720F] rounded-2xl font-bold text-center text-xs uppercase">{status.msg}</div>}
 
-        <div className={`p-8 rounded-[3rem] border flex justify-between items-center ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-50'}`}>
+        <div className={`p-8 rounded-[2rem] border flex justify-between items-center ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-50'}`}>
            <div className="flex items-center gap-4"><Moon size={24} className="text-[#E0720F]"/><p className="font-black text-xs uppercase">Mode Sombre</p></div>
            <button onClick={toggleDark} className={`w-14 h-7 rounded-full relative ${isDark ? 'bg-[#E64545]' : 'bg-slate-200'}`}><div className={`absolute top-1 w-5 h-5 bg-white rounded-full shadow ${isDark ? 'right-1' : 'left-1'}`}></div></button>
         </div>
@@ -381,13 +389,13 @@ const SettingsView = ({ user, profile, onBack, isDark, toggleDark }) => {
         </div>
 
         <form onSubmit={handleUpdateProfile} className="space-y-6">
-            <input value={newName} onChange={e=>setNewName(e.target.value)} className={`w-full p-4 rounded-2xl font-bold outline-none border ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-100'}`} placeholder="Prénom" />
-            <input value={phone} onChange={e=>setPhone(e.target.value)} className={`w-full p-4 rounded-2xl font-bold outline-none border ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-100'}`} placeholder="Téléphone" />
+            <input value={newName} onChange={e=>setNewName(e.target.value)} className={`w-full p-4 rounded-xl font-bold outline-none border ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-100'}`} placeholder="Prénom" />
+            <input value={phone} onChange={e=>setPhone(e.target.value)} className={`w-full p-4 rounded-xl font-bold outline-none border ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-100'}`} placeholder="Téléphone" />
             <div className="flex items-center justify-between p-4 bg-slate-50/50 rounded-2xl">
                 <div className="flex items-center gap-3"><EyeOff size={16} className="text-slate-400"/><p className="text-xs font-black uppercase">Mode Privé</p></div>
                 <button type="button" onClick={() => setPrivateMode(!privateMode)} className={`w-12 h-6 rounded-full relative ${privateMode ? 'bg-[#E64545]' : 'bg-slate-300'}`}><div className={`absolute top-1 w-4 h-4 bg-white rounded-full ${privateMode ? 'right-1' : 'left-1'}`}></div></button>
             </div>
-            <button disabled={loading} className="w-full bg-[#E64545] text-white py-5 rounded-2xl font-black uppercase shadow-xl hover:brightness-110">Sauvegarder</button>
+            <button disabled={loading} className="w-full bg-[#E64545] text-white py-4 rounded-2xl font-black uppercase shadow-xl hover:brightness-110">Sauvegarder</button>
         </form>
 
         <div className="space-y-6 pt-8"> 
@@ -468,8 +476,6 @@ const ChatRoom = ({ offer, currentUser, onBack, isDark }) => {
   const [liveOffer, setLiveOffer] = useState(offer);
   const chatEndRef = useRef(null);
 
-  const scrollToBottom = () => chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
-
   useEffect(() => {
     const q = collection(db, 'artifacts', appId, 'public', 'data', 'offers', offer.id, 'messages');
     const unsubMsg = onSnapshot(q, (snap) => {
@@ -523,11 +529,8 @@ const ChatRoom = ({ offer, currentUser, onBack, isDark }) => {
                       message: msgText
                   }
               );
-              console.log("Notif envoyée");
           }
-      } catch (error) {
-          console.error("Erreur envoi mail:", error);
-      }
+      } catch (error) { console.error(error); }
   };
 
   const handleReport = async () => {
@@ -830,11 +833,9 @@ const CompleteProfileScreen = ({ uid, serviceType }) => {
       const file = e.target.files[0];
       if (file) {
           try {
-             // Compression de l'image
              const compressedBase64 = await compressImage(file);
              setPhoto(compressedBase64);
           } catch (error) {
-             console.error("Erreur compression image", error);
              alert("Impossible d'utiliser cette image.");
           }
       }
@@ -940,7 +941,6 @@ const ParentDashboard = ({ profile, user }) => {
   useEffect(() => {
     localStorage.setItem('dark', isDark);
     const unsubSitters = onSnapshot(collection(db, 'artifacts', appId, 'public', 'data', 'sitters'), (snap) => {
-      // ON AFFICHE TOUS LES SITTERS DE LA CATEGORIE (Y COMPRIS SOI-MEME POUR VERIFIER L'ANNONCE)
       setSitters(snap.docs.map(d => ({ id: d.id, ...d.data() })).filter(s => s.serviceType === profile.serviceType));
       setLoading(false);
     });
@@ -1315,7 +1315,7 @@ const SitterDashboard = ({ user, profile }) => {
   const [birthDate, setBirthDate] = useState("");
   const [cvName, setCvName] = useState("");
   const [hasCar, setHasCar] = useState(false);
-  const [skills, setSkills] = useState([]); // Initialisé à tableau vide
+  const [skills, setSkills] = useState([]); // Initialisé à tableau vide pour éviter le crash
   
   const [loading, setLoading] = useState(false);
   const [activeTab, setActiveTab] = useState("profile");
@@ -1324,12 +1324,7 @@ const SitterDashboard = ({ user, profile }) => {
   const [isDark, setIsDark] = useState(localStorage.getItem('dark') === 'true');
   const [saveStatus, setSaveStatus] = useState("");
   const [isInstant, setIsInstant] = useState(false);
-  const [availability, setAvailability] = useState({
-    Lundi: { active: false, start: "08:00", end: "18:00" }, Mardi: { active: false, start: "08:00", end: "18:00" },
-    Mercredi: { active: false, start: "08:00", end: "18:00" }, Jeudi: { active: false, start: "08:00", end: "18:00" },
-    Vendredi: { active: false, start: "08:00", end: "18:00" }, Samedi: { active: false, start: "08:00", end: "18:00" },
-    Dimanche: { active: false, start: "08:00", end: "18:00" },
-  });
+  const [availability, setAvailability] = useState(DEFAULT_AVAILABILITY);
 
   const isPet = profile.serviceType === 'pet';
   const AVAILABLE_SKILLS = isPet 
@@ -1342,8 +1337,9 @@ const SitterDashboard = ({ user, profile }) => {
       if (snap.exists()) {
         const d = snap.data(); setBio(d.bio || ""); setPrice(d.price || ""); setCity(d.city || "");
         setBirthDate(d.birthDate || ""); setCvName(d.cvName || ""); setHasCar(d.hasCar || false);
-        if (d.skills) setSkills(d.skills);
-        if (d.availability) setAvailability(d.availability);
+        // SECURITE : Utilisation de || [] et || {} pour éviter les erreurs si données manquantes
+        if (d.skills) setSkills(d.skills); else setSkills([]);
+        if (d.availability) setAvailability(d.availability); else setAvailability(DEFAULT_AVAILABILITY);
         if(d.instantAvailableUntil && new Date(d.instantAvailableUntil) > new Date()) setIsInstant(true);
       }
     });
@@ -1396,17 +1392,14 @@ const SitterDashboard = ({ user, profile }) => {
         <div className="flex items-center gap-2"><SitFinderLogo className="w-8 h-8" glow={false} /><span className="font-black italic text-lg uppercase">BABYKEEPER</span></div>
         <div className="flex items-center gap-1.5">
           <ModeSwitcher currentRole={profile.role} currentService={profile.serviceType || 'baby'} uid={user.uid} />
-          
           <button onClick={() => setShowFAQ(true)} className={`p-2 rounded-2xl transition-all shadow-sm flex items-center justify-center ${isDark ? 'bg-slate-800 text-slate-300' : 'bg-white border border-slate-100 text-slate-400'}`}>
               <HelpCircle size={20} />
           </button>
-
           <button onClick={() => setActiveTab("premium")} className={`p-2 rounded-2xl transition-all shadow-md bg-gradient-to-br from-yellow-400 to-orange-500 text-white animate-pulse`}><Crown size={20} fill="white" /></button>
           <div className="relative p-2 text-slate-400"><Bell size={20}/>{unreadCount > 0 && <span className="absolute top-1 right-1 w-4 h-4 bg-[#E64545] text-white text-[8px] font-black rounded-full flex items-center justify-center border-2 border-white animate-bounce">{unreadCount}</span>}</div>
-          <button onClick={() => setActiveTab("settings")} className={`p-2 rounded-2xl transition-all ${isDark ? 'bg-slate-800 text-[#E0720F]' : 'bg-slate-50 text-slate-300'}`}><Settings size={20} /></button>
-          <button onClick={() => signOut(auth)} className={`p-2 rounded-2xl transition-all ${isDark ? 'bg-slate-800 text-slate-400' : 'bg-slate-50 text-slate-300'}`}><LogOut size={20} /></button>
         </div>
       </nav>
+
       <main className="p-6 max-w-4xl mx-auto space-y-8 animate-in fade-in duration-500">
         {activeTab === "profile" && (
             <div className="space-y-6">
@@ -1435,7 +1428,7 @@ const SitterDashboard = ({ user, profile }) => {
                 {/* --- FORMULAIRE EDITION COMPLET --- */}
                 <div className={`p-8 rounded-[2.5rem] shadow-xl border space-y-8 ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-50'}`}>
                     <div className="flex items-center gap-3 pb-4 border-b border-slate-100">
-                        <PenLine size={20} className="text-slate-400"/>
+                        <Edit2 size={20} className="text-slate-400"/>
                         <h3 className="font-black text-sm uppercase tracking-widest text-slate-500">Éditer mon annonce</h3>
                     </div>
 
