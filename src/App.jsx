@@ -1637,11 +1637,4 @@ export default function App() {
         if (unsubP) unsubP();
         await minSplashTimer;
         setInit(true);
-      }
-    });
-    return () => { unsubA(); if (unsubP) unsubP(); };
-  }, []);
-
-  if (!init) return <SplashScreen />;
-  if (!user) return <AuthScreen />;
-  i
+   
