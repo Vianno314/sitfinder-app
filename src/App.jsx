@@ -152,7 +152,6 @@ const UserAvatar = ({ photoURL, size = "w-full h-full", className = "" }) => {
 // ==========================================
 
 const FAQModal = ({ onClose }) => {
-    // JE REMETS TOUTES LES QUESTIONS ET LE LIEN SUPPORT
     const faqs = [
         { q: "Comment payer le Sitter ?", r: "Le paiement se fait en direct (Espèces, Lydia, CESU) à la fin de la garde. BabyKeeper ne prend aucune commission." },
         { q: "C'est quoi le point vert ?", r: "C'est le mode 'Dispo Immédiate'. Le Sitter est prêt à intervenir tout de suite (urgence)." },
@@ -176,7 +175,6 @@ const FAQModal = ({ onClose }) => {
                         </div>
                     ))}
                 </div>
-                {/* LIEN SUPPORT RESTAURÉ */}
                 <div className="text-center pt-6 border-t border-slate-100">
                     <p className="text-xs text-slate-400 mb-2 font-bold uppercase">Un problème ?</p>
                     <a href="mailto:babykeeper.bordais@gmail.com" className="inline-flex items-center gap-2 px-4 py-2 bg-slate-100 rounded-lg text-xs font-black text-slate-600 hover:bg-[#E64545] hover:text-white transition-colors uppercase tracking-widest">
@@ -672,7 +670,7 @@ const ChatRoom = ({ offer, currentUser, onBack, isDark }) => {
       )}
 
       <form onSubmit={sendMessage} className={`p-4 border-t flex gap-4 pb-12 ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-100'}`}>
-        <input type="text" placeholder="Répondre..." className={`flex-1 p-4 rounded-xl outline-none font-bold shadow-inner ${isDark ? 'bg-slate-800 text-white' : 'bg-slate-50 text-slate-700'}`} value={newMessage} onChange={(e) => setNewMessage(e.target.value)} />
+        <input type="text" placeholder="Répondre..." className={`flex-1 p-4 rounded-xl outline-none font-bold shadow-inner ${isDark ? 'bg-slate-800 text-white' : 'bg-slate-100 text-slate-700'}`} value={newMessage} onChange={(e) => setNewMessage(e.target.value)} />
         <button type="submit" className="bg-[#E0720F] text-white p-4 rounded-xl shadow-lg active:scale-95 transition-all"><Send size={20}/></button>
       </form>
     </div>
@@ -1076,6 +1074,7 @@ const ParentDashboard = ({ profile, user }) => {
                        </select>
                    </div>
                    <div className="space-y-2 text-left"><div className="flex justify-between items-center text-slate-800"><label className="text-[10px] font-black text-slate-400 uppercase italic">Budget ({maxPrice}€)</label><span className="text-sm font-black text-[#E64545] font-sans">{maxPrice}€/H</span></div><input type="range" min="10" max="100" step="5" className="w-full accent-[#E64545]" value={maxPrice} onChange={(e) => setMaxPrice(e.target.value)} /></div>
+                   <div className="flex gap-3 pt-4"><button onClick={() => setOnlyVerified(!onlyVerified)} className={`flex-1 py-3 rounded-xl text-[10px] font-black uppercase transition-all ${onlyVerified ? 'bg-[#E64545]/10 text-[#E64545]' : (isDark ? 'bg-slate-800' : 'bg-slate-50')}`}>Sitter Pro ✨</button><button onClick={() => setOnlyFavorites(!onlyFavorites)} className={`flex-1 py-3 rounded-xl text-[10px] font-black uppercase transition-all ${onlyFavorites ? 'bg-red-50 text-red-600' : (isDark ? 'bg-slate-800' : 'bg-slate-50')}`}>Favoris ❤️</button></div>
                 </div>
               )}
             </div>
@@ -1104,6 +1103,10 @@ const ParentDashboard = ({ profile, user }) => {
                                    <Star size={12} className="text-[#E0720F]" fill="#E0720F"/>
                                    <span className="text-xs font-bold text-slate-500">{s.rating || 5}</span>
                                    <span className="text-[10px] text-slate-400 ml-1">({s.views || 0} vues)</span>
+                               </div>
+                               <div className="flex gap-1 mt-1">
+                                   {(s.hasCV) && <div className="flex items-center gap-1 bg-blue-50 text-blue-600 px-2 py-0.5 rounded text-[8px] font-black uppercase tracking-widest border border-blue-100"><ShieldCheck size={8}/> VÉRIFIÉ</div>}
+                                   {(s.level) && <div className="flex items-center gap-1 bg-orange-50 text-orange-600 px-2 py-0.5 rounded text-[8px] font-black uppercase tracking-widest border border-orange-100">NIV {s.level}</div>}
                                </div>
                            </div>
                       </div>
@@ -1395,6 +1398,7 @@ const SitterDashboard = ({ user, profile }) => {
 
   if (activeChat) return <ChatRoom offer={activeChat} currentUser={user} onBack={() => setActiveChat(null)} isDark={isDark} />;
   if (activeTab === "settings") return <SettingsView user={user} profile={profile} onBack={() => setActiveTab("profile")} isDark={isDark} toggleDark={() => setIsDark(!isDark)} />;
+  if (activeTab === "premium") return <PremiumView onBack={() => setActiveTab("profile")} isDark={isDark} />; // CORRECTION ICI
 
   return (
     <div className={`min-h-screen font-sans pb-24 transition-colors duration-300 ${isDark ? 'bg-slate-950 text-slate-100' : 'bg-slate-50 text-slate-800'}`}>
@@ -1636,12 +1640,11 @@ export default function App() {
   useEffect(() => {
     let unsubP = null;
     const minSplashTimer = new Promise(resolve => setTimeout(resolve, 800));
-    
     const unsubA = onAuthStateChanged(auth, async (u) => {
       setUser(u);
       if (u) {
         unsubP = onSnapshot(doc(db, 'artifacts', appId, 'users', u.uid, 'settings', 'profile'), async (snap) => {
-          if (snap.exists()) { setProfile(snap.data()); } else { setProfile(null); }
+          if (snap.exists()) setProfile(snap.data()); else setProfile(null);
           await minSplashTimer;
           setInit(true);
         });
