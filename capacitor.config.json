@@ -1,6 +1,6 @@
 {
   "appId": "com.babykeeper.app",
   "appName": "BabyKeeper",
-  "webDir": "build",
+  "webDir": "dist",
   "bundledWebRuntime": false
 }
