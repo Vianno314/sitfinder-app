@@ -27,12 +27,12 @@ import {
   orderBy,
   where
 } from "firebase/firestore";
-// Importations des icônes (Sécurisées pour éviter les crashs)
+// Importations des icônes
 import { 
   Baby, LogOut, Save, Search, Loader2, AlertCircle, ShieldCheck, 
   Euro, User, Mail, Lock, ChevronRight, Sparkles, Heart, Filter, Calendar,
   Clock, UserPlus, Cake, FileUp, FileText, CheckCircle2, MessageSquare, 
-  Send, X, Check, ArrowLeft, MessageCircle, PartyPopper, Star, MapPin, Camera, SlidersHorizontal, Settings, KeyRound, Phone, Trash2, Palette, Image as ImageIcon, Share2, Quote, TrendingUp, Zap, Trophy, Languages, EyeOff, Moon, Sun, Bell, Flag, Eye, Wallet, Car, CreditCard, LockKeyhole, Crown, Info, Dog, Cat, Bone, PawPrint, RefreshCw, HelpCircle, Power, Inbox, Edit3
+  Send, X, Check, ArrowLeft, MessageCircle, PartyPopper, Star, MapPin, Camera, SlidersHorizontal, Settings, KeyRound, Phone, Trash2, Palette, Image as ImageIcon, Share2, Quote, TrendingUp, Zap, Trophy, Languages, EyeOff, Moon, Sun, Bell, Flag, Eye, Wallet, Car, CreditCard, LockKeyhole, Crown, Info, Dog, Cat, Bone, PawPrint, RefreshCw, HelpCircle, Power, Inbox, PenLine
 } from "lucide-react";
 
 // ==========================================
@@ -54,7 +54,7 @@ const db = getFirestore(app, "default");
 const appId = "sitfinder-prod-v1";
 
 // ==========================================
-// 2. UTILITAIRES DE DESIGN & LOGIQUE
+// 2. UTILITAIRES DE DESIGN
 // ==========================================
 
 const SitFinderLogo = ({ className = "w-16 h-16", glow = true }) => (
@@ -95,7 +95,7 @@ const calculateAge = (birth) => {
   return age;
 };
 
-// --- FONCTION COMPRESSION IMAGE ---
+// Compression d'image
 const compressImage = (file) => {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
@@ -137,9 +137,7 @@ const SplashScreen = ({ message = "La recherche en toute confiance" }) => (
   </div>
 );
 
-// --- CORRECTION CRASH AVATAR ---
 const UserAvatar = ({ photoURL, size = "w-full h-full", className = "" }) => {
-    // Vérification stricte : doit être une chaine de caractères et avoir du contenu
     if (photoURL && typeof photoURL === 'string' && photoURL.length > 50) {
         return <img src={photoURL} alt="User" className={`${size} object-cover ${className}`} />;
     }
@@ -294,7 +292,7 @@ const ModeSwitcher = ({ currentRole, currentService, uid }) => {
 };
 
 // ==========================================
-// 4. COMPOSANT PARAMÈTRES (SYNC PHOTO + DELETE)
+// 4. COMPOSANT PARAMÈTRES
 // ==========================================
 
 const SettingsView = ({ user, profile, onBack, isDark, toggleDark }) => {
@@ -337,10 +335,8 @@ const SettingsView = ({ user, profile, onBack, isDark, toggleDark }) => {
     try {
       const updateData = { name: newName, phone, photoURL: customPhoto, privateMode };
       
-      // 1. Mise à jour profil privé
       await updateDoc(doc(db, 'artifacts', appId, 'users', user.uid, 'settings', 'profile'), updateData);
       
-      // 2. Mise à jour FORCEE profil public (Sitter)
       const publicSitterRef = doc(db, 'artifacts', appId, 'public', 'data', 'sitters', user.uid);
       const publicDoc = await getDoc(publicSitterRef);
       if (publicDoc.exists()) {
@@ -1398,9 +1394,11 @@ const SitterDashboard = ({ user, profile }) => {
         <div className="flex items-center gap-2"><SitFinderLogo className="w-8 h-8" glow={false} /><span className="font-black italic text-lg uppercase">BABYKEEPER</span></div>
         <div className="flex items-center gap-1.5">
           <ModeSwitcher currentRole={profile.role} currentService={profile.serviceType || 'baby'} uid={user.uid} />
+          
           <button onClick={() => setShowFAQ(true)} className={`p-2 rounded-2xl transition-all shadow-sm flex items-center justify-center ${isDark ? 'bg-slate-800 text-slate-300' : 'bg-white border border-slate-100 text-slate-400'}`}>
               <HelpCircle size={20} />
           </button>
+
           <button onClick={() => setActiveTab("premium")} className={`p-2 rounded-2xl transition-all shadow-md bg-gradient-to-br from-yellow-400 to-orange-500 text-white animate-pulse`}><Crown size={20} fill="white" /></button>
           <div className="relative p-2 text-slate-400"><Bell size={20}/>{unreadCount > 0 && <span className="absolute top-1 right-1 w-4 h-4 bg-[#E64545] text-white text-[8px] font-black rounded-full flex items-center justify-center border-2 border-white animate-bounce">{unreadCount}</span>}</div>
           <button onClick={() => setActiveTab("settings")} className={`p-2 rounded-2xl transition-all ${isDark ? 'bg-slate-800 text-[#E0720F]' : 'bg-slate-50 text-slate-300'}`}><Settings size={20} /></button>
@@ -1435,7 +1433,7 @@ const SitterDashboard = ({ user, profile }) => {
                 {/* --- FORMULAIRE EDITION COMPLET --- */}
                 <div className={`p-8 rounded-[2.5rem] shadow-xl border space-y-8 ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-50'}`}>
                     <div className="flex items-center gap-3 pb-4 border-b border-slate-100">
-                        <Edit3 size={20} className="text-slate-400"/>
+                        <PenLine size={20} className="text-slate-400"/>
                         <h3 className="font-black text-sm uppercase tracking-widest text-slate-500">Éditer mon annonce</h3>
                     </div>
 
@@ -1572,8 +1570,10 @@ export default function App() {
           setInit(true);
         });
       } else {
-        setProfile(null); if (unsubP) unsubP();
-        await minSplashTimer; setInit(true);
+        setProfile(null);
+        if (unsubP) unsubP();
+        await minSplashTimer;
+        setInit(true);
       }
     });
     return () => { unsubA(); if (unsubP) unsubP(); };
