@@ -32,7 +32,7 @@ import {
   Baby, LogOut, Save, Search, Loader2, AlertCircle, ShieldCheck, 
   Euro, User, Mail, Lock, ChevronRight, Sparkles, Heart, Filter, Calendar,
   Clock, UserPlus, Cake, FileUp, FileText, CheckCircle2, MessageSquare, 
-  Send, X, Check, ArrowLeft, MessageCircle, PartyPopper, Star, MapPin, Camera, SlidersHorizontal, Settings, KeyRound, Phone, Trash2, Palette, Image as ImageIcon, Share2, Quote, TrendingUp, Zap, Trophy, Languages, EyeOff, Moon, Sun, Bell, Flag, Eye, Wallet, Car, CreditCard, LockKeyhole, Crown, Info, Dog, Cat, Bone, PawPrint, RefreshCw, HelpCircle, Power, Inbox
+  Send, X, Check, ArrowLeft, MessageCircle, PartyPopper, Star, MapPin, Camera, SlidersHorizontal, Settings, KeyRound, Phone, Trash2, Palette, Image as ImageIcon, Share2, Quote, TrendingUp, Zap, Trophy, Languages, EyeOff, Moon, Sun, Bell, Flag, Eye, Wallet, Car, CreditCard, LockKeyhole, Crown, Info, Dog, Cat, Bone, PawPrint, RefreshCw, HelpCircle, Power, Inbox, Edit3
 } from "lucide-react";
 
 // ==========================================
@@ -95,31 +95,15 @@ const calculateAge = (birth) => {
   return age;
 };
 
-// Compression d'image
-const compressImage = (file) => {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.readAsDataURL(file);
-    reader.onload = (event) => {
-      const img = new Image();
-      img.src = event.target.result;
-      img.onload = () => {
-        const canvas = document.createElement('canvas');
-        const MAX_WIDTH = 500;
-        const scaleSize = MAX_WIDTH / img.width;
-        if (scaleSize >= 1) {
-            canvas.width = img.width; canvas.height = img.height;
-        } else {
-            canvas.width = MAX_WIDTH; canvas.height = img.height * scaleSize;
-        }
-        const ctx = canvas.getContext('2d');
-        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-        resolve(canvas.toDataURL('image/jpeg', 0.8)); 
-      };
-      img.onerror = (e) => reject(e);
-    };
-    reader.onerror = (e) => reject(e);
-  });
+const UserAvatar = ({ photoURL, size = "w-full h-full", className = "" }) => {
+    if (photoURL) {
+        return <img src={photoURL} alt="User" className={`${size} object-cover ${className}`} />;
+    }
+    return (
+        <div className={`${size} bg-slate-200 flex items-center justify-center text-slate-400 ${className}`}>
+            <User size="50%" />
+        </div>
+    );
 };
 
 const SplashScreen = ({ message = "La recherche en toute confiance" }) => (
@@ -137,24 +121,13 @@ const SplashScreen = ({ message = "La recherche en toute confiance" }) => (
   </div>
 );
 
-const UserAvatar = ({ photoURL, size = "w-full h-full", className = "" }) => {
-    if (photoURL && photoURL.length > 50) {
-        return <img src={photoURL} alt="User" className={`${size} object-cover ${className}`} />;
-    }
-    return (
-        <div className={`${size} bg-slate-200 flex items-center justify-center text-slate-400 ${className}`}>
-            <User size="50%" />
-        </div>
-    );
-};
-
 // ==========================================
 // 3. COMPOSANTS GLOBAUX
 // ==========================================
 
 const FAQModal = ({ onClose }) => {
     const faqs = [
-        { q: "Comment payer le Sitter ?", r: "Le paiement se fait en direct (Espèces, Lydia, CESU) à la fin de la garde. BabyKeeper ne prend aucune commission." },
+        { q: "Comment payer le Sitter ?", r: "Le paiement se fait en direct (Espèces, Lydia, CESU) à la fin de la garde. BabyKeeper ne prend aucune commission sur les gardes." },
         { q: "C'est quoi le point vert ?", r: "C'est le mode 'Dispo Immédiate'. Le Sitter est prêt à intervenir tout de suite (urgence)." },
         { q: "Je veux garder des animaux aussi !", r: "Cliquez sur le bouton 'Mode' en haut à droite et choisissez 'Pet-Sitter'." },
         { q: "Comment avoir le badge Vérifié ?", r: "Remplissez votre profil à 100% et ajoutez une photo claire." },
@@ -292,7 +265,7 @@ const ModeSwitcher = ({ currentRole, currentService, uid }) => {
 };
 
 // ==========================================
-// 4. COMPOSANT PARAMÈTRES (CORRIGÉ PHOTO PUBLIC)
+// 4. COMPOSANT PARAMÈTRES (AVEC PADDING ENORME POUR MOBILE)
 // ==========================================
 
 const SettingsView = ({ user, profile, onBack, isDark, toggleDark }) => {
@@ -317,15 +290,12 @@ const SettingsView = ({ user, profile, onBack, isDark, toggleDark }) => {
     }
   };
 
-  const handlePhotoUpload = async (e) => {
+  const handlePhotoUpload = (e) => {
     const file = e.target.files[0];
     if (file) {
-      try {
-        const compressedBase64 = await compressImage(file);
-        setCustomPhoto(compressedBase64);
-      } catch (error) {
-          alert("Image invalide ou trop lourde");
-      }
+      const reader = new FileReader();
+      reader.onloadend = () => { setCustomPhoto(reader.result); };
+      reader.readAsDataURL(file);
     }
   };
 
@@ -334,27 +304,21 @@ const SettingsView = ({ user, profile, onBack, isDark, toggleDark }) => {
     setLoading(true);
     try {
       const updateData = { name: newName, phone, photoURL: customPhoto, privateMode };
-      
-      // 1. Mise à jour profil privé
       await updateDoc(doc(db, 'artifacts', appId, 'users', user.uid, 'settings', 'profile'), updateData);
-      
-      // 2. Mise à jour FORCEE profil public (Sitter)
-      const publicSitterRef = doc(db, 'artifacts', appId, 'public', 'data', 'sitters', user.uid);
-      const publicDoc = await getDoc(publicSitterRef);
-      if (publicDoc.exists()) {
-          await updateDoc(publicSitterRef, { 
-              name: newName, 
-              photoURL: customPhoto, // ICI : On écrase bien la photo de l'annonce
-              phone,
-              serviceType: profile.serviceType
-          });
+      if (profile.role === 'sitter') {
+        await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'sitters', user.uid), { 
+            name: newName, 
+            photoURL: customPhoto, 
+            phone,
+            serviceType: profile.serviceType
+        }, { merge: true });
       }
-
       setStatus({ type: "success", msg: "Enregistré !" });
-    } catch (err) { console.error(err); setStatus({ type: "error", msg: "Erreur..." }); }
+    } catch (err) { setStatus({ type: "error", msg: "Erreur..." }); }
     finally { setLoading(false); }
   };
 
+  // Ajout de pb-64 pour que le bouton déconnexion soit toujours visible
   return (
     <div className={`min-h-screen font-sans ${isDark ? 'bg-slate-950 text-white' : 'bg-slate-50 text-slate-800'}`}>
       <div className={`p-6 border-b flex items-center gap-4 sticky top-0 z-50 ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-100'}`}>
@@ -390,6 +354,14 @@ const SettingsView = ({ user, profile, onBack, isDark, toggleDark }) => {
         </form>
 
         <div className="space-y-6 pt-8"> 
+          <a href="mailto:babykeeper.bordais@gmail.com" className="w-full p-5 border-2 border-[#E0720F]/20 text-[#E0720F] rounded-2xl font-black text-xs uppercase flex justify-center gap-2 hover:bg-[#E0720F]/5">Support Technique</a>
+          
+          <div className="flex justify-center gap-4 text-[10px] text-slate-400 font-bold uppercase tracking-widest pt-4 border-t border-slate-100/50">
+             <button onClick={() => alert("Mentions Légales : \nBabyKeeper est une plateforme de mise en relation.\nNous ne sommes pas l'employeur des baby-sitters.")} className="hover:text-[#E64545]">CGU</button>
+             <span>•</span>
+             <button onClick={() => alert("Politique de Confidentialité : \nVos données sont sécurisées et ne sont jamais revendues.")} className="hover:text-[#E64545]">Confidentialité</button>
+          </div>
+
           <button onClick={() => signOut(auth)} className="w-full p-5 border-2 border-dashed border-red-200 rounded-2xl font-black text-xs uppercase flex justify-center gap-2 text-red-400 hover:bg-red-50">Déconnexion</button>
           <button onClick={handleDeleteAccount} className="w-full p-5 bg-red-50 text-red-500 rounded-2xl font-black text-xs uppercase flex justify-center gap-2">Supprimer le compte</button>
         </div>
@@ -443,6 +415,7 @@ const PremiumView = ({ onBack, isDark }) => {
                  >
                      Je m'abonne (3€)
                  </a>
+                 <p className="text-[10px] text-center opacity-50 font-bold uppercase">Sans engagement • Annulable à tout moment</p>
              </div>
          </div>
       </div>
@@ -502,14 +475,12 @@ const ChatRoom = ({ offer, currentUser, onBack, isDark }) => {
 
   const sendEmailNotification = async (msgText) => {
       if (!window.emailjs) return; 
-      
       const otherId = currentUser.uid === offer.sitterId ? offer.parentId : offer.sitterId;
       try {
           const userDoc = await getDoc(doc(db, 'artifacts', appId, 'users', otherId, 'settings', 'profile'));
           if (userDoc.exists()) {
               const targetEmail = userDoc.data().email;
               const targetName = userDoc.data().name;
-              
               await window.emailjs.send(
                   "service_hjonpe3", // TON SERVICE ID
                   "template_b2gl0lh", // TON TEMPLATE ID
@@ -677,7 +648,7 @@ const ChatRoom = ({ offer, currentUser, onBack, isDark }) => {
 };
 
 // ==========================================
-// 7. AUTH SCREEN
+// 7. AUTH SCREEN (AVEC MOT DE PASSE OUBLIÉ & DESIGN FIX)
 // ==========================================
 
 const AuthScreen = () => {
@@ -823,16 +794,12 @@ const CompleteProfileScreen = ({ uid, serviceType }) => {
   const [photo, setPhoto] = useState(null);
   const [loading, setLoading] = useState(false);
 
-  const handlePhotoSelect = async (e) => {
+  const handlePhotoSelect = (e) => {
       const file = e.target.files[0];
       if (file) {
-          try {
-             const compressedBase64 = await compressImage(file);
-             setPhoto(compressedBase64);
-          } catch (error) {
-             console.error("Erreur compression image", error);
-             alert("Impossible d'utiliser cette image.");
-          }
+          const reader = new FileReader();
+          reader.onloadend = () => { setPhoto(reader.result); };
+          reader.readAsDataURL(file);
       }
   };
 
@@ -891,7 +858,7 @@ const CompleteProfileScreen = ({ uid, serviceType }) => {
 };
 
 // ==========================================
-// 8. DASHBOARD PARENT (FIX NAVIGATION & EMPTY STATE)
+// 8. DASHBOARD PARENT (MULTI-UNIVERS & FILTRE JOUR & BADGES & DISPO IMMEDIATE)
 // ==========================================
 
 const ParentDashboard = ({ profile, user }) => {
@@ -911,11 +878,12 @@ const ParentDashboard = ({ profile, user }) => {
   const [showFilters, setShowFilters] = useState(false);
   const [sitterReviews, setSitterReviews] = useState([]);
   const [isDark, setIsDark] = useState(localStorage.getItem('dark') === 'true');
-  const [showFAQ, setShowFAQ] = useState(false);
+  const [showFAQ, setShowFAQ] = useState(false); // --- ETAT FAQ MODAL ---
 
   const isPet = profile.serviceType === 'pet';
   const days = ["Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi", "Samedi", "Dimanche"];
 
+  // --- AUTO-ACTIVATION PREMIUM VIA URL ---
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     if (params.get('success') === 'true') {
@@ -936,15 +904,16 @@ const ParentDashboard = ({ profile, user }) => {
   useEffect(() => {
     localStorage.setItem('dark', isDark);
     const unsubSitters = onSnapshot(collection(db, 'artifacts', appId, 'public', 'data', 'sitters'), (snap) => {
-      // ON AFFICHE TOUS LES SITTERS DE LA CATEGORIE (Y COMPRIS SOI-MEME POUR VERIFIER L'ANNONCE)
-      setSitters(snap.docs.map(d => ({ id: d.id, ...d.data() })).filter(s => s.serviceType === profile.serviceType));
+      // FILTRE PAR UNIVERS (Baby ou Pet) et EXCLURE SON PROPRE PROFIL SI ON EST SITTER
+      setSitters(snap.docs.map(d => ({ id: d.id, ...d.data() })).filter(s => s.serviceType === profile.serviceType && s.id !== user.uid));
       setLoading(false);
     });
-    const qOffers = query(collection(db, 'artifacts', appId, 'public', 'data', 'offers'), where("parentId", "==", user.uid));
-    const unsubOffers = onSnapshot(qOffers, (snap) => { 
-        // FILTRE ICI : ON NE MONTRE PAS LES OFFRES QU'ON S'EST ENVOYÉ A SOI-MÊME DANS LA LISTE DE DISCUSSION
-        const list = snap.docs.map(d => ({ id: d.id, ...d.data() })).filter(o => o.sitterId !== o.parentId);
-        setOffers(list); 
+    const qOffers = query(
+      collection(db, 'artifacts', appId, 'public', 'data', 'offers'), 
+      where("parentId", "==", user.uid)
+    );
+    const unsubOffers = onSnapshot(qOffers, (snap) => {
+      setOffers(snap.docs.map(d => ({ id: d.id, ...d.data() })));
     });
     return () => { unsubSitters(); unsubOffers(); };
   }, [user.uid, isDark, profile.serviceType]); 
@@ -995,9 +964,6 @@ const ParentDashboard = ({ profile, user }) => {
   }, [sitters, search, locationFilter, maxPrice, onlyVerified, onlyFavorites, profile.favorites, dayFilter]);
 
   const handleBooking = async (s, p, h) => {
-    // EMPECHER L'AUTO-RESERVATION
-    if (s.id === user.uid) return alert("Vous ne pouvez pas réserver votre propre service !");
-
     try {
       const isPremium = profile?.isPremium === true;
       if (!isPremium) {
@@ -1026,7 +992,7 @@ const ParentDashboard = ({ profile, user }) => {
   };
 
   if (activeChat) return <ChatRoom offer={activeChat} currentUser={user} onBack={() => setActiveChat(null)} isDark={isDark} />;
-  if (activeTab === "profile") return <SettingsView user={user} profile={profile} onBack={() => setActiveTab("search")} isDark={isDark} toggleDark={() => setIsDark(!isDark)} />;
+  if (activeTab === "settings") return <SettingsView user={user} profile={profile} onBack={() => setActiveTab("search")} isDark={isDark} toggleDark={() => setIsDark(!isDark)} />;
   if (activeTab === "premium") return <PremiumView onBack={() => setActiveTab("search")} isDark={isDark} />;
 
   const getSPhoto = (s) => (s.useCustomPhoto && s.photoURL) ? s.photoURL : `https://api.dicebear.com/7.x/${s.avatarStyle || 'avataaars'}/svg?seed=${s.name}`;
@@ -1037,10 +1003,13 @@ const ParentDashboard = ({ profile, user }) => {
         <div className="flex items-center gap-2"><SitFinderLogo className="w-8 h-8" glow={false} /><span className="font-black italic text-lg md:text-2xl uppercase tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-[#E64545] to-[#E0720F]">BABYKEEPER</span></div>
         <div className="flex items-center gap-1.5">
           <ModeSwitcher currentRole={profile.role} currentService={profile.serviceType || 'baby'} uid={user.uid} />
+          
           <button onClick={() => setShowFAQ(true)} className={`p-2 rounded-2xl transition-all shadow-sm flex items-center justify-center ${isDark ? 'bg-slate-800 text-slate-300' : 'bg-white border border-slate-100 text-slate-400'}`}>
               <HelpCircle size={20} />
           </button>
+
           <button onClick={() => setActiveTab("premium")} className={`p-2 rounded-2xl transition-all shadow-md bg-gradient-to-br from-yellow-400 to-orange-500 text-white animate-pulse`}><Crown size={20} fill="white" /></button>
+          
           <div className="relative p-2 text-slate-400"><Bell size={20}/>{unreadCount > 0 && <span className="absolute top-1 right-1 w-4 h-4 bg-[#E64545] text-white text-[8px] font-black rounded-full flex items-center justify-center border-2 border-white animate-bounce">{unreadCount}</span>}</div>
         </div>
       </nav>
@@ -1111,8 +1080,7 @@ const ParentDashboard = ({ profile, user }) => {
                         {s.level && isPet && <div className="flex items-center gap-2 bg-[#E0720F] text-white px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest w-fit mt-1">NIV {s.level} 🐾</div>}
                       </div>
                       <div className={`w-28 h-28 rounded-[2.5rem] mb-6 overflow-hidden border-4 shadow-xl ring-4 group-hover/card:scale-110 transition-transform duration-500 ${isDark ? 'bg-slate-800 border-slate-700 ring-slate-900' : 'bg-slate-50 border-white ring-slate-50/50'}`}>
-                          {/* --- ICI : Utilisation de la photoURL qui est désormais synchro --- */}
-                          <UserAvatar photoURL={s.photoURL} />
+                          <UserAvatar photoURL={getSPhoto(s)} />
                       </div>
                       <h4 className={`font-black text-4xl font-sans mb-1 leading-none tracking-tighter text-left ${isDark ? 'text-white' : 'text-slate-800'}`}>{s.name}</h4>
                       <div className="flex items-center gap-3 text-slate-400 mb-6"><RatingStars rating={s.rating || 5} size={18}/><span className={`text-[10px] font-black uppercase px-2 py-0.5 rounded-lg border ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-slate-50 border-slate-100'}`}>{s.city}</span></div>
@@ -1135,7 +1103,7 @@ const ParentDashboard = ({ profile, user }) => {
               })}
             </div>
             </>
-        )}
+        }
 
         {/* --- VUE MESSAGES --- */}
         {activeTab === "messages" && (
@@ -1173,8 +1141,9 @@ const ParentDashboard = ({ profile, user }) => {
       <div className={`fixed bottom-10 left-1/2 -translate-x-1/2 w-[90%] max-w-md backdrop-blur-xl p-2.5 rounded-[3rem] shadow-2xl flex items-center justify-between z-50 border ${isDark ? 'bg-slate-900/95 border-slate-800' : 'bg-slate-900/95 border-white/10'}`}>
         <button onClick={() => setActiveTab("search")} className={`flex-1 flex flex-col items-center py-4 rounded-[2.5rem] transition-all duration-300 ${activeTab === "search" ? (isDark ? "bg-[#E64545] text-white" : "bg-[#E64545] text-white") : "text-slate-400 hover:text-white"}`}><Search size={22}/><span className="text-[9px] font-black uppercase mt-1.5 tracking-widest">Trouver</span></button>
         <button onClick={() => setActiveTab("messages")} className={`flex-1 flex flex-col items-center py-4 rounded-[2.5rem] transition-all duration-300 relative ${activeTab === "messages" ? (isDark ? "bg-[#E64545] text-white" : "bg-[#E64545] text-white") : "text-slate-400 hover:text-white"}`}><MessageSquare size={22}/><span className="text-[9px] font-black uppercase mt-1.5 font-sans tracking-widest">Offres</span>{unreadCount > 0 && <div className="absolute top-3 right-1/3 w-2.5 h-2.5 bg-[#E0720F] rounded-full border-2 border-slate-900 animate-pulse"></div>}</button>
-        {/* NOUVEAU BOUTON REGLAGES EN BAS QUI OUVRE LES REGLAGES */}
-        <button onClick={() => setActiveTab("profile")} className={`flex-1 flex flex-col items-center py-4 rounded-[2.5rem] ${activeTab === "profile" ? (isDark ? "bg-[#E64545] text-white" : "bg-[#E64545] text-white") : "text-slate-400 hover:text-white"}`}>
+        
+        {/* BOUTON REGLAGES (REMPLACE PROFIL) */}
+        <button onClick={() => setActiveTab("settings")} className={`flex-1 flex flex-col items-center py-4 rounded-[2.5rem] transition-all duration-300 ${activeTab === "settings" ? (isDark ? "bg-[#E64545] text-white" : "bg-[#E64545] text-white") : "text-slate-400 hover:text-white"}`}>
             <Settings size={22}/>
             <span className="text-[9px] font-black uppercase mt-1.5 tracking-widest font-sans">Réglages</span>
         </button>
@@ -1186,13 +1155,18 @@ const ParentDashboard = ({ profile, user }) => {
       {/* --- FAQ MODAL --- */}
       {showFAQ && <FAQModal onClose={() => setShowFAQ(false)} />}
       
-      {/* --- FENÊTRE MODALE DETAIL SITTER (CORRIGÉE HEADER MOBILE) --- */}
       {selectedSitter && (
-        <div className="fixed inset-0 bg-slate-900/90 backdrop-blur-md z-[100] flex items-center justify-center p-4 md:p-6 text-slate-900">
-          <div className="bg-white w-full max-w-xl rounded-[4rem] overflow-hidden shadow-2xl animate-in slide-in-from-bottom-10 duration-500 flex flex-col max-h-[85vh]">
-            
-            {/* --- HEADER FIXE AVEC BOUTONS SEPARÉS --- */}
-            <div className="flex justify-between items-center p-6 border-b border-slate-100 bg-white z-50 shrink-0">
+        <div className="fixed inset-0 bg-slate-900/90 backdrop-blur-md z-[100] flex items-center justify-center p-6 text-slate-900">
+          <div className="bg-white w-full max-w-xl rounded-[4rem] overflow-hidden shadow-2xl animate-in slide-in-from-bottom-10 duration-500 p-10 space-y-10">
+            <div className="flex justify-between items-start">
+              <div className="flex gap-8 items-center text-left">
+                 <div className="w-28 h-28 rounded-[2.5rem] overflow-hidden border-4 shadow-2xl border-white shadow-slate-200">
+                     <UserAvatar photoURL={getSPhoto(selectedSitter)} />
+                 </div>
+                 <div className="space-y-1"><h3 className="text-4xl font-black tracking-tighter font-sans leading-none">{selectedSitter.name}</h3><RatingStars rating={selectedSitter.rating || 5} size={20}/></div>
+              </div>
+              <div className="flex gap-2">
+                {/* --- BOUTON PARTAGE --- */}
                 <button 
                     onClick={() => {
                         if (navigator.share) {
@@ -1206,93 +1180,63 @@ const ParentDashboard = ({ profile, user }) => {
                             navigator.clipboard.writeText(`Regarde ce profil de ${selectedSitter.name} sur BabyKeeper !`);
                         }
                     }} 
-                    className="p-4 rounded-full transition-all bg-blue-50 text-blue-600 hover:bg-blue-100 shadow-sm"
+                    className="p-4 rounded-full transition-all bg-blue-50 text-blue-600 hover:bg-blue-100"
                 >
                     <Share2 size={24}/>
                 </button>
-                
-                {/* NOM AU CENTRE */}
-                <h3 className="text-xl font-black italic uppercase tracking-tighter text-slate-800">{selectedSitter.name}</h3>
-
-                <button onClick={() => setSelectedSitter(null)} className="p-4 rounded-full transition-all bg-slate-100 text-slate-400 hover:bg-red-50 hover:text-red-500 shadow-sm">
-                    <X size={24}/>
-                </button>
+                <button onClick={() => setSelectedSitter(null)} className="p-4 rounded-full transition-all bg-slate-50 text-slate-800 hover:bg-red-50"><X size={24}/></button>
+              </div>
             </div>
-
-            {/* --- CONTENU DÉFILANT --- */}
-            <div className="overflow-y-auto p-8 space-y-8 custom-scrollbar">
-                
-                <div className="flex flex-col items-center gap-2">
-                     <div className="w-32 h-32 rounded-[2.5rem] overflow-hidden border-4 shadow-2xl border-white shadow-slate-200">
-                         <UserAvatar photoURL={selectedSitter.photoURL} />
-                     </div>
-                     <RatingStars rating={selectedSitter.rating || 5} size={24}/>
-                </div>
-
-                <div className="space-y-6 text-left">
-                    <div className="p-8 rounded-[3.5rem] space-y-6 shadow-inner border bg-slate-50 border-slate-100/50 shadow-slate-100">
-                        <div className="flex justify-between items-center"><span className="font-black text-slate-500 text-[11px] uppercase tracking-widest italic">Lieu</span><span className="font-black uppercase">{selectedSitter.city || "France"}</span></div>
-                        <div className="flex justify-between items-center"><span className="font-black text-slate-500 text-[11px] uppercase tracking-widest italic">Visites</span><span className="font-black uppercase">{selectedSitter.views || 0} 👀</span></div>
-                        {selectedSitter.level && !isPet && <div className="flex justify-between items-center"><span className="font-black text-slate-500 text-[11px] uppercase tracking-widest italic">Niveau</span><span className="font-black uppercase text-[#E0720F]">NIV {selectedSitter.level} 👑</span></div>}
-                        {selectedSitter.level && isPet && <div className="flex justify-between items-center"><span className="font-black text-slate-500 text-[11px] uppercase tracking-widest italic">Niveau</span><span className="font-black uppercase text-[#E0720F]">NIV {selectedSitter.level} 🐾</span></div>}
-                        
-                        {/* LISTE COMPETENCES DANS PROFIL COMPLET */}
-                        {selectedSitter.skills && (
-                            <div className="flex flex-wrap gap-2 mt-4 pt-4 border-t border-slate-100">
-                                {selectedSitter.skills.map((skill, i) => (
-                                    <span key={i} className="text-[10px] font-bold uppercase bg-slate-100 text-slate-600 px-3 py-1.5 rounded-xl border flex items-center gap-1">✨ {skill}</span>
-                                ))}
-                            </div>
-                        )}
-                    </div>
+            <div className="max-h-[300px] overflow-y-auto space-y-6 pr-2 text-left custom-scrollbar">
+                <div className="p-10 rounded-[3.5rem] space-y-6 shadow-inner border bg-slate-50 border-slate-100/50 shadow-slate-100">
+                    <div className="flex justify-between items-center"><span className="font-black text-slate-500 text-[11px] uppercase tracking-widest italic">Lieu</span><span className="font-black uppercase">{selectedSitter.city || "France"}</span></div>
+                    <div className="flex justify-between items-center"><span className="font-black text-slate-500 text-[11px] uppercase tracking-widest italic">Visites</span><span className="font-black uppercase">{selectedSitter.views || 0} 👀</span></div>
+                    {selectedSitter.level && !isPet && <div className="flex justify-between items-center"><span className="font-black text-slate-500 text-[11px] uppercase tracking-widest italic">Niveau</span><span className="font-black uppercase text-[#E0720F]">NIV {selectedSitter.level} 👑</span></div>}
+                    {selectedSitter.level && isPet && <div className="flex justify-between items-center"><span className="font-black text-slate-500 text-[11px] uppercase tracking-widest italic">Niveau</span><span className="font-black uppercase text-[#E0720F]">NIV {selectedSitter.level} 🐾</span></div>}
                     
-                    <div className="space-y-2">
-                        <h4 className="text-[11px] font-black uppercase tracking-[0.3em] text-slate-500 ml-5 italic">Bio</h4>
-                        <p className="p-6 bg-slate-50 rounded-3xl text-sm italic leading-relaxed text-slate-600 border border-slate-100">"{selectedSitter.bio}"</p>
-                    </div>
-
-                    {sitterReviews.length > 0 && (
-                        <div className="space-y-4">
-                            <h4 className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-500 ml-5 italic">Avis de parents</h4>
-                            {sitterReviews.map((r, idx) => (
-                                <div key={idx} className="p-6 rounded-[2rem] shadow-sm space-y-3 border bg-white border-slate-100">
-                                    <div className="flex justify-between items-center"><span className="font-black text-xs">{r.parentName}</span><RatingStars rating={r.rating} size={12} /></div>
-                                    <p className="text-xs italic leading-relaxed text-slate-500">"{r.text}"</p>
-                                </div>
+                    {/* LISTE COMPETENCES DANS PROFIL COMPLET */}
+                    {selectedSitter.skills && (
+                        <div className="flex flex-wrap gap-2 mt-4 pt-4 border-t border-slate-100">
+                            {selectedSitter.skills.map((skill, i) => (
+                                <span key={i} className="text-[10px] font-bold uppercase bg-slate-100 text-slate-600 px-3 py-1.5 rounded-xl border flex items-center gap-1">✨ {skill}</span>
                             ))}
                         </div>
                     )}
                 </div>
-
-                <div className="space-y-5">
-                  <div className="grid grid-cols-2 gap-4 text-left">
-                      <div className="space-y-2">
-                          <label className="text-[10px] font-black uppercase italic ml-4 text-slate-400 font-sans">Prix (€/H)</label>
-                          <input id="neg-p" type="number" defaultValue={selectedSitter.price} className="w-full p-6 rounded-[2.5rem] outline-none font-black text-2xl shadow-inner bg-slate-50 text-slate-800" />
-                      </div>
-                      <div className="space-y-2">
-                          <label className="text-[10px] font-black uppercase italic ml-4 text-slate-400 font-sans">Temps (H)</label>
-                          <input id="neg-h" type="number" defaultValue="2" className="w-full p-6 rounded-[2.5rem] outline-none font-black text-2xl shadow-inner bg-slate-50 text-slate-800" />
-                      </div>
+                {sitterReviews.length > 0 && (
+                    <div className="space-y-4">
+                        <h4 className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-500 ml-5 italic">Avis de parents</h4>
+                        {sitterReviews.map((r, idx) => (
+                            <div key={idx} className="p-6 rounded-[2rem] shadow-sm space-y-3 border bg-white border-slate-100">
+                                <div className="flex justify-between items-center"><span className="font-black text-xs">{r.parentName}</span><RatingStars rating={r.rating} size={12} /></div>
+                                <p className="text-xs italic leading-relaxed text-slate-500">"{r.text}"</p>
+                            </div>
+                        ))}
+                    </div>
+                )}
+            </div>
+            <div className="space-y-5">
+              <div className="grid grid-cols-2 gap-4 text-left">
+                  <div className="space-y-2">
+                      <label className="text-[10px] font-black uppercase italic ml-4 text-slate-400 font-sans">Prix (€/H)</label>
+                      <input id="neg-p" type="number" defaultValue={selectedSitter.price} className="w-full p-6 rounded-[2.5rem] outline-none font-black text-2xl shadow-inner bg-slate-50 text-slate-800" />
                   </div>
-
-                   <div className="flex justify-between items-center bg-slate-50 p-4 rounded-2xl">
-                     <div className="flex items-center gap-2 text-xs font-bold text-slate-500"><Car size={16}/> {selectedSitter.hasCar ? "Véhiculé 🚗" : "Non véhiculé"}</div>
+                  <div className="space-y-2">
+                      <label className="text-[10px] font-black uppercase italic ml-4 text-slate-400 font-sans">Temps (H)</label>
+                      <input id="neg-h" type="number" defaultValue="2" className="w-full p-6 rounded-[2.5rem] outline-none font-black text-2xl shadow-inner bg-slate-50 text-slate-800" />
                   </div>
+              </div>
 
-                  {/* BOUTON ENVOYER DEMANDE : DESACTIVÉ SI C'EST TON PROPRE PROFIL */}
-                  {selectedSitter.id === user.uid ? (
-                      <button disabled className="w-full py-8 rounded-[2.5rem] font-black text-sm shadow-inner uppercase tracking-[0.2em] bg-slate-200 text-slate-400 cursor-not-allowed">
-                          C'EST VOTRE PROFIL (APERÇU)
-                      </button>
-                  ) : (
-                      <button onClick={() => {
-                          const p = document.getElementById('neg-p').value;
-                          const h = document.getElementById('neg-h').value;
-                          handleBooking(selectedSitter, p, h);
-                      }} className="w-full py-8 rounded-[2.5rem] font-black text-sm shadow-xl shadow-[#E64545]/20 uppercase tracking-[0.2em] active:scale-95 transition-all bg-[#E64545] text-white hover:bg-[#E64545]/90">ENVOYER LA DEMANDE</button>
-                  )}
-                </div>
+               <div className="flex justify-between items-center bg-slate-50 p-4 rounded-2xl">
+                 <div className="flex items-center gap-2 text-xs font-bold text-slate-500"><Car size={16}/> {selectedSitter.hasCar ? "Véhiculé 🚗" : "Non véhiculé"}</div>
+              </div>
+
+              {/* BOUTON ENVOYER DEMANDE : ROUGE */}
+              <button onClick={() => {
+                  const p = document.getElementById('neg-p').value;
+                  const h = document.getElementById('neg-h').value;
+                  handleBooking(selectedSitter, p, h);
+              }} className="w-full py-8 rounded-[2.5rem] font-black text-sm shadow-xl shadow-[#E64545]/20 uppercase tracking-[0.2em] active:scale-95 transition-all bg-[#E64545] text-white hover:bg-[#E64545]/90">ENVOYER LA DEMANDE</button>
             </div>
           </div>
         </div>
@@ -1416,32 +1360,12 @@ const SitterDashboard = ({ user, profile }) => {
 
     setLoading(true);
     try {
-      // ON FORCE LA MISE A JOUR DE LA PHOTO ICI EGALEMENT POUR ETRE SUR
       await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'sitters', user.uid), {
-        name: profile.name, serviceType: profile.serviceType, 
-        photoURL: profile.photoURL || "", // <-- IMPORTANT : On prend la photo du profil actuel
-        views: views || 0,
+        name: profile.name, serviceType: profile.serviceType, photoURL: profile.photoURL || "", views: views || 0,
         phone: profile.phone || "", bio: bio.trim(), price, birthDate, availability, cvName, hasCV: !!cvName, city, rating: 5, uid: user.uid, level, hasCar, skills, updatedAt: new Date().toISOString()
       }, { merge: true });
       setSaveStatus("PUBLIÉ ! ✨"); setTimeout(() => setSaveStatus(""), 4000);
     } catch(e) { console.error(e); } finally { setLoading(false); }
-  };
-
-  const handleDeleteAd = async () => {
-    if (window.confirm("⚠️ Voulez-vous vraiment supprimer votre annonce ?\nVous n'apparaîtrez plus dans les recherches.")) {
-      setLoading(true);
-      try {
-        await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'sitters', user.uid));
-        setBio(""); setPrice(""); setCity(""); // Reset local state
-        setSaveStatus("");
-        alert("Votre annonce a été supprimée.");
-      } catch (e) {
-        console.error(e);
-        alert("Erreur lors de la suppression.");
-      } finally {
-        setLoading(false);
-      }
-    }
   };
 
   const markAsRead = async (offer) => {
@@ -1467,12 +1391,10 @@ const SitterDashboard = ({ user, profile }) => {
 
           <button onClick={() => setActiveTab("premium")} className={`p-2 rounded-2xl transition-all shadow-md bg-gradient-to-br from-yellow-400 to-orange-500 text-white animate-pulse`}><Crown size={20} fill="white" /></button>
           <div className="relative p-2 text-slate-400"><Bell size={20}/>{unreadCount > 0 && <span className="absolute top-1 right-1 w-4 h-4 bg-[#E64545] text-white text-[8px] font-black rounded-full flex items-center justify-center border-2 border-white animate-bounce">{unreadCount}</span>}</div>
-          <button onClick={() => setActiveTab("settings")} className={`p-2 rounded-2xl transition-all ${isDark ? 'bg-slate-800 text-[#E0720F]' : 'bg-slate-50 text-slate-300'}`}><Settings size={20} /></button>
-          <button onClick={() => signOut(auth)} className={`p-2 rounded-2xl transition-all ${isDark ? 'bg-slate-800 text-slate-400' : 'bg-slate-50 text-slate-300'}`}><LogOut size={20} /></button>
         </div>
       </nav>
       <main className="p-6 max-w-4xl mx-auto space-y-12">
-        {activeTab === "profile" && (
+        {activeTab === "profile" ? (
           <div className="space-y-10 text-left animate-in fade-in slide-in-from-bottom-6 duration-700">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className={`p-8 rounded-[3rem] shadow-xl border flex flex-col items-center text-center space-y-4 ${isDark ? 'bg-slate-900 border-slate-800 shadow-slate-950' : 'bg-white'}`}>
@@ -1556,56 +1478,44 @@ const SitterDashboard = ({ user, profile }) => {
                    </div>
                 </div>
 
-                {/* --- ZONE BOUTONS ACTION --- */}
-                <div className="flex flex-col gap-4">
-                    <button onClick={handleSave} disabled={loading} className={`w-full py-10 rounded-[3.5rem] font-black shadow-2xl flex justify-center items-center gap-4 active:scale-95 transition-all uppercase tracking-[0.4em] text-sm hover:brightness-110 shadow-slate-300 ${isDark ? 'bg-indigo-600 text-white' : 'bg-slate-900 text-white'}`}>
-                        {loading ? <Loader2 className="animate-spin" size={32}/> : (saveStatus || "METTRE À JOUR / PUBLIER")}
-                    </button>
-                    
-                    <button onClick={handleDeleteAd} className="w-full py-5 rounded-[3.5rem] font-black text-red-500 bg-red-50 border border-red-100 flex justify-center items-center gap-2 active:scale-95 transition-all uppercase tracking-widest text-[10px] hover:bg-red-100">
-                        <Trash2 size={16}/> Supprimer mon annonce
-                    </button>
-                </div>
-
+                <button onClick={handleSave} disabled={loading} className={`w-full py-10 rounded-[3.5rem] font-black shadow-2xl flex justify-center items-center gap-4 active:scale-95 transition-all uppercase tracking-[0.4em] text-sm hover:brightness-110 shadow-slate-300 ${isDark ? 'bg-indigo-600 text-white' : 'bg-slate-900 text-white'}`}>{loading ? <Loader2 className="animate-spin" size={32}/> : (saveStatus || "PUBLIER MON PROFIL")}</button>
             </div>
           </div>
-        )}
-
-        {/* --- VUE MESSAGES --- */}
-        {activeTab === "messages" && (
+        ) : (
           <div className="space-y-8 animate-in fade-in duration-500">
-            <h2 className={`text-4xl font-black italic uppercase font-sans tracking-tight leading-none text-left ${isDark ? 'text-white' : 'text-slate-800'}`}>Discussions</h2>
-            <div className="grid gap-6">
-              {offers.length === 0 ? 
-                 <div className={`py-24 text-center rounded-[4rem] border-2 border-dashed italic text-xl shadow-inner flex flex-col items-center justify-center gap-4 ${isDark ? 'bg-slate-900 border-slate-800 text-slate-500' : 'bg-white border-slate-100 text-slate-400'}`}>
-                    <Inbox size={48} className="opacity-20"/>
-                    <p>Aucune demande pour le moment...</p>
-                 </div>
-              : offers.sort((a,b) => (b.lastMsgAt?.seconds || 0) - (a.lastMsgAt?.seconds || 0)).map(o => (
-                  <div key={o.id} onClick={() => markAsRead(o)} className={`p-10 rounded-[3.5rem] shadow-xl border flex items-center justify-between hover:border-[#E0720F]/30 cursor-pointer transition-all active:scale-[0.99] shadow-md ${isDark ? 'bg-slate-900 border-slate-800 text-white shadow-slate-950' : 'bg-white border-slate-100 text-slate-900 shadow-slate-100'} ${o.hasUnread && o.lastSenderId !== user.uid ? 'ring-2 ring-[#E64545]' : ''}`}>
-                    <div className="flex items-center gap-6 text-left">
-                        <div className={`w-20 h-20 rounded-3xl overflow-hidden shadow-sm border ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-[#E0720F]/10 border-[#E0720F]/20'}`}>
-                            {/* Récupération de l'image du Sitter */}
-                            <UserAvatar photoURL={profile.photoURL} />
-                        </div>
-                        <div className="text-left"><h4 className={`font-black text-3xl italic leading-tight ${isDark ? 'text-white' : ''}`}>{o.parentName}</h4><p className={`text-[11px] font-black uppercase tracking-[0.3em] mt-1 ${isDark ? 'text-indigo-400' : 'text-[#E0720F]'}`}>{o.status === 'accepted' ? 'Validé ✨' : `Offre : ${o.price}€/H`}</p></div>
-                    </div>
-                    {o.hasUnread && o.lastSenderId !== user.uid && <div className="w-4 h-4 bg-[#E64545] rounded-full animate-pulse shadow-xl"></div>}
-                  </div>
-              ))}
-            </div>
+              <h2 className="text-4xl font-black italic uppercase tracking-tighter leading-none text-left">Missions</h2>
+              <div className="grid gap-6">
+                  {offers.length === 0 && (
+                     <div className={`py-24 text-center rounded-[4rem] border-2 border-dashed italic text-xl shadow-inner flex flex-col items-center justify-center gap-4 ${isDark ? 'bg-slate-900 border-slate-800 text-slate-500' : 'bg-white border-slate-100 text-slate-400'}`}>
+                        <Inbox size={48} className="opacity-20"/>
+                        <p>Aucune offre active...</p>
+                     </div>
+                  )}
+
+                  {offers.sort((a,b) => (b.lastMsgAt?.seconds || 0) - (a.lastMsgAt?.seconds || 0)).map(o => (
+                      <div key={o.id} onClick={() => markAsRead(o)} className={`p-10 rounded-[3.5rem] shadow-xl border flex items-center justify-between hover:border-[#E0720F]/30 cursor-pointer active:scale-[0.99] shadow-md ${isDark ? 'bg-slate-900 border-slate-800 shadow-slate-950' : 'bg-white border-slate-100 shadow-slate-50'}`}>
+                          <div className="flex items-center gap-8 text-slate-800">
+                              <div className={`w-24 h-24 rounded-[2.5rem] overflow-hidden shadow-sm border ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-[#E64545] border-[#E64545]'}`}>
+                                  <UserAvatar photoURL={profile.photoURL} />
+                              </div>
+                              <div className="text-left"><h4 className={`font-black text-3xl italic leading-tight ${isDark ? 'text-white' : ''}`}>{o.parentName}</h4><p className={`text-[11px] font-black uppercase tracking-[0.3em] mt-1 ${isDark ? 'text-indigo-400' : 'text-[#E0720F]'}`}>{o.status === 'accepted' ? 'Validé ✨' : `Offre : ${o.price}€/H`}</p></div>
+                          </div>
+                          {o.hasUnread && o.lastSenderId !== user.uid && <div className="w-4 h-4 bg-[#E64545] rounded-full animate-pulse shadow-xl"></div>}
+                      </div>
+                  ))}
+              </div>
           </div>
         )}
       </main>
-
-      <div className={`fixed bottom-10 left-1/2 -translate-x-1/2 w-[90%] max-w-md backdrop-blur-xl p-2.5 rounded-[3rem] shadow-2xl flex items-center justify-between z-50 border ${isDark ? 'bg-slate-900/95 border-slate-800' : 'bg-slate-900/95 border-white/10'}`}>
-        <button onClick={() => setActiveTab("profile")} className={`flex-1 flex flex-col items-center py-4 rounded-[2.5rem] transition-all duration-300 ${activeTab === "profile" ? (isDark ? "bg-[#E64545] text-white" : "bg-[#E64545] text-white") : "text-slate-400 hover:text-white"}`}><User size={22}/><span className="text-[9px] font-black uppercase mt-1.5 tracking-widest font-sans">Profil</span></button><button onClick={() => setActiveTab("messages")} className={`flex-1 flex flex-col items-center py-4 rounded-[2.5rem] transition-all duration-300 relative ${activeTab === "messages" ? (isDark ? "bg-[#E64545] text-white" : "bg-[#E64545] text-white") : "text-slate-400 hover:text-white"}`}><MessageSquare size={22}/><span className="text-[9px] font-black uppercase mt-1.5 font-sans tracking-widest">Offres</span>{unreadCount > 0 && <div className="absolute top-3 right-1/3 w-2.5 h-2.5 bg-[#E0720F] rounded-full border-2 border-slate-900 animate-pulse"></div>}</button></div>
-    
-      {/* --- BANDEAU INSTALLATION PWA --- */}
-      <InstallPrompt />
-
-      {/* --- FAQ MODAL --- */}
-      {showFAQ && <FAQModal onClose={() => setShowFAQ(false)} />}
+      <div className={`fixed bottom-10 left-1/2 -translate-x-1/2 w-[90%] max-w-md backdrop-blur-xl p-2.5 rounded-[3.5rem] shadow-2xl flex items-center justify-between z-50 border ${isDark ? 'bg-slate-900/95 border-slate-800' : 'bg-slate-900/95 border-white/10'}`}>
+          <button onClick={() => setActiveTab("profile")} className={`flex-1 flex flex-col items-center py-4 rounded-[2.5rem] transition-all duration-300 ${activeTab === "profile" ? (isDark ? "bg-[#E64545] text-white" : "bg-[#E64545] text-white") : "text-slate-400 hover:text-white"}`}><User size={22}/><span className="text-[9px] font-black uppercase mt-1.5 tracking-widest font-sans">Profil</span></button>
+          <button onClick={() => setActiveTab("messages")} className={`flex-1 flex flex-col items-center py-4 rounded-[2.5rem] transition-all duration-300 relative ${activeTab === "messages" ? (isDark ? "bg-[#E64545] text-white" : "bg-[#E64545] text-white") : "text-slate-400 hover:text-white"}`}><MessageSquare size={22}/><span className="text-[9px] font-black uppercase mt-1.5 font-sans tracking-widest">Offres</span>{unreadCount > 0 && <div className="absolute top-3 right-1/3 w-2.5 h-2.5 bg-[#E0720F] rounded-full border-2 border-slate-900 animate-pulse"></div>}</button>
+          {/* BOUTON REGLAGES DANS LA BARRE DU BAS POUR LE SITTER */}
+          <button onClick={() => setActiveTab("settings")} className={`flex-1 flex flex-col items-center py-4 rounded-[2.5rem] transition-all duration-300 ${activeTab === "settings" ? (isDark ? "bg-[#E64545] text-white" : "bg-[#E64545] text-white") : "text-slate-400 hover:text-white"}`}>
+            <Settings size={22}/>
+            <span className="text-[9px] font-black uppercase mt-1.5 tracking-widest font-sans">Réglages</span>
+        </button>
+      </div>
     </div>
   );
 };
@@ -1622,7 +1532,7 @@ export default function App() {
   useEffect(() => {
     let unsubP = null;
     const minSplashTimer = new Promise(resolve => setTimeout(resolve, 800));
-    // CORRECTION : J'ai supprimé la déconnexion automatique
+    signOut(auth);
     
     const unsubA = onAuthStateChanged(auth, async (u) => {
       setUser(u);
