@@ -166,7 +166,7 @@ const UserAvatar = ({ photoURL, size = "w-full h-full", className = "" }) => {
 };
 
 // ==============================================================================================
-// 3. MODULES GLOBAUX
+// 3. MODULES GLOBAUX (FAQ, INSTALL, SWITCH)
 // ==============================================================================================
 
 const FAQModal = ({ onClose }) => {
@@ -272,6 +272,7 @@ const ModeSwitcher = ({ currentRole, currentService, uid }) => {
 
     const switchMode = async (role, service) => {
         setIsOpen(false);
+        // Force l'update des deux champs pour éviter les sync issues
         await updateDoc(doc(db, 'artifacts', appId, 'users', uid, 'settings', 'profile'), { 
             role: role, 
             serviceType: service 
@@ -353,8 +354,11 @@ const SettingsView = ({ user, profile, onBack, isDark, toggleDark }) => {
     setLoading(true);
     try {
       const updateData = { name: newName, phone, photoURL: customPhoto, privateMode };
+      
+      // 1. Mise à jour profil privé
       await updateDoc(doc(db, 'artifacts', appId, 'users', user.uid, 'settings', 'profile'), updateData);
       
+      // 2. Mise à jour FORCEE profil public (Sitter)
       const publicSitterRef = doc(db, 'artifacts', appId, 'public', 'data', 'sitters', user.uid);
       const publicDoc = await getDoc(publicSitterRef);
       if (publicDoc.exists()) {
@@ -751,7 +755,7 @@ const AuthScreen = () => {
       } else { await signInWithEmailAndPassword(auth, email, password); }
     } catch (err) { 
         if(err.code === 'auth/email-already-in-use') {
-            alert("Compte existant ! Connectez-vous, puis changez de mode (Enfant/Animal) dans l'appli.");
+            alert("Compte existant ! Connectez-vous.");
             setIsRegister(false);
         } else {
             alert("Email ou mot de passe invalide."); 
@@ -802,6 +806,7 @@ const AuthScreen = () => {
               <button type="button" onClick={() => setRole("sitter")} className={`py-3 rounded-xl font-black text-[10px] ${role === "sitter" ? "bg-white shadow text-[#E0720F]" : "text-slate-400"}`}>SITTER</button>
             </div>
             
+            {/* RESTAURATION DES NIVEAUX */}
             {role === "sitter" && serviceType === "baby" && (
               <div className="grid grid-cols-3 gap-1 mt-2">
                 <button type="button" onClick={() => setLevel("1")} className={`py-2 rounded-lg text-[10px] font-black uppercase transition-all ${level === "1" ? "bg-slate-900 text-white" : "bg-slate-200 text-slate-500"}`}>NIV 1 🍼<br/><span className="text-[8px] opacity-70 font-normal">Garde+Repas</span></button>
@@ -953,26 +958,56 @@ const ParentDashboard = ({ profile, user }) => {
 
   useEffect(() => {
     localStorage.setItem('dark', isDark);
-    const unsubSitters = onSnapshot(collection(db, 'artifacts', appId, 'public', 'data', 'sitters'), (snap) => {
-      // Filtrage sécurisé
-      setSitters(snap.docs.map(d => ({ id: d.id, ...d.data() })).filter(s => s.serviceType === (profile?.serviceType || 'baby')));
-      setLoading(false);
-    });
     
-    // FILTRE DES OFFRES PAR UNIVERS (BABY/PET) POUR NE PAS MELANGER
-    const qOffers = query(
-        collection(db, 'artifacts', appId, 'public', 'data', 'offers'), 
-        where("parentId", "==", user.uid)
-    );
-    
+    // Récupération et filtrage des offres
+    const qOffers = query(collection(db, 'artifacts', appId, 'public', 'data', 'offers'), where("parentId", "==", user.uid));
     const unsubOffers = onSnapshot(qOffers, (snap) => { 
         const list = snap.docs
             .map(d => ({ id: d.id, ...d.data() }))
-            .filter(o => o.sitterId !== o.parentId && o.serviceType === (profile?.serviceType || 'baby')); // FILTRE ICI
+            .filter(o => o.sitterId !== o.parentId && o.serviceType === (profile?.serviceType || 'baby'));
         setOffers(list); 
     });
-    return () => { unsubSitters(); unsubOffers(); };
+
+    return () => { unsubOffers(); };
   }, [user.uid, isDark, profile]); 
+
+  // UseMemo pour filtrer les sitters ET exclure ceux déjà bookés (Status accepté)
+  const filteredSitters = useMemo(() => {
+    // 1. Récupérer les IDs des sitters déjà "bookés" (acceptés/payés/terminés)
+    const bookedSitterIds = offers
+        .filter(o => ['accepted', 'paid_held', 'completed'].includes(o.status))
+        .map(o => o.sitterId);
+
+    return sitters.filter(s => {
+      // 2. EXCLUSION SI BOOKÉ
+      if (bookedSitterIds.includes(s.id)) return false;
+
+      const matchName = s.name?.toLowerCase().includes(search.toLowerCase());
+      const matchLocation = !locationFilter || s.city?.toLowerCase().includes(locationFilter.toLowerCase());
+      const matchPrice = (parseInt(s.price) || 0) <= maxPrice;
+      const matchVerified = !onlyVerified || s.hasCV;
+      const matchFav = !onlyFavorites || (profile.favorites || []).includes(s.id);
+      const matchDay = !dayFilter || (s.availability && s.availability[dayFilter]?.active);
+
+      return matchName && matchLocation && matchPrice && matchVerified && matchFav && matchDay;
+    }).sort((a, b) => {
+        const isInstantA = a.instantAvailableUntil && new Date(a.instantAvailableUntil) > new Date();
+        const isInstantB = b.instantAvailableUntil && new Date(b.instantAvailableUntil) > new Date();
+        if (isInstantA && !isInstantB) return -1; 
+        if (!isInstantA && isInstantB) return 1;  
+        return (b.views || 0) - (a.views || 0);
+    });
+
+  }, [sitters, search, locationFilter, maxPrice, onlyVerified, onlyFavorites, profile, dayFilter, offers]); // Ajout de offers dans les dépendances
+
+  // Chargement des sitters séparé pour éviter les boucles infinies
+  useEffect(() => {
+     const unsubSitters = onSnapshot(collection(db, 'artifacts', appId, 'public', 'data', 'sitters'), (snap) => {
+      setSitters(snap.docs.map(d => ({ id: d.id, ...d.data() })).filter(s => s.serviceType === (profile?.serviceType || 'baby')));
+      setLoading(false);
+    });
+    return () => unsubSitters();
+  }, [profile?.serviceType]);
 
   useEffect(() => {
       if (selectedSitter) {
@@ -991,28 +1026,6 @@ const ParentDashboard = ({ profile, user }) => {
           favorites: isFav ? arrayRemove(sitterId) : arrayUnion(sitterId)
       });
   };
-
-  const filteredSitters = useMemo(() => {
-    const filtered = sitters.filter(s => {
-      const matchName = s.name?.toLowerCase().includes(search.toLowerCase());
-      const matchLocation = !locationFilter || s.city?.toLowerCase().includes(locationFilter.toLowerCase());
-      const matchPrice = (parseInt(s.price) || 0) <= maxPrice;
-      const matchVerified = !onlyVerified || s.hasCV;
-      const matchFav = !onlyFavorites || (profile.favorites || []).includes(s.id);
-      const matchDay = !dayFilter || (s.availability && s.availability[dayFilter]?.active);
-
-      return matchName && matchLocation && matchPrice && matchVerified && matchFav && matchDay;
-    });
-
-    return filtered.sort((a, b) => {
-        const isInstantA = a.instantAvailableUntil && new Date(a.instantAvailableUntil) > new Date();
-        const isInstantB = b.instantAvailableUntil && new Date(b.instantAvailableUntil) > new Date();
-        if (isInstantA && !isInstantB) return -1; 
-        if (!isInstantA && isInstantB) return 1;  
-        return (b.views || 0) - (a.views || 0);
-    });
-
-  }, [sitters, search, locationFilter, maxPrice, onlyVerified, onlyFavorites, profile, dayFilter]);
 
   const handleBooking = async (s, p, h) => {
     if (s.id === user.uid) return alert("Vous ne pouvez pas réserver votre propre service !");
@@ -1642,7 +1655,7 @@ const SitterDashboard = ({ user, profile }) => {
           </div>
         )}
 
-        {/* --- VUE MESSAGES (CORRIGÉE ET ACCESSIBLE POUR LE SITTER) --- */}
+        {/* --- VUE MESSAGES --- */}
         {activeTab === "messages" && (
           <div className="animate-in fade-in duration-500 pb-24">
             <h2 className="text-2xl font-bold mb-6 px-2">Mes Discussions</h2>
