@@ -68,7 +68,6 @@ const appId = "sitfinder-prod-v1";
 // 2. UTILITAIRES & COMPOSANTS VISUELS
 // ==============================================================================================
 
-// Logo animé BabyKeeper
 const SitFinderLogo = ({ className = "w-16 h-16", glow = true }) => (
   <div className={`relative flex items-center justify-center ${className}`}>
     {glow && (
@@ -83,7 +82,6 @@ const SitFinderLogo = ({ className = "w-16 h-16", glow = true }) => (
   </div>
 );
 
-// Composant Étoiles de notation
 const RatingStars = ({ rating = 5, size = 14, interactive = false, onRate = null }) => (
   <div className="flex gap-0.5 text-[#E0720F]">
     {[...Array(5)].map((_, i) => (
@@ -98,7 +96,6 @@ const RatingStars = ({ rating = 5, size = 14, interactive = false, onRate = null
   </div>
 );
 
-// Calcul de l'âge
 const calculateAge = (birth) => {
   if (!birth) return null;
   const today = new Date();
@@ -110,7 +107,6 @@ const calculateAge = (birth) => {
   return age;
 };
 
-// Compression d'image avant upload
 const compressImage = (file) => {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
@@ -137,7 +133,6 @@ const compressImage = (file) => {
   });
 };
 
-// Écran de chargement
 const SplashScreen = ({ message = "La recherche en toute confiance" }) => (
   <div className="flex flex-col items-center justify-center h-screen bg-white font-sans overflow-hidden">
     <div className="relative mb-10 animate-in zoom-in duration-1000">
@@ -153,7 +148,6 @@ const SplashScreen = ({ message = "La recherche en toute confiance" }) => (
   </div>
 );
 
-// Avatar utilisateur générique ou photo
 const UserAvatar = ({ photoURL, size = "w-full h-full", className = "" }) => {
     if (photoURL && photoURL.length > 50) {
         return <img src={photoURL} alt="User" className={`${size} object-cover ${className}`} />;
@@ -166,7 +160,7 @@ const UserAvatar = ({ photoURL, size = "w-full h-full", className = "" }) => {
 };
 
 // ==============================================================================================
-// 3. MODULES GLOBAUX (FAQ, INSTALL, SWITCH)
+// 3. MODULES GLOBAUX
 // ==============================================================================================
 
 const FAQModal = ({ onClose }) => {
@@ -272,7 +266,6 @@ const ModeSwitcher = ({ currentRole, currentService, uid }) => {
 
     const switchMode = async (role, service) => {
         setIsOpen(false);
-        // Force l'update des deux champs pour éviter les sync issues
         await updateDoc(doc(db, 'artifacts', appId, 'users', uid, 'settings', 'profile'), { 
             role: role, 
             serviceType: service 
@@ -540,6 +533,7 @@ const ChatRoom = ({ offer, currentUser, onBack, isDark }) => {
                       message: msgText
                   }
               );
+              console.log("Notif envoyée");
           }
       } catch (error) {
           console.error("Erreur envoi mail:", error);
@@ -806,6 +800,7 @@ const AuthScreen = () => {
               <button type="button" onClick={() => setRole("sitter")} className={`py-3 rounded-xl font-black text-[10px] ${role === "sitter" ? "bg-white shadow text-[#E0720F]" : "text-slate-400"}`}>SITTER</button>
             </div>
             
+            {/* RESTAURATION DES NIVEAUX */}
             {role === "sitter" && serviceType === "baby" && (
               <div className="grid grid-cols-3 gap-1 mt-2">
                 <button type="button" onClick={() => setLevel("1")} className={`py-2 rounded-lg text-[10px] font-black uppercase transition-all ${level === "1" ? "bg-slate-900 text-white" : "bg-slate-200 text-slate-500"}`}>NIV 1 🍼<br/><span className="text-[8px] opacity-70 font-normal">Garde+Repas</span></button>
@@ -913,7 +908,7 @@ const CompleteProfileScreen = ({ uid, serviceType }) => {
 };
 
 // ==========================================
-// 8. DASHBOARD PARENT
+// 8. DASHBOARD PARENT (DESIGN PRO + FEATURES COMPLETES)
 // ==========================================
 
 const ParentDashboard = ({ profile, user }) => {
@@ -935,7 +930,7 @@ const ParentDashboard = ({ profile, user }) => {
   const [isDark, setIsDark] = useState(localStorage.getItem('dark') === 'true');
   const [showFAQ, setShowFAQ] = useState(false);
 
-  // Protection anti-crash
+  // Protection contre le crash "serviceType is undefined"
   const isPet = (profile?.serviceType || 'baby') === 'pet';
   const days = ["Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi", "Samedi", "Dimanche"];
 
@@ -963,6 +958,7 @@ const ParentDashboard = ({ profile, user }) => {
       setLoading(false);
     });
     
+    // FILTRE DES OFFRES PAR UNIVERS (BABY/PET) POUR NE PAS MELANGER
     const qOffers = query(
         collection(db, 'artifacts', appId, 'public', 'data', 'offers'), 
         where("parentId", "==", user.uid)
@@ -971,7 +967,7 @@ const ParentDashboard = ({ profile, user }) => {
     const unsubOffers = onSnapshot(qOffers, (snap) => { 
         const list = snap.docs
             .map(d => ({ id: d.id, ...d.data() }))
-            .filter(o => o.sitterId !== o.parentId && o.serviceType === (profile?.serviceType || 'baby'));
+            .filter(o => o.sitterId !== o.parentId && o.serviceType === (profile?.serviceType || 'baby')); // FILTRE ICI
         setOffers(list); 
     });
     return () => { unsubSitters(); unsubOffers(); };
@@ -1036,6 +1032,7 @@ const ParentDashboard = ({ profile, user }) => {
       
       const offerText = `Offre : ${h}h à ${p}€/h`;
       
+      // AJOUT DU CHAMP serviceType DANS L'OFFRE
       const newOffer = await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'offers'), {
         parentId: user.uid, 
         parentName: profile.name, 
@@ -1049,7 +1046,7 @@ const ParentDashboard = ({ profile, user }) => {
         lastMsgAt: Timestamp.now(), 
         hasUnread: true, 
         lastSenderId: user.uid,
-        serviceType: profile.serviceType || 'baby' 
+        serviceType: profile.serviceType || 'baby' // CLEF POUR LE FILTRAGE
       });
       
       await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'offers', newOffer.id, 'messages'), { text: `Bonjour ${s.name}, je souhaiterais réserver une garde de ${h}H au prix de ${p}€/H.`, senderId: user.uid, parentId: user.uid, sitterId: s.id, createdAt: Timestamp.now() });
@@ -1089,6 +1086,7 @@ const ParentDashboard = ({ profile, user }) => {
         {/* --- VUE RECHERCHE --- */}
         {activeTab === "search" && (
             <>
+            {/* HERO CARD PRO */}
             <div className={`p-8 md:p-10 rounded-3xl shadow-lg relative overflow-hidden group transition-all duration-700 ${isDark ? 'bg-gradient-to-br from-[#E64545] to-slate-900' : 'bg-gradient-to-br from-[#E64545] to-[#E0720F]'}`}>
               <div className="relative z-10 text-white">
                   <h2 className="text-3xl font-black italic tracking-tighter font-sans leading-tight animate-in slide-in-from-left duration-700">Bonjour {profile.name} ! 👋</h2>
@@ -1340,18 +1338,33 @@ const SitterDashboard = ({ user, profile }) => {
 
   useEffect(() => {
     localStorage.setItem('dark', isDark);
+    
+    // CHARGEMENT PROFIL PUBLIC AVEC PROTECTION ANTI-CRASH
     const unsubPublic = onSnapshot(doc(db, 'artifacts', appId, 'public', 'data', 'sitters', user.uid), (snap) => {
       if (snap.exists()) {
-        const d = snap.data(); setBio(d.bio || ""); setPrice(d.price || ""); setBirthDate(d.birthDate || ""); setCity(d.city || ""); setCvName(d.cvName || ""); setViews(d.views || 0); setHasCar(d.hasCar || false);
+        const d = snap.data(); 
+        setBio(d.bio || ""); 
+        setPrice(d.price || ""); 
+        setBirthDate(d.birthDate || ""); 
+        setCity(d.city || ""); 
+        setCvName(d.cvName || ""); 
+        setViews(d.views || 0); 
+        setHasCar(d.hasCar || false);
         if (d.level) setLevel(d.level);
-        if (d.skills) setSkills(d.skills); 
-        if (d.availability) setAvailability(d.availability);
+        
+        // PROTECTION: Si skills est null ou pas un tableau, on met un tableau vide
+        if (Array.isArray(d.skills)) setSkills(d.skills); 
+        else setSkills([]);
+
+        // PROTECTION: Si availability est null ou pas un objet, on laisse l'état par défaut
+        if (d.availability && typeof d.availability === 'object') setAvailability(d.availability);
+        
         if (d.instantAvailableUntil && new Date(d.instantAvailableUntil) > new Date()) setIsInstant(true);
         else setIsInstant(false);
       }
     });
     
-    // FILTRE DES OFFRES PAR UNIVERS (BABY/PET)
+    // CHARGEMENT DES OFFRES
     const qOffers = query(
       collection(db, 'artifacts', appId, 'public', 'data', 'offers'), 
       where("sitterId", "==", user.uid)
@@ -1359,14 +1372,12 @@ const SitterDashboard = ({ user, profile }) => {
     const unsubOffers = onSnapshot(qOffers, (snap) => {
       const list = snap.docs
             .map(d => ({ id: d.id, ...d.data() }))
-            .filter(o => o.serviceType === (profile?.serviceType || 'baby')); // FILTRE ICI AUSSI
+            .filter(o => o.serviceType === (profile?.serviceType || 'baby')); 
       setOffers(list);
     });
-    const unsubReviews = onSnapshot(collection(db, 'artifacts', appId, 'public', 'data', 'sitters', user.uid, 'reviews'), (snap) => {
-        setReviews(snap.docs.map(d => d.data()));
-    });
-    return () => { unsubPublic(); unsubOffers(); unsubReviews(); };
-  }, [user.uid, isDark, profile]);
+
+    return () => { unsubPublic(); unsubOffers(); };
+  }, [user.uid, isDark, profile.serviceType]);
 
   const totalEarnings = useMemo(() => {
       return offers
@@ -1675,86 +1686,6 @@ const SitterDashboard = ({ user, profile }) => {
 
       <InstallPrompt />
       {showFAQ && <FAQModal onClose={() => setShowFAQ(false)} />}
-      
-      {/* --- FENÊTRE MODALE DETAIL SITTER AVEC NEGOCIATION --- */}
-      {selectedSitter && (
-        <div className="fixed inset-0 bg-slate-900/80 backdrop-blur-sm z-[100] flex items-center justify-center p-4 text-slate-900">
-          <div className="bg-white w-full max-w-lg rounded-2xl overflow-hidden shadow-2xl animate-in zoom-in duration-300 flex flex-col max-h-[90vh]">
-            
-            <div className="relative h-32 bg-slate-100">
-                 <div className="absolute inset-0 bg-gradient-to-r from-[#E64545] to-[#E0720F] opacity-10"></div>
-                 <button onClick={() => setSelectedSitter(null)} className="absolute top-4 right-4 p-2 bg-black/10 rounded-full hover:bg-black/20 text-slate-600 transition-colors z-20"><X size={20}/></button>
-            </div>
-
-            <div className="px-6 pb-6 -mt-12 overflow-y-auto custom-scrollbar">
-                <div className="flex justify-between items-end mb-4">
-                     <div className="w-24 h-24 rounded-2xl overflow-hidden border-4 shadow-xl border-white bg-white">
-                         <UserAvatar photoURL={selectedSitter.photoURL} />
-                     </div>
-                     <div className="flex gap-2 mb-1">
-                         <button onClick={() => toggleFavorite(selectedSitter.id)} className={`p-2 rounded-lg transition-all ${profile.favorites?.includes(selectedSitter.id) ? 'bg-red-50 text-red-500' : 'bg-slate-100 text-slate-400'}`}><Heart size={20} fill={profile.favorites?.includes(selectedSitter.id) ? "currentColor" : "none"}/></button>
-                     </div>
-                </div>
-
-                <div className="mb-6">
-                    <h3 className="text-2xl font-black italic uppercase tracking-tighter text-slate-800">{selectedSitter.name}</h3>
-                    <div className="flex items-center gap-2 text-slate-500 text-sm mt-1">
-                        <MapPin size={14}/> {selectedSitter.city} • {calculateAge(selectedSitter.birthDate)} ans
-                    </div>
-                    {/* TAGS */}
-                    <div className="flex flex-wrap gap-2 mt-3">
-                         {selectedSitter.skills?.map((s,i) => <span key={i} className="px-2 py-1 bg-slate-50 text-slate-600 border border-slate-200 rounded-md text-[10px] font-bold uppercase">{s}</span>)}
-                    </div>
-                </div>
-
-                <div className="space-y-4">
-                    <div className="p-4 bg-slate-50 rounded-xl border border-slate-100">
-                        <h4 className="text-[10px] font-black uppercase text-slate-400 mb-2">Bio</h4>
-                        <p className="text-sm italic text-slate-600 leading-relaxed">"{selectedSitter.bio}"</p>
-                    </div>
-
-                    {sitterReviews.length > 0 && (
-                        <div>
-                            <h4 className="text-[10px] font-black uppercase text-slate-400 mb-2">Avis</h4>
-                            <div className="space-y-2">
-                                {sitterReviews.slice(0, 3).map((r, idx) => (
-                                    <div key={idx} className="p-3 bg-white border border-slate-100 rounded-lg shadow-sm">
-                                        <div className="flex justify-between items-center mb-1"><span className="font-bold text-xs">{r.parentName}</span><RatingStars rating={r.rating} size={10} /></div>
-                                        <p className="text-xs text-slate-500 italic">"{r.text}"</p>
-                                    </div>
-                                ))}
-                            </div>
-                        </div>
-                    )}
-                </div>
-
-                {/* FOOTER RESERVATION AVEC NEGOCIATION */}
-                <div className="mt-6 pt-4 border-t border-slate-100">
-                    <div className="flex gap-4 mb-4">
-                        <div className="flex-1">
-                            <label className="text-[9px] font-bold uppercase text-slate-400">Prix (€/H)</label>
-                            <input id="neg-p" type="number" defaultValue={selectedSitter.price} className="w-full p-3 rounded-xl bg-slate-50 font-bold border-none" />
-                        </div>
-                         <div className="flex-1">
-                            <label className="text-[9px] font-bold uppercase text-slate-400">Heures</label>
-                            <input id="neg-h" type="number" defaultValue="2" className="w-full p-3 rounded-xl bg-slate-50 font-bold border-none" />
-                        </div>
-                    </div>
-                    {selectedSitter.id === user.uid ? (
-                        <button disabled className="w-full py-4 rounded-xl font-bold bg-slate-100 text-slate-400 uppercase text-xs">Aperçu Profil</button>
-                    ) : (
-                      <button onClick={() => {
-                          const p = document.getElementById('neg-p').value;
-                          const h = document.getElementById('neg-h').value;
-                          handleBooking(selectedSitter, p, h);
-                      }} className="w-full py-4 rounded-xl font-black text-xs shadow-xl shadow-[#E64545]/20 uppercase tracking-widest active:scale-95 transition-all bg-[#E64545] text-white hover:bg-[#E64545]/90">Envoyer offre</button>
-                    )}
-                </div>
-
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 };
