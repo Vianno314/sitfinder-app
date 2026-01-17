@@ -47,7 +47,7 @@ import {
   CheckCircle, AlertTriangle
 } from "lucide-react";
 
-// Configuration Firebase (Identique à la tienne)
+// Configuration Firebase
 const firebaseConfig = {
   apiKey: "AIzaSyCcg_EOypcJ79aqKEwgWCzZwGkSQ-cd_7s",
   authDomain: "sitfinder-df2e4.firebaseapp.com",
@@ -275,7 +275,7 @@ const ModeSwitcher = ({ currentRole, currentService, uid }) => {
             role: role, 
             serviceType: service 
         });
-        window.location.reload(); // Force reload pour éviter les états incohérents
+        window.location.reload(); 
     };
 
     return (
@@ -697,9 +697,9 @@ const ChatRoom = ({ offer, currentUser, onBack, isDark }) => {
   );
 };
 
-// ==============================================================================================
-// 7. AUTHENTIFICATION & CRÉATION COMPTE (NIVEAUX 1,2,3)
-// ==============================================================================================
+// ==========================================
+// 7. AUTH SCREEN (AVEC NIVEAUX SITTER 1,2,3)
+// ==========================================
 
 const AuthScreen = () => {
   const [isRegister, setIsRegister] = useState(false);
@@ -754,7 +754,7 @@ const AuthScreen = () => {
       } else { await signInWithEmailAndPassword(auth, email, password); }
     } catch (err) { 
         if(err.code === 'auth/email-already-in-use') {
-            alert("Compte existant ! Connectez-vous.");
+            alert("Compte existant ! Connectez-vous, puis changez de mode (Enfant/Animal) dans l'appli.");
             setIsRegister(false);
         } else {
             alert("Email ou mot de passe invalide."); 
@@ -805,6 +805,7 @@ const AuthScreen = () => {
               <button type="button" onClick={() => setRole("sitter")} className={`py-3 rounded-xl font-black text-[10px] ${role === "sitter" ? "bg-white shadow text-[#E0720F]" : "text-slate-400"}`}>SITTER</button>
             </div>
             
+            {/* RESTAURATION DES NIVEAUX */}
             {role === "sitter" && serviceType === "baby" && (
               <div className="grid grid-cols-3 gap-1 mt-2">
                 <button type="button" onClick={() => setLevel("1")} className={`py-2 rounded-lg text-[10px] font-black uppercase transition-all ${level === "1" ? "bg-slate-900 text-white" : "bg-slate-200 text-slate-500"}`}>NIV 1 🍼<br/><span className="text-[8px] opacity-70 font-normal">Garde+Repas</span></button>
@@ -911,9 +912,9 @@ const CompleteProfileScreen = ({ uid, serviceType }) => {
   );
 };
 
-// ==============================================================================================
-// 8. DASHBOARD PARENT (RECHERCHE + MESSAGERIE FILTRÉE)
-// ==============================================================================================
+// ==========================================
+// 8. DASHBOARD PARENT (DESIGN PRO + FEATURES COMPLETES)
+// ==========================================
 
 const ParentDashboard = ({ profile, user }) => {
   const [sitters, setSitters] = useState([]);
@@ -934,7 +935,8 @@ const ParentDashboard = ({ profile, user }) => {
   const [isDark, setIsDark] = useState(localStorage.getItem('dark') === 'true');
   const [showFAQ, setShowFAQ] = useState(false);
 
-  const isPet = profile.serviceType === 'pet';
+  // Protection contre le crash "serviceType is undefined"
+  const isPet = (profile?.serviceType || 'baby') === 'pet';
   const days = ["Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi", "Samedi", "Dimanche"];
 
   useEffect(() => {
@@ -956,20 +958,25 @@ const ParentDashboard = ({ profile, user }) => {
   useEffect(() => {
     localStorage.setItem('dark', isDark);
     const unsubSitters = onSnapshot(collection(db, 'artifacts', appId, 'public', 'data', 'sitters'), (snap) => {
-      setSitters(snap.docs.map(d => ({ id: d.id, ...d.data() })).filter(s => s.serviceType === profile.serviceType));
+      // Filtrage sécurisé
+      setSitters(snap.docs.map(d => ({ id: d.id, ...d.data() })).filter(s => s.serviceType === (profile?.serviceType || 'baby')));
       setLoading(false);
     });
     
-    const qOffers = query(collection(db, 'artifacts', appId, 'public', 'data', 'offers'), where("parentId", "==", user.uid));
+    // FILTRE DES OFFRES PAR UNIVERS (BABY/PET) POUR NE PAS MELANGER
+    const qOffers = query(
+        collection(db, 'artifacts', appId, 'public', 'data', 'offers'), 
+        where("parentId", "==", user.uid)
+    );
+    
     const unsubOffers = onSnapshot(qOffers, (snap) => { 
-        // ICI : FILTRAGE STRICT PAR SERVICETYPE (BABY ou PET)
         const list = snap.docs
             .map(d => ({ id: d.id, ...d.data() }))
-            .filter(o => o.sitterId !== o.parentId && o.serviceType === (profile.serviceType || 'baby'));
+            .filter(o => o.sitterId !== o.parentId && o.serviceType === (profile?.serviceType || 'baby')); // FILTRE ICI
         setOffers(list); 
     });
     return () => { unsubSitters(); unsubOffers(); };
-  }, [user.uid, isDark, profile.serviceType]); 
+  }, [user.uid, isDark, profile]); 
 
   useEffect(() => {
       if (selectedSitter) {
@@ -983,7 +990,7 @@ const ParentDashboard = ({ profile, user }) => {
   const unreadCount = offers.filter(o => o.hasUnread && o.lastSenderId !== user.uid).length;
 
   const toggleFavorite = async (sitterId) => {
-      const isFav = profile.favorites?.includes(sitterId);
+      const isFav = (profile.favorites || []).includes(sitterId);
       await updateDoc(doc(db, 'artifacts', appId, 'users', user.uid, 'settings', 'profile'), {
           favorites: isFav ? arrayRemove(sitterId) : arrayUnion(sitterId)
       });
@@ -995,7 +1002,7 @@ const ParentDashboard = ({ profile, user }) => {
       const matchLocation = !locationFilter || s.city?.toLowerCase().includes(locationFilter.toLowerCase());
       const matchPrice = (parseInt(s.price) || 0) <= maxPrice;
       const matchVerified = !onlyVerified || s.hasCV;
-      const matchFav = !onlyFavorites || profile.favorites?.includes(s.id);
+      const matchFav = !onlyFavorites || (profile.favorites || []).includes(s.id);
       const matchDay = !dayFilter || (s.availability && s.availability[dayFilter]?.active);
 
       return matchName && matchLocation && matchPrice && matchVerified && matchFav && matchDay;
@@ -1009,7 +1016,7 @@ const ParentDashboard = ({ profile, user }) => {
         return (b.views || 0) - (a.views || 0);
     });
 
-  }, [sitters, search, locationFilter, maxPrice, onlyVerified, onlyFavorites, profile.favorites, dayFilter]);
+  }, [sitters, search, locationFilter, maxPrice, onlyVerified, onlyFavorites, profile, dayFilter]);
 
   const handleBooking = async (s, p, h) => {
     if (s.id === user.uid) return alert("Vous ne pouvez pas réserver votre propre service !");
@@ -1030,7 +1037,7 @@ const ParentDashboard = ({ profile, user }) => {
       
       const offerText = `Offre : ${h}h à ${p}€/h`;
       
-      // AJOUT DU CHAMP serviceType DANS L'OFFRE POUR FILTRER PLUS TARD
+      // AJOUT DU CHAMP serviceType DANS L'OFFRE
       const newOffer = await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'offers'), {
         parentId: user.uid, 
         parentName: profile.name, 
@@ -1755,9 +1762,9 @@ const SitterDashboard = ({ user, profile }) => {
   );
 };
 
-// ==============================================================================================
-// 10. LOGIQUE RACINE SÉCURISÉE (APP)
-// ==============================================================================================
+// ==========================================
+// 10. RACINE SÉCURISÉE (ANTI-CRASH)
+// ==========================================
 
 export default function App() {
   const [init, setInit] = useState(false);
@@ -1766,15 +1773,13 @@ export default function App() {
 
   useEffect(() => {
     let unsubP = null;
-    
-    // Timer de sécurité pour ne pas rester bloqué sur le splash si Firebase est lent
     const minSplashTimer = new Promise(resolve => setTimeout(resolve, 1500));
     
     const unsubA = onAuthStateChanged(auth, async (u) => {
       setUser(u);
       
       if (u) {
-        // On écoute le profil utilisateur
+        // On écoute le profil utilisateur avec protection
         unsubP = onSnapshot(doc(db, 'artifacts', appId, 'users', u.uid, 'settings', 'profile'), async (snap) => {
           await minSplashTimer;
           if (snap.exists()) {
@@ -1808,14 +1813,16 @@ export default function App() {
   // On passe 'serviceType' en props pour pré-remplir si dispo
   if (user && !profile) return <CompleteProfileScreen uid={user.uid} serviceType={profile?.serviceType} />; 
   
-  // 4. Vérification de sécurité des données
-  if (!profile.role) {
+  // 4. PROTECTION ANTI-CRASH : Si le profil est chargé mais corrompu (pas de rôle)
+  if (profile && !profile.role) {
       return (
           <div className="flex flex-col items-center justify-center h-screen p-6 text-center space-y-4 bg-slate-50">
               <AlertCircle size={48} className="text-red-500 mb-2"/>
               <h2 className="text-xl font-bold text-slate-800">Profil incomplet</h2>
-              <p className="text-slate-500 text-sm">Une erreur est survenue lors du chargement de votre profil.</p>
-              <button onClick={() => signOut(auth)} className="bg-slate-900 text-white px-6 py-3 rounded-xl font-bold uppercase text-xs shadow-lg hover:bg-slate-800 transition-colors">Se déconnecter</button>
+              <p className="text-slate-500 text-sm">Votre ancien compte n'est pas compatible avec cette version.</p>
+              <button onClick={() => signOut(auth)} className="bg-slate-900 text-white px-6 py-3 rounded-xl font-bold uppercase text-xs shadow-lg hover:bg-slate-800 transition-colors">
+                  Se déconnecter et recréer un compte
+              </button>
           </div>
       );
   }
