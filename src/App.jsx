@@ -44,7 +44,7 @@ import {
   Image as ImageIcon, Share2, Quote, TrendingUp, Zap, Trophy, Languages, 
   EyeOff, Moon, Sun, Bell, Flag, Eye, Wallet, Car, CreditCard, LockKeyhole, 
   Crown, Info, Dog, Cat, Bone, PawPrint, RefreshCw, HelpCircle, Power, Inbox, 
-  CheckCircle, AlertTriangle
+  CheckCircle, AlertTriangle, LayoutDashboard
 } from "lucide-react";
 
 // Configuration Firebase
@@ -68,6 +68,7 @@ const appId = "sitfinder-prod-v1";
 // 2. UTILITAIRES & COMPOSANTS VISUELS
 // ==============================================================================================
 
+// Logo animé BabyKeeper
 const SitFinderLogo = ({ className = "w-16 h-16", glow = true }) => (
   <div className={`relative flex items-center justify-center ${className}`}>
     {glow && (
@@ -82,6 +83,7 @@ const SitFinderLogo = ({ className = "w-16 h-16", glow = true }) => (
   </div>
 );
 
+// Composant Étoiles de notation
 const RatingStars = ({ rating = 5, size = 14, interactive = false, onRate = null }) => (
   <div className="flex gap-0.5 text-[#E0720F]">
     {[...Array(5)].map((_, i) => (
@@ -96,6 +98,7 @@ const RatingStars = ({ rating = 5, size = 14, interactive = false, onRate = null
   </div>
 );
 
+// Calcul de l'âge
 const calculateAge = (birth) => {
   if (!birth) return null;
   const today = new Date();
@@ -107,6 +110,7 @@ const calculateAge = (birth) => {
   return age;
 };
 
+// Compression d'image avant upload
 const compressImage = (file) => {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
@@ -133,6 +137,7 @@ const compressImage = (file) => {
   });
 };
 
+// Écran de chargement
 const SplashScreen = ({ message = "La recherche en toute confiance" }) => (
   <div className="flex flex-col items-center justify-center h-screen bg-white font-sans overflow-hidden">
     <div className="relative mb-10 animate-in zoom-in duration-1000">
@@ -148,6 +153,7 @@ const SplashScreen = ({ message = "La recherche en toute confiance" }) => (
   </div>
 );
 
+// Avatar utilisateur générique ou photo
 const UserAvatar = ({ photoURL, size = "w-full h-full", className = "" }) => {
     if (photoURL && photoURL.length > 50) {
         return <img src={photoURL} alt="User" className={`${size} object-cover ${className}`} />;
@@ -347,11 +353,8 @@ const SettingsView = ({ user, profile, onBack, isDark, toggleDark }) => {
     setLoading(true);
     try {
       const updateData = { name: newName, phone, photoURL: customPhoto, privateMode };
-      
-      // 1. Mise à jour profil privé
       await updateDoc(doc(db, 'artifacts', appId, 'users', user.uid, 'settings', 'profile'), updateData);
       
-      // 2. Mise à jour FORCEE profil public (Sitter)
       const publicSitterRef = doc(db, 'artifacts', appId, 'public', 'data', 'sitters', user.uid);
       const publicDoc = await getDoc(publicSitterRef);
       if (publicDoc.exists()) {
@@ -533,7 +536,6 @@ const ChatRoom = ({ offer, currentUser, onBack, isDark }) => {
                       message: msgText
                   }
               );
-              console.log("Notif envoyée");
           }
       } catch (error) {
           console.error("Erreur envoi mail:", error);
@@ -749,7 +751,7 @@ const AuthScreen = () => {
       } else { await signInWithEmailAndPassword(auth, email, password); }
     } catch (err) { 
         if(err.code === 'auth/email-already-in-use') {
-            alert("Compte existant ! Connectez-vous.");
+            alert("Compte existant ! Connectez-vous, puis changez de mode (Enfant/Animal) dans l'appli.");
             setIsRegister(false);
         } else {
             alert("Email ou mot de passe invalide."); 
@@ -800,7 +802,6 @@ const AuthScreen = () => {
               <button type="button" onClick={() => setRole("sitter")} className={`py-3 rounded-xl font-black text-[10px] ${role === "sitter" ? "bg-white shadow text-[#E0720F]" : "text-slate-400"}`}>SITTER</button>
             </div>
             
-            {/* RESTAURATION DES NIVEAUX */}
             {role === "sitter" && serviceType === "baby" && (
               <div className="grid grid-cols-3 gap-1 mt-2">
                 <button type="button" onClick={() => setLevel("1")} className={`py-2 rounded-lg text-[10px] font-black uppercase transition-all ${level === "1" ? "bg-slate-900 text-white" : "bg-slate-200 text-slate-500"}`}>NIV 1 🍼<br/><span className="text-[8px] opacity-70 font-normal">Garde+Repas</span></button>
@@ -1032,7 +1033,7 @@ const ParentDashboard = ({ profile, user }) => {
       
       const offerText = `Offre : ${h}h à ${p}€/h`;
       
-      // AJOUT DU CHAMP serviceType DANS L'OFFRE
+      // AJOUT DU CHAMP serviceType DANS L'OFFRE POUR FILTRER PLUS TARD
       const newOffer = await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'offers'), {
         parentId: user.uid, 
         parentName: profile.name, 
@@ -1324,7 +1325,7 @@ const SitterDashboard = ({ user, profile }) => {
   const [isDark, setIsDark] = useState(localStorage.getItem('dark') === 'true');
   const [views, setViews] = useState(0);
 
-  const isPet = (profile?.serviceType || 'baby') === 'pet';
+  const isPet = profile.serviceType === 'pet';
 
   // LISTE DES COMPÉTENCES DISPONIBLES
   const AVAILABLE_SKILLS = isPet 
@@ -1372,7 +1373,7 @@ const SitterDashboard = ({ user, profile }) => {
     const unsubOffers = onSnapshot(qOffers, (snap) => {
       const list = snap.docs
             .map(d => ({ id: d.id, ...d.data() }))
-            .filter(o => o.serviceType === (profile?.serviceType || 'baby')); 
+            .filter(o => o.serviceType === (profile.serviceType || 'baby')); 
       setOffers(list);
     });
 
@@ -1676,9 +1677,15 @@ const SitterDashboard = ({ user, profile }) => {
       </main>
 
       <div className={`fixed bottom-6 left-1/2 -translate-x-1/2 w-[90%] max-w-md backdrop-blur-xl p-2 rounded-2xl shadow-2xl flex items-center justify-between z-50 border ${isDark ? 'bg-slate-900/95 border-slate-800' : 'bg-slate-900/95 border-white/10'}`}>
-        <button onClick={() => setActiveTab("search")} className={`flex-1 flex flex-col items-center py-3 rounded-xl transition-all duration-300 ${activeTab === "search" ? (isDark ? "bg-[#E64545] text-white" : "bg-[#E64545] text-white") : "text-slate-400 hover:text-white"}`}><Search size={20}/><span className="text-[8px] font-black uppercase mt-1 tracking-widest">Trouver</span></button>
-        <button onClick={() => setActiveTab("messages")} className={`flex-1 flex flex-col items-center py-3 rounded-xl transition-all duration-300 relative ${activeTab === "messages" ? (isDark ? "bg-[#E64545] text-white" : "bg-[#E64545] text-white") : "text-slate-400 hover:text-white"}`}><MessageSquare size={20}/><span className="text-[8px] font-black uppercase mt-1 font-sans tracking-widest">Offres</span>{unreadCount > 0 && <div className="absolute top-2 right-1/3 w-2 h-2 bg-[#E0720F] rounded-full border-2 border-slate-900 animate-pulse"></div>}</button>
-        <button onClick={() => setActiveTab("profile")} className={`flex-1 flex flex-col items-center py-3 rounded-xl ${activeTab === "profile" ? (isDark ? "bg-[#E64545] text-white" : "bg-[#E64545] text-white") : "text-slate-400 hover:text-white"}`}>
+        <button onClick={() => setActiveTab("profile")} className={`flex-1 flex flex-col items-center py-3 rounded-xl transition-all duration-300 ${activeTab === "profile" ? (isDark ? "bg-[#E64545] text-white" : "bg-[#E64545] text-white") : "text-slate-400 hover:text-white"}`}>
+            <LayoutDashboard size={20}/>
+            <span className="text-[8px] font-black uppercase mt-1 tracking-widest font-sans">Annonce</span>
+        </button>
+        <button onClick={() => setActiveTab("messages")} className={`flex-1 flex flex-col items-center py-3 rounded-xl transition-all duration-300 relative ${activeTab === "messages" ? (isDark ? "bg-[#E64545] text-white" : "bg-[#E64545] text-white") : "text-slate-400 hover:text-white"}`}>
+            <MessageSquare size={20}/>
+            <span className="text-[8px] font-black uppercase mt-1 font-sans tracking-widest">Offres</span>{unreadCount > 0 && <div className="absolute top-2 right-1/3 w-2 h-2 bg-[#E0720F] rounded-full border-2 border-slate-900 animate-pulse"></div>}
+        </button>
+        <button onClick={() => setActiveTab("settings")} className={`flex-1 flex flex-col items-center py-3 rounded-xl ${activeTab === "settings" ? (isDark ? "bg-[#E64545] text-white" : "bg-[#E64545] text-white") : "text-slate-400 hover:text-white"}`}>
             <Settings size={20}/>
             <span className="text-[8px] font-black uppercase mt-1 tracking-widest font-sans">Réglages</span>
         </button>
