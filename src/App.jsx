@@ -44,7 +44,7 @@ import {
   Image as ImageIcon, Share2, Quote, TrendingUp, Zap, Trophy, Languages, 
   EyeOff, Moon, Sun, Bell, Flag, Eye, Wallet, Car, CreditCard, LockKeyhole, 
   Crown, Info, Dog, Cat, Bone, PawPrint, RefreshCw, HelpCircle, Power, Inbox, 
-  CheckCircle, AlertTriangle, LayoutDashboard
+  CheckCircle, AlertTriangle, LayoutDashboard, Coffee
 } from "lucide-react";
 
 // Configuration Firebase
@@ -272,6 +272,7 @@ const ModeSwitcher = ({ currentRole, currentService, uid }) => {
 
     const switchMode = async (role, service) => {
         setIsOpen(false);
+        // Force l'update des deux champs pour éviter les sync issues
         await updateDoc(doc(db, 'artifacts', appId, 'users', uid, 'settings', 'profile'), { 
             role: role, 
             serviceType: service 
@@ -587,7 +588,11 @@ const ChatRoom = ({ offer, currentUser, onBack, isDark }) => {
     try {
       await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'offers', offer.id), { status });
       let text = "";
-      if (status === 'accepted') text = "🤝 Offre acceptée ! Vous pouvez échanger vos coordonnées. Rappel : Le paiement se fait en direct.";
+      if (status === 'accepted') {
+          text = "🤝 Offre acceptée ! Vous pouvez échanger vos coordonnées. Rappel : Le paiement se fait en direct.";
+          // SI ACCEPTÉ, ON MET LE SITTER EN "OCCUPÉ" (isBusy) POUR QU'IL DISPARAISSE DES RECHERCHES
+          await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'sitters', currentUser.uid), { isBusy: true });
+      }
       else if (status === 'declined') text = "L'offre a été refusée.";
       
       await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'offers', offer.id, 'messages'), { text, senderId: 'system', parentId: offer.parentId, sitterId: offer.sitterId, createdAt: Timestamp.now() });
@@ -805,7 +810,6 @@ const AuthScreen = () => {
               <button type="button" onClick={() => setRole("sitter")} className={`py-3 rounded-xl font-black text-[10px] ${role === "sitter" ? "bg-white shadow text-[#E0720F]" : "text-slate-400"}`}>SITTER</button>
             </div>
             
-            {/* RESTAURATION DES NIVEAUX */}
             {role === "sitter" && serviceType === "baby" && (
               <div className="grid grid-cols-3 gap-1 mt-2">
                 <button type="button" onClick={() => setLevel("1")} className={`py-2 rounded-lg text-[10px] font-black uppercase transition-all ${level === "1" ? "bg-slate-900 text-white" : "bg-slate-200 text-slate-500"}`}>NIV 1 🍼<br/><span className="text-[8px] opacity-70 font-normal">Garde+Repas</span></button>
@@ -913,7 +917,7 @@ const CompleteProfileScreen = ({ uid, serviceType }) => {
 };
 
 // ==========================================
-// 8. DASHBOARD PARENT (DESIGN PRO + FEATURES COMPLETES)
+// 8. DASHBOARD PARENT
 // ==========================================
 
 const ParentDashboard = ({ profile, user }) => {
@@ -963,7 +967,7 @@ const ParentDashboard = ({ profile, user }) => {
       setLoading(false);
     });
     
-    // FILTRE DES OFFRES PAR UNIVERS (BABY/PET) POUR NE PAS MELANGER
+    // FILTRE DES OFFRES PAR UNIVERS
     const qOffers = query(
         collection(db, 'artifacts', appId, 'public', 'data', 'offers'), 
         where("parentId", "==", user.uid)
@@ -972,7 +976,7 @@ const ParentDashboard = ({ profile, user }) => {
     const unsubOffers = onSnapshot(qOffers, (snap) => { 
         const list = snap.docs
             .map(d => ({ id: d.id, ...d.data() }))
-            .filter(o => o.sitterId !== o.parentId && (o.serviceType || 'baby') === (profile?.serviceType || 'baby')); // FILTRE ICI
+            .filter(o => o.sitterId !== o.parentId && (o.serviceType || 'baby') === (profile?.serviceType || 'baby')); 
         setOffers(list); 
     });
     return () => { unsubSitters(); unsubOffers(); };
@@ -997,15 +1001,12 @@ const ParentDashboard = ({ profile, user }) => {
   };
 
   const filteredSitters = useMemo(() => {
-    // 1. Récupérer les IDs des sitters déjà "bookés" (acceptés/payés/terminés)
-    // C'est ici que j'ai ajouté la logique que tu as demandée
-    const bookedSitterIds = offers
-        .filter(o => ['accepted', 'paid_held', 'completed'].includes(o.status))
-        .map(o => o.sitterId);
-
     const filtered = sitters.filter(s => {
-      // 2. EXCLUSION IMMEDIATE SI BOOKÉ
-      if (bookedSitterIds.includes(s.id)) return false;
+      // 1. NE PAS S'AFFICHER SOI-MEME
+      if (s.id === user.uid) return false;
+
+      // 2. MASQUER LES SITTERS OCCUPÉS
+      if (s.isBusy) return false;
 
       const matchName = s.name?.toLowerCase().includes(search.toLowerCase());
       const matchLocation = !locationFilter || s.city?.toLowerCase().includes(locationFilter.toLowerCase());
@@ -1025,7 +1026,7 @@ const ParentDashboard = ({ profile, user }) => {
         return (b.views || 0) - (a.views || 0);
     });
 
-  }, [sitters, search, locationFilter, maxPrice, onlyVerified, onlyFavorites, profile, dayFilter, offers]);
+  }, [sitters, search, locationFilter, maxPrice, onlyVerified, onlyFavorites, profile, dayFilter]);
 
   const handleBooking = async (s, p, h) => {
     if (s.id === user.uid) return alert("Vous ne pouvez pas réserver votre propre service !");
@@ -1138,8 +1139,7 @@ const ParentDashboard = ({ profile, user }) => {
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {loading ? <div className="col-span-full py-20 flex justify-center animate-pulse"><Loader2 className="animate-spin text-[#E64545]" size={64} /></div> 
-              : filteredSitters.length === 0 ? <div className="col-span-full text-center py-10 text-slate-400 italic">Aucun profil trouvé ou tous vos favoris sont déjà réservés.</div> :
-              filteredSitters.map((s) => {
+              : filteredSitters.map((s) => {
                   const isInstant = s.instantAvailableUntil && new Date(s.instantAvailableUntil) > new Date();
 
                   return (
@@ -1233,15 +1233,14 @@ const ParentDashboard = ({ profile, user }) => {
       
       {/* --- FENÊTRE MODALE DETAIL SITTER AVEC NEGOCIATION --- */}
       {selectedSitter && (
-        <div className="fixed inset-0 bg-slate-900/80 backdrop-blur-sm z-[100] flex items-center justify-center p-4 text-slate-900">
-          <div className="bg-white w-full max-w-lg rounded-2xl overflow-hidden shadow-2xl animate-in zoom-in duration-300 flex flex-col max-h-[90vh]">
+        <div className="fixed inset-0 bg-black/80 z-[9999] flex items-center justify-center p-4 text-slate-900 animate-in fade-in duration-300">
+          <div className="bg-white w-full max-w-lg rounded-2xl overflow-hidden shadow-2xl flex flex-col max-h-[90vh] z-[10000]">
             
-            <div className="relative h-32 bg-slate-100">
-                 <div className="absolute inset-0 bg-gradient-to-r from-[#E64545] to-[#E0720F] opacity-10"></div>
-                 <button onClick={() => setSelectedSitter(null)} className="absolute top-4 right-4 p-2 bg-black/10 rounded-full hover:bg-black/20 text-slate-600 transition-colors z-20"><X size={20}/></button>
+            <div className="relative h-32 bg-gradient-to-r from-orange-400 to-red-500 shrink-0">
+                 <button onClick={() => setSelectedSitter(null)} className="absolute top-4 right-4 p-2 bg-black/20 rounded-full hover:bg-black/30 text-white transition-colors z-20"><X size={20}/></button>
             </div>
 
-            <div className="px-6 pb-6 -mt-12 overflow-y-auto custom-scrollbar">
+            <div className="px-6 pb-6 -mt-12 overflow-y-auto custom-scrollbar flex-1">
                 <div className="flex justify-between items-end mb-4">
                      <div className="w-24 h-24 rounded-2xl overflow-hidden border-4 shadow-xl border-white bg-white">
                          <UserAvatar photoURL={selectedSitter.photoURL} />
@@ -1288,11 +1287,11 @@ const ParentDashboard = ({ profile, user }) => {
                     <div className="flex gap-4 mb-4">
                         <div className="flex-1">
                             <label className="text-[9px] font-bold uppercase text-slate-400">Prix (€/H)</label>
-                            <input id="neg-p" type="number" defaultValue={selectedSitter.price} className="w-full p-3 rounded-xl bg-slate-50 font-bold border-none" />
+                            <input id="neg-p" type="number" defaultValue={selectedSitter.price} className="w-full p-3 rounded-xl bg-slate-50 font-bold border-none text-center" />
                         </div>
                          <div className="flex-1">
                             <label className="text-[9px] font-bold uppercase text-slate-400">Heures</label>
-                            <input id="neg-h" type="number" defaultValue="2" className="w-full p-3 rounded-xl bg-slate-50 font-bold border-none" />
+                            <input id="neg-h" type="number" defaultValue="2" className="w-full p-3 rounded-xl bg-slate-50 font-bold border-none text-center" />
                         </div>
                     </div>
                     {selectedSitter.id === user.uid ? (
@@ -1435,6 +1434,12 @@ const SitterDashboard = ({ user, profile }) => {
      await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'sitters', user.uid), { 
          instantAvailableUntil: until 
      });
+  };
+
+  // --- NOUVEAU BOUTON : DEVENIR DISPONIBLE (RESET) ---
+  const resetAvailability = async () => {
+      await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'sitters', user.uid), { isBusy: false });
+      alert("Vous êtes de nouveau visible pour les parents ! ✅");
   };
 
   const handleSave = async () => {
@@ -1645,18 +1650,23 @@ const SitterDashboard = ({ user, profile }) => {
             </div>
 
             {/* Barre d'action finale */}
-            <div className="flex gap-3 pt-2 pb-24">
-                <button onClick={handleDeleteAd} className="px-6 py-3 rounded-xl border border-red-100 text-red-500 font-bold text-sm hover:bg-red-50 transition-colors">
-                   Supprimer
+            <div className="flex flex-col gap-3 pt-2 pb-24">
+                <button onClick={resetAvailability} className="w-full py-3 bg-blue-50 text-blue-600 rounded-xl font-bold text-sm hover:bg-blue-100">
+                    Je suis de nouveau disponible ✅
                 </button>
-                <button onClick={handleSave} disabled={loading} className="flex-1 bg-[#E64545] hover:bg-red-700 text-white font-bold py-3 rounded-xl shadow-md active:scale-[0.98] transition-all flex items-center justify-center gap-2">
-                    {loading ? <Loader2 className="animate-spin" size={20} /> : <><Save size={18}/> {saveStatus || "Mettre à jour l'annonce"}</>}
-                </button>
+                <div className="flex gap-3">
+                    <button onClick={handleDeleteAd} className="px-6 py-3 rounded-xl border border-red-100 text-red-500 font-bold text-sm hover:bg-red-50 transition-colors">
+                       Supprimer
+                    </button>
+                    <button onClick={handleSave} disabled={loading} className="flex-1 bg-[#E64545] hover:bg-red-700 text-white font-bold py-3 rounded-xl shadow-md active:scale-[0.98] transition-all flex items-center justify-center gap-2">
+                        {loading ? <Loader2 className="animate-spin" size={20} /> : <><Save size={18}/> {saveStatus || "Mettre à jour l'annonce"}</>}
+                    </button>
+                </div>
             </div>
           </div>
         )}
 
-        {/* --- VUE MESSAGES --- */}
+        {/* --- VUE MESSAGES (CORRIGÉE ET ACCESSIBLE POUR LE SITTER) --- */}
         {activeTab === "messages" && (
           <div className="animate-in fade-in duration-500 pb-24">
             <h2 className="text-2xl font-bold mb-6 px-2">Mes Discussions</h2>
