@@ -34,7 +34,7 @@ import {
   Baby, LogOut, Save, Search, Loader2, AlertCircle, ShieldCheck, 
   Euro, User, Mail, Lock, ChevronRight, Sparkles, Heart, Filter, Calendar,
   Clock, UserPlus, Cake, FileUp, FileText, CheckCircle2, MessageSquare, 
-  Send, X, Check, ArrowLeft, MessageCircle, PartyPopper, Star, MapPin, Camera, SlidersHorizontal, Settings, KeyRound, Phone, Trash2, Palette, Image as ImageIcon, Share2, Quote, TrendingUp, Zap, Trophy, Languages, EyeOff, Moon, Sun, Bell, Flag, Eye, Wallet, Car, CreditCard, LockKeyhole, Crown, Info, Dog, Cat, Bone, PawPrint, RefreshCw, HelpCircle, Power, Inbox
+  Send, X, Check, ArrowLeft, MessageCircle, PartyPopper, Star, MapPin, Camera, SlidersHorizontal, Settings, KeyRound, Phone, Trash2, Palette, Image as ImageIcon, Share2, Quote, TrendingUp, Zap, Trophy, Languages, EyeOff, Moon, Sun, Bell, Flag, Eye, Wallet, Car, CreditCard, LockKeyhole, Crown, Info, Dog, Cat, Bone, PawPrint, RefreshCw, HelpCircle, Power, Inbox, CheckCircle
 } from "lucide-react";
 
 // ==========================================
@@ -56,7 +56,7 @@ const db = getFirestore(app, "default");
 const appId = "sitfinder-prod-v1";
 
 // ==========================================
-// 2. UTILITAIRES
+// 2. UTILITAIRES DE DESIGN
 // ==========================================
 
 const SitFinderLogo = ({ className = "w-16 h-16", glow = true }) => (
@@ -150,7 +150,7 @@ const UserAvatar = ({ photoURL, size = "w-full h-full", className = "" }) => {
 };
 
 // ==========================================
-// 3. COMPOSANTS GLOBAUX & FAQ COMPLÈTE
+// 3. COMPOSANTS GLOBAUX
 // ==========================================
 
 const FAQModal = ({ onClose }) => {
@@ -252,15 +252,22 @@ const InstallPrompt = () => {
     );
 };
 
+// ==========================================
+// 4. COMPOSANT MODE SWITCHER (PARENTS VS PETS)
+// ==========================================
+
 const ModeSwitcher = ({ currentRole, currentService, uid }) => {
     const [isOpen, setIsOpen] = useState(false);
 
     const switchMode = async (role, service) => {
         setIsOpen(false);
+        // On met à jour le profil pour changer de "mode" (Univers Enfant vs Animal)
         await updateDoc(doc(db, 'artifacts', appId, 'users', uid, 'settings', 'profile'), { 
             role: role, 
             serviceType: service 
         });
+        // Petit reload pour forcer le nettoyage des états
+        window.location.reload();
     };
 
     return (
@@ -295,7 +302,7 @@ const ModeSwitcher = ({ currentRole, currentService, uid }) => {
 };
 
 // ==========================================
-// 4. COMPOSANT PARAMÈTRES (AVEC SUPPRESSION ET UPLOAD)
+// 5. SETTINGS VIEW
 // ==========================================
 
 const SettingsView = ({ user, profile, onBack, isDark, toggleDark }) => {
@@ -402,7 +409,7 @@ const SettingsView = ({ user, profile, onBack, isDark, toggleDark }) => {
 };
 
 // ==========================================
-// 5. COMPOSANT PREMIUM (3€)
+// 6. PREMIUM VIEW
 // ==========================================
 
 const PremiumView = ({ onBack, isDark }) => {
@@ -454,7 +461,7 @@ const PremiumView = ({ onBack, isDark }) => {
 };
 
 // ==========================================
-// 6. MESSAGERIE & CHAT (AVEC SYSTÈME D'OFFRES INTÉGRÉ)
+// 7. CHATROOM AVEC LOGIQUE METIER COMPLETE
 // ==========================================
 
 const ChatRoom = ({ offer, currentUser, onBack, isDark }) => {
@@ -683,7 +690,7 @@ const ChatRoom = ({ offer, currentUser, onBack, isDark }) => {
 };
 
 // ==========================================
-// 7. AUTH SCREEN (AVEC NIVEAUX SITTER 1,2,3)
+// 8. AUTH SCREEN
 // ==========================================
 
 const AuthScreen = () => {
@@ -790,7 +797,7 @@ const AuthScreen = () => {
               <button type="button" onClick={() => setRole("sitter")} className={`py-3 rounded-xl font-black text-[10px] ${role === "sitter" ? "bg-white shadow text-[#E0720F]" : "text-slate-400"}`}>SITTER</button>
             </div>
             
-            {/* RESTAURATION DES NIVEAUX QUI AVAIENT DISPARU */}
+            {/* RESTAURATION DES NIVEAUX */}
             {role === "sitter" && serviceType === "baby" && (
               <div className="grid grid-cols-3 gap-1 mt-2">
                 <button type="button" onClick={() => setLevel("1")} className={`py-2 rounded-lg text-[10px] font-black uppercase transition-all ${level === "1" ? "bg-slate-900 text-white" : "bg-slate-200 text-slate-500"}`}>NIV 1 🍼<br/><span className="text-[8px] opacity-70 font-normal">Garde+Repas</span></button>
@@ -898,7 +905,7 @@ const CompleteProfileScreen = ({ uid, serviceType }) => {
 };
 
 // ==========================================
-// 8. DASHBOARD PARENT (DESIGN PRO + FEATURES COMPLETES)
+// 9. DASHBOARD PARENT (DESIGN PRO + FEATURES COMPLETES)
 // ==========================================
 
 const ParentDashboard = ({ profile, user }) => {
@@ -934,20 +941,23 @@ const ParentDashboard = ({ profile, user }) => {
     }
   }, [user.uid]); 
 
-  const toggleServiceType = async () => {
-      const newType = isPet ? 'baby' : 'pet';
-      await updateDoc(doc(db, 'artifacts', appId, 'users', user.uid, 'settings', 'profile'), { serviceType: newType });
-  };
-
   useEffect(() => {
     localStorage.setItem('dark', isDark);
     const unsubSitters = onSnapshot(collection(db, 'artifacts', appId, 'public', 'data', 'sitters'), (snap) => {
       setSitters(snap.docs.map(d => ({ id: d.id, ...d.data() })).filter(s => s.serviceType === profile.serviceType));
       setLoading(false);
     });
-    const qOffers = query(collection(db, 'artifacts', appId, 'public', 'data', 'offers'), where("parentId", "==", user.uid));
+    
+    // FILTRE DES OFFRES PAR UNIVERS (BABY/PET) POUR NE PAS MELANGER
+    const qOffers = query(
+        collection(db, 'artifacts', appId, 'public', 'data', 'offers'), 
+        where("parentId", "==", user.uid)
+    );
+    
     const unsubOffers = onSnapshot(qOffers, (snap) => { 
-        const list = snap.docs.map(d => ({ id: d.id, ...d.data() })).filter(o => o.sitterId !== o.parentId);
+        const list = snap.docs
+            .map(d => ({ id: d.id, ...d.data() }))
+            .filter(o => o.sitterId !== o.parentId && o.serviceType === (profile.serviceType || 'baby')); // FILTRE ICI
         setOffers(list); 
     });
     return () => { unsubSitters(); unsubOffers(); };
@@ -986,10 +996,8 @@ const ParentDashboard = ({ profile, user }) => {
     return filtered.sort((a, b) => {
         const isInstantA = a.instantAvailableUntil && new Date(a.instantAvailableUntil) > new Date();
         const isInstantB = b.instantAvailableUntil && new Date(b.instantAvailableUntil) > new Date();
-        
         if (isInstantA && !isInstantB) return -1; 
         if (!isInstantA && isInstantB) return 1;  
-        
         return (b.views || 0) - (a.views || 0);
     });
 
@@ -1011,10 +1019,26 @@ const ParentDashboard = ({ profile, user }) => {
               return; 
           }
       }
+      
       const offerText = `Offre : ${h}h à ${p}€/h`;
+      
+      // AJOUT DU CHAMP serviceType DANS L'OFFRE
       const newOffer = await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'offers'), {
-        parentId: user.uid, parentName: profile.name, sitterId: s.id, sitterName: s.name, price: p, hours: h, status: 'pending', createdAt: Timestamp.now(), lastMsg: offerText, lastMsgAt: Timestamp.now(), hasUnread: true, lastSenderId: user.uid
+        parentId: user.uid, 
+        parentName: profile.name, 
+        sitterId: s.id, 
+        sitterName: s.name, 
+        price: p, 
+        hours: h, 
+        status: 'pending', 
+        createdAt: Timestamp.now(), 
+        lastMsg: offerText, 
+        lastMsgAt: Timestamp.now(), 
+        hasUnread: true, 
+        lastSenderId: user.uid,
+        serviceType: profile.serviceType || 'baby' // CLEF POUR LE FILTRAGE
       });
+      
       await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'offers', newOffer.id, 'messages'), { text: `Bonjour ${s.name}, je souhaiterais réserver une garde de ${h}H au prix de ${p}€/H.`, senderId: user.uid, parentId: user.uid, sitterId: s.id, createdAt: Timestamp.now() });
       setSelectedSitter(null); setActiveTab("messages");
     } catch (e) { console.error(e); }
@@ -1035,6 +1059,10 @@ const ParentDashboard = ({ profile, user }) => {
         <div className="flex items-center gap-2"><SitFinderLogo className="w-8 h-8" glow={false} /><span className="font-black italic text-lg md:text-2xl uppercase tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-[#E64545] to-[#E0720F]">BABYKEEPER</span></div>
         <div className="flex items-center gap-1.5">
           <ModeSwitcher currentRole={profile.role} currentService={profile.serviceType || 'baby'} uid={user.uid} />
+          {/* BOUTON MESSAGES POUR PARENT */}
+          <button onClick={() => setActiveTab("messages")} className={`p-2 rounded-2xl transition-all shadow-sm flex items-center justify-center ${activeTab === 'messages' ? 'bg-[#E64545] text-white' : (isDark ? 'bg-slate-800 text-slate-300' : 'bg-white border border-slate-100 text-slate-400')}`}>
+              <MessageSquare size={20} />
+          </button>
           <button onClick={() => setShowFAQ(true)} className={`p-2 rounded-2xl transition-all shadow-sm flex items-center justify-center ${isDark ? 'bg-slate-800 text-slate-300' : 'bg-white border border-slate-100 text-slate-400'}`}>
               <HelpCircle size={20} />
           </button>
@@ -1262,7 +1290,7 @@ const ParentDashboard = ({ profile, user }) => {
 };
 
 // ==========================================
-// 9. DASHBOARD SITTER (VERSION PRO)
+// 10. DASHBOARD SITTER (VERSION PRO AVEC MESSAGERIE RESTAUREE)
 // ==========================================
 
 const SitterDashboard = ({ user, profile }) => {
@@ -1310,18 +1338,23 @@ const SitterDashboard = ({ user, profile }) => {
         else setIsInstant(false);
       }
     });
+    
+    // FILTRE DES OFFRES PAR UNIVERS (BABY/PET)
     const qOffers = query(
       collection(db, 'artifacts', appId, 'public', 'data', 'offers'), 
       where("sitterId", "==", user.uid)
     );
     const unsubOffers = onSnapshot(qOffers, (snap) => {
-      setOffers(snap.docs.map(d => ({ id: d.id, ...d.data() })));
+      const list = snap.docs
+            .map(d => ({ id: d.id, ...d.data() }))
+            .filter(o => o.serviceType === (profile.serviceType || 'baby')); // FILTRE ICI AUSSI
+      setOffers(list);
     });
     const unsubReviews = onSnapshot(collection(db, 'artifacts', appId, 'public', 'data', 'sitters', user.uid, 'reviews'), (snap) => {
         setReviews(snap.docs.map(d => d.data()));
     });
     return () => { unsubPublic(); unsubOffers(); unsubReviews(); };
-  }, [user.uid, isDark]);
+  }, [user.uid, isDark, profile.serviceType]);
 
   const totalEarnings = useMemo(() => {
       return offers
@@ -1416,9 +1449,15 @@ const SitterDashboard = ({ user, profile }) => {
         </div>
         <div className="flex items-center gap-2">
           <ModeSwitcher currentRole={profile.role} currentService={profile.serviceType || 'baby'} uid={user.uid} />
-          <button onClick={() => setShowFAQ(true)} className="p-2 hover:bg-slate-100 rounded-full transition-colors dark:hover:bg-slate-800"><HelpCircle size={18} /></button>
-          <button onClick={() => setActiveTab("premium")} className="p-2 bg-gradient-to-r from-amber-400 to-orange-500 text-white rounded-full shadow-sm hover:scale-105 transition-transform"><Crown size={18} /></button>
-          <button onClick={() => setActiveTab("settings")} className="p-2 hover:bg-slate-100 rounded-full transition-colors dark:hover:bg-slate-800"><Settings size={18} /></button>
+          {/* BOUTON MESSAGES POUR SITTER (AJOUTÉ ET FONCTIONNEL) */}
+          <button onClick={() => setActiveTab("messages")} className={`p-2 rounded-2xl transition-all shadow-sm flex items-center justify-center ${activeTab === 'messages' ? 'bg-[#E64545] text-white' : (isDark ? 'bg-slate-800 text-slate-300' : 'bg-white border border-slate-100 text-slate-400')}`}>
+              <MessageSquare size={20} />
+          </button>
+          <button onClick={() => setShowFAQ(true)} className={`p-2 rounded-2xl transition-all shadow-sm flex items-center justify-center ${isDark ? 'bg-slate-800 text-slate-300' : 'bg-white border border-slate-100 text-slate-400'}`}>
+              <HelpCircle size={20} />
+          </button>
+          <button onClick={() => setActiveTab("premium")} className={`p-2 rounded-2xl transition-all shadow-md bg-gradient-to-br from-yellow-400 to-orange-500 text-white animate-pulse`}><Crown size={20} fill="white" /></button>
+          <button onClick={() => setActiveTab("settings")} className={`p-2 hover:bg-slate-100 rounded-full transition-colors dark:hover:bg-slate-800`}><Settings size={18} /></button>
           <button onClick={() => signOut(auth)} className="p-2 hover:bg-red-50 text-slate-400 hover:text-red-500 rounded-full transition-colors"><LogOut size={18} /></button>
         </div>
       </nav>
@@ -1579,7 +1618,7 @@ const SitterDashboard = ({ user, profile }) => {
           </div>
         )}
 
-        {/* --- VUE MESSAGES --- */}
+        {/* --- VUE MESSAGES (CORRIGÉE ET ACCESSIBLE POUR LE SITTER) --- */}
         {activeTab === "messages" && (
           <div className="animate-in fade-in duration-500 pb-24">
             <h2 className="text-2xl font-bold mb-6 px-2">Mes Discussions</h2>
@@ -1597,7 +1636,7 @@ const SitterDashboard = ({ user, profile }) => {
                      <div className="flex-1 min-w-0">
                         <div className="flex justify-between items-baseline mb-1">
                             <h4 className="font-bold text-slate-900 dark:text-white truncate">{o.parentName}</h4>
-                            <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full uppercase ${o.status === 'accepted' ? 'bg-green-100 text-green-700' : 'bg-slate-100 text-slate-500'}`}>
+                            <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full uppercase ${o.status === 'accepted' ? 'bg-green-100 text-green-700' : (o.status === 'declined' ? 'bg-red-100 text-red-600' : 'bg-yellow-100 text-yellow-700')}`}>
                                 {o.status === 'accepted' ? 'Validé' : (o.status === 'pending' ? 'À valider ⚠️' : o.status)}
                             </span>
                         </div>
@@ -1613,22 +1652,97 @@ const SitterDashboard = ({ user, profile }) => {
         )}
       </main>
 
-      {/* NAVIGATION BASSE (MOBILE) */}
-      <div className="md:hidden fixed bottom-6 left-4 right-4 bg-slate-900/90 backdrop-blur-lg text-white p-2 rounded-2xl shadow-2xl flex justify-around items-center z-50 border border-slate-700/50">
-          <button onClick={() => setActiveTab("profile")} className={`p-3 rounded-xl transition-all ${activeTab === 'profile' ? 'bg-[#E64545] text-white' : 'text-slate-400'}`}>
-              <User size={20} />
-          </button>
-          <button onClick={() => setActiveTab("messages")} className={`p-3 rounded-xl transition-all relative ${activeTab === 'messages' ? 'bg-[#E64545] text-white' : 'text-slate-400'}`}>
-              <MessageSquare size={20} />
-              {unreadCount > 0 && <span className="absolute top-2 right-2 w-2 h-2 bg-[#E0720F] rounded-full"></span>}
-          </button>
-          <button onClick={() => setActiveTab("settings")} className={`p-3 rounded-xl transition-all ${activeTab === 'settings' ? 'bg-[#E64545] text-white' : 'text-slate-400'}`}>
-              <Settings size={20} />
-          </button>
+      <div className={`fixed bottom-6 left-1/2 -translate-x-1/2 w-[90%] max-w-md backdrop-blur-xl p-2 rounded-2xl shadow-2xl flex items-center justify-between z-50 border ${isDark ? 'bg-slate-900/95 border-slate-800' : 'bg-slate-900/95 border-white/10'}`}>
+        <button onClick={() => setActiveTab("search")} className={`flex-1 flex flex-col items-center py-3 rounded-xl transition-all duration-300 ${activeTab === "search" ? (isDark ? "bg-[#E64545] text-white" : "bg-[#E64545] text-white") : "text-slate-400 hover:text-white"}`}><Search size={20}/><span className="text-[8px] font-black uppercase mt-1 tracking-widest">Trouver</span></button>
+        <button onClick={() => setActiveTab("messages")} className={`flex-1 flex flex-col items-center py-3 rounded-xl transition-all duration-300 relative ${activeTab === "messages" ? (isDark ? "bg-[#E64545] text-white" : "bg-[#E64545] text-white") : "text-slate-400 hover:text-white"}`}><MessageSquare size={20}/><span className="text-[8px] font-black uppercase mt-1 font-sans tracking-widest">Offres</span>{unreadCount > 0 && <div className="absolute top-2 right-1/3 w-2 h-2 bg-[#E0720F] rounded-full border-2 border-slate-900 animate-pulse"></div>}</button>
+        <button onClick={() => setActiveTab("profile")} className={`flex-1 flex flex-col items-center py-3 rounded-xl ${activeTab === "profile" ? (isDark ? "bg-[#E64545] text-white" : "bg-[#E64545] text-white") : "text-slate-400 hover:text-white"}`}>
+            <Settings size={20}/>
+            <span className="text-[8px] font-black uppercase mt-1 tracking-widest font-sans">Réglages</span>
+        </button>
       </div>
 
       <InstallPrompt />
       {showFAQ && <FAQModal onClose={() => setShowFAQ(false)} />}
+      
+      {/* --- FENÊTRE MODALE DETAIL SITTER AVEC NEGOCIATION --- */}
+      {selectedSitter && (
+        <div className="fixed inset-0 bg-slate-900/80 backdrop-blur-sm z-[100] flex items-center justify-center p-4 text-slate-900">
+          <div className="bg-white w-full max-w-lg rounded-2xl overflow-hidden shadow-2xl animate-in zoom-in duration-300 flex flex-col max-h-[90vh]">
+            
+            <div className="relative h-32 bg-slate-100">
+                 <div className="absolute inset-0 bg-gradient-to-r from-[#E64545] to-[#E0720F] opacity-10"></div>
+                 <button onClick={() => setSelectedSitter(null)} className="absolute top-4 right-4 p-2 bg-black/10 rounded-full hover:bg-black/20 text-slate-600 transition-colors z-20"><X size={20}/></button>
+            </div>
+
+            <div className="px-6 pb-6 -mt-12 overflow-y-auto custom-scrollbar">
+                <div className="flex justify-between items-end mb-4">
+                     <div className="w-24 h-24 rounded-2xl overflow-hidden border-4 shadow-xl border-white bg-white">
+                         <UserAvatar photoURL={selectedSitter.photoURL} />
+                     </div>
+                     <div className="flex gap-2 mb-1">
+                         <button onClick={() => toggleFavorite(selectedSitter.id)} className={`p-2 rounded-lg transition-all ${profile.favorites?.includes(selectedSitter.id) ? 'bg-red-50 text-red-500' : 'bg-slate-100 text-slate-400'}`}><Heart size={20} fill={profile.favorites?.includes(selectedSitter.id) ? "currentColor" : "none"}/></button>
+                     </div>
+                </div>
+
+                <div className="mb-6">
+                    <h3 className="text-2xl font-black italic uppercase tracking-tighter text-slate-800">{selectedSitter.name}</h3>
+                    <div className="flex items-center gap-2 text-slate-500 text-sm mt-1">
+                        <MapPin size={14}/> {selectedSitter.city} • {calculateAge(selectedSitter.birthDate)} ans
+                    </div>
+                    {/* TAGS */}
+                    <div className="flex flex-wrap gap-2 mt-3">
+                         {selectedSitter.skills?.map((s,i) => <span key={i} className="px-2 py-1 bg-slate-50 text-slate-600 border border-slate-200 rounded-md text-[10px] font-bold uppercase">{s}</span>)}
+                    </div>
+                </div>
+
+                <div className="space-y-4">
+                    <div className="p-4 bg-slate-50 rounded-xl border border-slate-100">
+                        <h4 className="text-[10px] font-black uppercase text-slate-400 mb-2">Bio</h4>
+                        <p className="text-sm italic text-slate-600 leading-relaxed">"{selectedSitter.bio}"</p>
+                    </div>
+
+                    {sitterReviews.length > 0 && (
+                        <div>
+                            <h4 className="text-[10px] font-black uppercase text-slate-400 mb-2">Avis</h4>
+                            <div className="space-y-2">
+                                {sitterReviews.slice(0, 3).map((r, idx) => (
+                                    <div key={idx} className="p-3 bg-white border border-slate-100 rounded-lg shadow-sm">
+                                        <div className="flex justify-between items-center mb-1"><span className="font-bold text-xs">{r.parentName}</span><RatingStars rating={r.rating} size={10} /></div>
+                                        <p className="text-xs text-slate-500 italic">"{r.text}"</p>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    )}
+                </div>
+
+                {/* FOOTER RESERVATION AVEC NEGOCIATION */}
+                <div className="mt-6 pt-4 border-t border-slate-100">
+                    <div className="flex gap-4 mb-4">
+                        <div className="flex-1">
+                            <label className="text-[9px] font-bold uppercase text-slate-400">Prix (€/H)</label>
+                            <input id="neg-p" type="number" defaultValue={selectedSitter.price} className="w-full p-3 rounded-xl bg-slate-50 font-bold border-none" />
+                        </div>
+                         <div className="flex-1">
+                            <label className="text-[9px] font-bold uppercase text-slate-400">Heures</label>
+                            <input id="neg-h" type="number" defaultValue="2" className="w-full p-3 rounded-xl bg-slate-50 font-bold border-none" />
+                        </div>
+                    </div>
+                    {selectedSitter.id === user.uid ? (
+                        <button disabled className="w-full py-4 rounded-xl font-bold bg-slate-100 text-slate-400 uppercase text-xs">Aperçu Profil</button>
+                    ) : (
+                      <button onClick={() => {
+                          const p = document.getElementById('neg-p').value;
+                          const h = document.getElementById('neg-h').value;
+                          handleBooking(selectedSitter, p, h);
+                      }} className="w-full py-4 rounded-xl font-black text-xs shadow-xl shadow-[#E64545]/20 uppercase tracking-widest active:scale-95 transition-all bg-[#E64545] text-white hover:bg-[#E64545]/90">Envoyer offre</button>
+                    )}
+                </div>
+
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
@@ -1667,6 +1781,6 @@ export default function App() {
   if (!user) return <AuthScreen />;
   if (user && !profile) return <CompleteProfileScreen uid={user.uid} serviceType={profile?.serviceType} />; 
   
-  // Redirection en fonction du ROLE et de l'UNIVERS (Enfant ou Animaux)
+  // LOGIQUE DE REDIRECTION FINALE
   return profile.role === "parent" ? <ParentDashboard profile={profile} user={user} /> : <SitterDashboard user={user} profile={profile} />;
 }
