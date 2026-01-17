@@ -1766,77 +1766,100 @@ const SitterDashboard = ({ user, profile }) => {
 // 10. RACINE SÉCURISÉE (ANTI-CRASH)
 // ==========================================
 
+// ==========================================
+// 10. RACINE SÉCURISÉE (ANTI-PAGE BLANCHE)
+// ==========================================
+
 export default function App() {
   const [init, setInit] = useState(false);
   const [user, setUser] = useState(null);
   const [profile, setProfile] = useState(null);
+  const [error, setError] = useState(null);
 
   useEffect(() => {
     let unsubP = null;
+    
+    // Timer de sécurité : si au bout de 3 secondes rien ne s'affiche, on force l'affichage
+    const safetyTimer = setTimeout(() => {
+        if (!init) setInit(true);
+    }, 3000);
+
     const minSplashTimer = new Promise(resolve => setTimeout(resolve, 1500));
     
-    const unsubA = onAuthStateChanged(auth, async (u) => {
-      setUser(u);
-      
-      if (u) {
-        // On écoute le profil utilisateur avec protection
-        unsubP = onSnapshot(doc(db, 'artifacts', appId, 'users', u.uid, 'settings', 'profile'), async (snap) => {
-          await minSplashTimer;
-          if (snap.exists()) {
-              setProfile(snap.data());
+    try {
+        const unsubA = onAuthStateChanged(auth, async (u) => {
+          setUser(u);
+          
+          if (u) {
+            // Écoute du profil avec gestion d'erreur
+            unsubP = onSnapshot(doc(db, 'artifacts', appId, 'users', u.uid, 'settings', 'profile'), async (snap) => {
+              await minSplashTimer;
+              if (snap.exists()) {
+                  const data = snap.data();
+                  // Vérification que le profil est valide
+                  if (!data.role) {
+                      console.error("Profil corrompu");
+                      setProfile(null); // On force la recréation si le rôle manque
+                  } else {
+                      setProfile(data);
+                  }
+              } else {
+                  setProfile(null);
+              }
+              setInit(true);
+            }, (err) => {
+                console.error("Erreur Firebase:", err);
+                setError(err.message);
+                setInit(true);
+            });
           } else {
-              setProfile(null);
+            setProfile(null);
+            if (unsubP) unsubP();
+            await minSplashTimer;
+            setInit(true);
           }
-          setInit(true);
-        }, (error) => {
-            console.error("Erreur lecture profil:", error);
-            setInit(true); // On débloque l'UI même en cas d'erreur
         });
-      } else {
-        setProfile(null);
-        if (unsubP) unsubP();
-        await minSplashTimer;
+        return () => { unsubA(); if (unsubP) unsubP(); clearTimeout(safetyTimer); };
+    } catch (err) {
+        setError(err.message);
         setInit(true);
-      }
-    });
-
-    return () => { unsubA(); if (unsubP) unsubP(); };
+    }
   }, []);
 
-  // 1. Ecran de chargement
-  if (!init) return <SplashScreen />;
-
-  // 2. Non connecté -> Auth
-  if (!user) return <AuthScreen />;
-
-  // 3. Connecté mais pas de profil en base -> Création
-  // On passe 'serviceType' en props pour pré-remplir si dispo
-  if (user && !profile) return <CompleteProfileScreen uid={user.uid} serviceType={profile?.serviceType} />; 
-  
-  // 4. PROTECTION ANTI-CRASH : Si le profil est chargé mais corrompu (pas de rôle)
-  if (profile && !profile.role) {
+  // 1. Gestion des erreurs fatales (Évite la page blanche)
+  if (error) {
       return (
-          <div className="flex flex-col items-center justify-center h-screen p-6 text-center space-y-4 bg-slate-50">
-              <AlertCircle size={48} className="text-red-500 mb-2"/>
-              <h2 className="text-xl font-bold text-slate-800">Profil incomplet</h2>
-              <p className="text-slate-500 text-sm">Votre ancien compte n'est pas compatible avec cette version.</p>
-              <button onClick={() => signOut(auth)} className="bg-slate-900 text-white px-6 py-3 rounded-xl font-bold uppercase text-xs shadow-lg hover:bg-slate-800 transition-colors">
-                  Se déconnecter et recréer un compte
+          <div className="flex flex-col items-center justify-center h-screen p-6 text-center space-y-6 bg-white text-slate-800 font-sans">
+              <AlertTriangle size={64} className="text-red-500"/>
+              <h2 className="text-2xl font-black uppercase">Oups, petit problème !</h2>
+              <p className="text-sm text-slate-500">Une erreur technique est survenue. Cela arrive souvent lors des mises à jour.</p>
+              <div className="p-4 bg-slate-100 rounded-xl text-xs font-mono text-red-400 break-all">{error}</div>
+              <button onClick={() => signOut(auth).then(()=>window.location.reload())} className="bg-slate-900 text-white px-8 py-4 rounded-xl font-bold uppercase shadow-xl hover:scale-105 transition-transform">
+                  Réinitialiser l'application
               </button>
           </div>
       );
   }
 
-  // 5. Tout est bon -> Dashboard
-  try {
-      return profile.role === "parent" ? <ParentDashboard profile={profile} user={user} /> : <SitterDashboard user={user} profile={profile} />;
-  } catch (error) {
-      console.error("Crash Dashboard:", error);
+  // 2. Écran de chargement
+  if (!init) return <SplashScreen />;
+
+  // 3. Non connecté -> Auth
+  if (!user) return <AuthScreen />;
+
+  // 4. Connecté mais pas de profil (ou profil supprimé) -> Création
+  if (user && !profile) return <CompleteProfileScreen uid={user.uid} serviceType={profile?.serviceType} />;
+  
+  // 5. Protection finale : Si le profil existe mais qu'il manque des infos critiques
+  if (profile && !profile.role) {
       return (
-        <div className="p-10 text-center flex flex-col items-center justify-center h-screen space-y-4">
-            <p>Une erreur inattendue est survenue.</p>
-            <button onClick={() => signOut(auth)} className="text-red-500 font-bold underline">Recharger l'application</button>
+        <div className="flex flex-col items-center justify-center h-screen p-6 text-center space-y-4">
+             <h2 className="font-bold text-lg">Mise à jour du compte requise</h2>
+             <button onClick={() => signOut(auth)} className="bg-red-500 text-white px-6 py-3 rounded-xl font-bold">Se reconnecter</button>
         </div>
       );
   }
+
+  // 6. Tout est bon -> Dashboard
+  return profile.role === "parent" ? <ParentDashboard profile={profile} user={user} /> : <SitterDashboard user={user} profile={profile} />;
 }
