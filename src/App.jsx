@@ -8,7 +8,8 @@ import {
   onAuthStateChanged,
   signOut,
   deleteUser,
-  sendPasswordResetEmail
+  sendPasswordResetEmail,
+  updateProfile
 } from "firebase/auth";
 import {
   getFirestore,
@@ -25,7 +26,8 @@ import {
   arrayRemove,
   query,
   orderBy,
-  where
+  where,
+  serverTimestamp
 } from "firebase/firestore";
 // Importations des icônes
 import { 
@@ -452,7 +454,7 @@ const PremiumView = ({ onBack, isDark }) => {
 };
 
 // ==========================================
-// 6. MESSAGERIE & CHAT (AVEC SIGNALEMENT ET AVIS)
+// 6. MESSAGERIE & CHAT (AVEC SYSTÈME D'OFFRES INTÉGRÉ)
 // ==========================================
 
 const ChatRoom = ({ offer, currentUser, onBack, isDark }) => {
@@ -565,6 +567,7 @@ const ChatRoom = ({ offer, currentUser, onBack, isDark }) => {
     setTranslations(prev => ({ ...prev, [id]: "Traduction (FR) : " + text }));
   };
 
+  // --- LOGIQUE D'ACCEPTATION / REFUS DE L'OFFRE ---
   const updateOfferStatus = async (status) => {
     try {
       await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'offers', offer.id), { status });
@@ -616,6 +619,7 @@ const ChatRoom = ({ offer, currentUser, onBack, isDark }) => {
         </div>
       </div>
 
+      {/* BANDEAU PAIEMENT / VALIDATION */}
       {liveOffer.status === 'accepted' && (
           <div className="p-4 bg-blue-50 border-b border-blue-100 flex flex-col gap-2 items-center text-center">
               <div className="flex items-center gap-2 text-blue-600 font-black text-xs uppercase tracking-widest">
@@ -662,6 +666,7 @@ const ChatRoom = ({ offer, currentUser, onBack, isDark }) => {
           </div>
       )}
 
+      {/* --- ZONE D'ACTION POUR LE SITTER (ACCEPTER / REFUSER L'OFFRE) --- */}
       {liveOffer.status === 'pending' && currentUser.uid === liveOffer.sitterId && (
         <div className="p-4 bg-white border-t border-slate-50 grid grid-cols-2 gap-4 dark:bg-slate-900 dark:border-slate-800">
           <button onClick={() => updateOfferStatus('declined')} className="bg-slate-100 text-slate-400 py-4 rounded-xl font-black text-[10px] uppercase dark:bg-slate-800">Refuser</button>
@@ -767,7 +772,7 @@ const AuthScreen = () => {
           {isRegister && <input required placeholder="Ton Prénom" className="w-full p-5 bg-slate-50 rounded-xl outline-none font-bold shadow-inner" value={name} onChange={(e) => setName(e.target.value)} />}
           <input required type="email" placeholder="Email" className="w-full p-5 bg-slate-50 rounded-xl outline-none font-bold shadow-inner" value={email} onChange={(e) => setEmail(e.target.value)} />
           <input required type="password" placeholder="Mot de passe" className="w-full p-5 bg-slate-50 rounded-xl outline-none font-bold shadow-inner" value={password} onChange={(e) => setPassword(e.target.value)} />
-           
+            
           {!isRegister && (
              <div className="flex flex-wrap justify-between items-center pl-2 gap-2">
                  <div className="flex items-center gap-2">
@@ -1173,7 +1178,7 @@ const ParentDashboard = ({ profile, user }) => {
       <InstallPrompt />
       {showFAQ && <FAQModal onClose={() => setShowFAQ(false)} />}
       
-      {/* --- FENÊTRE MODALE DETAIL SITTER (PRO VERSION) --- */}
+      {/* --- FENÊTRE MODALE DETAIL SITTER AVEC NEGOCIATION --- */}
       {selectedSitter && (
         <div className="fixed inset-0 bg-slate-900/80 backdrop-blur-sm z-[100] flex items-center justify-center p-4 text-slate-900">
           <div className="bg-white w-full max-w-lg rounded-2xl overflow-hidden shadow-2xl animate-in zoom-in duration-300 flex flex-col max-h-[90vh]">
@@ -1225,7 +1230,7 @@ const ParentDashboard = ({ profile, user }) => {
                     )}
                 </div>
 
-                {/* FOOTER RESERVATION */}
+                {/* FOOTER RESERVATION AVEC NEGOCIATION */}
                 <div className="mt-6 pt-4 border-t border-slate-100">
                     <div className="flex gap-4 mb-4">
                         <div className="flex-1">
@@ -1244,7 +1249,7 @@ const ParentDashboard = ({ profile, user }) => {
                           const p = document.getElementById('neg-p').value;
                           const h = document.getElementById('neg-h').value;
                           handleBooking(selectedSitter, p, h);
-                      }} className="w-full py-4 rounded-xl font-black text-xs shadow-xl shadow-[#E64545]/20 uppercase tracking-widest active:scale-95 transition-all bg-[#E64545] text-white hover:bg-[#E64545]/90">Envoyer demande</button>
+                      }} className="w-full py-4 rounded-xl font-black text-xs shadow-xl shadow-[#E64545]/20 uppercase tracking-widest active:scale-95 transition-all bg-[#E64545] text-white hover:bg-[#E64545]/90">Envoyer offre</button>
                     )}
                 </div>
 
@@ -1398,7 +1403,7 @@ const SitterDashboard = ({ user, profile }) => {
 
   if (activeChat) return <ChatRoom offer={activeChat} currentUser={user} onBack={() => setActiveChat(null)} isDark={isDark} />;
   if (activeTab === "settings") return <SettingsView user={user} profile={profile} onBack={() => setActiveTab("profile")} isDark={isDark} toggleDark={() => setIsDark(!isDark)} />;
-  if (activeTab === "premium") return <PremiumView onBack={() => setActiveTab("profile")} isDark={isDark} />; // CORRECTION ICI
+  if (activeTab === "premium") return <PremiumView onBack={() => setActiveTab("profile")} isDark={isDark} />; 
 
   return (
     <div className={`min-h-screen font-sans pb-24 transition-colors duration-300 ${isDark ? 'bg-slate-950 text-slate-100' : 'bg-slate-50 text-slate-800'}`}>
@@ -1490,8 +1495,8 @@ const SitterDashboard = ({ user, profile }) => {
                         
                         <div className="pt-2">
                              <button onClick={() => setHasCar(!hasCar)} className={`w-full py-3 px-4 rounded-xl text-xs font-bold uppercase transition-all flex items-center justify-center gap-2 border ${hasCar ? "bg-[#E0720F]/10 border-[#E0720F] text-[#E0720F]" : "bg-slate-50 border-slate-200 text-slate-400 dark:bg-slate-800 dark:border-slate-700"}`}>
-                                <Car size={16}/> {hasCar ? "Véhiculé" : "Non véhiculé"}
-                            </button>
+                                 <Car size={16}/> {hasCar ? "Véhiculé" : "Non véhiculé"}
+                             </button>
                         </div>
                     </div>
 
@@ -1509,7 +1514,7 @@ const SitterDashboard = ({ user, profile }) => {
                                     <button 
                                         key={index}
                                         onClick={() => toggleSkill(skill)}
-                                        className={`px-3 py-1.5 rounded-lg text-xs font-bold border transition-all ${skills.includes(skill) ? 'bg-slate-800 text-white border-slate-800 dark:bg-white dark:text-slate-900' : 'bg-white text-slate-500 border-slate-200 hover:border-slate-300 dark:bg-slate-800 dark:border-slate-700'}`}
+                                        className={`px-3 py-1.5 rounded-lg text-xs font-bold border transition-all ${skills.includes(skill) ? 'bg-slate-800 text-white border-slate-800 dark:bg-white dark:text-slate-900' : 'bg-white text-slate-50 border-slate-200 hover:border-slate-300 dark:bg-slate-800 dark:border-slate-700'}`}
                                     >
                                         {skill}
                                     </button>
@@ -1580,20 +1585,20 @@ const SitterDashboard = ({ user, profile }) => {
             <h2 className="text-2xl font-bold mb-6 px-2">Mes Discussions</h2>
             <div className="space-y-3">
               {offers.length === 0 ? 
-                 <div className="py-20 text-center rounded-2xl border-2 border-dashed border-slate-200 text-slate-400 flex flex-col items-center gap-3">
+                 <div className={`py-20 text-center rounded-2xl border-2 border-dashed border-slate-200 text-slate-400 flex flex-col items-center gap-3`}>
                     <Inbox size={40} className="opacity-50"/>
                     <p className="text-sm font-medium">Aucune demande reçue pour le moment.</p>
                  </div>
               : offers.sort((a,b) => (b.lastMsgAt?.seconds || 0) - (a.lastMsgAt?.seconds || 0)).map(o => (
                   <div key={o.id} onClick={() => markAsRead(o)} className={`p-4 rounded-xl border shadow-sm bg-white dark:bg-slate-900 dark:border-slate-800 hover:shadow-md transition-all cursor-pointer flex items-center gap-4 group ${o.hasUnread && o.lastSenderId !== user.uid ? 'border-l-4 border-l-[#E64545]' : ''}`}>
                      <div className="w-12 h-12 rounded-full overflow-hidden bg-slate-100 shrink-0">
-                        <UserAvatar photoURL={profile.photoURL} className="w-full h-full object-cover" />
+                        <UserAvatar photoURL={o.parentName} className="w-full h-full object-cover" />
                      </div>
                      <div className="flex-1 min-w-0">
                         <div className="flex justify-between items-baseline mb-1">
                             <h4 className="font-bold text-slate-900 dark:text-white truncate">{o.parentName}</h4>
                             <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full uppercase ${o.status === 'accepted' ? 'bg-green-100 text-green-700' : 'bg-slate-100 text-slate-500'}`}>
-                                {o.status === 'accepted' ? 'Validé' : `${o.price}€/h`}
+                                {o.status === 'accepted' ? 'Validé' : (o.status === 'pending' ? 'À valider ⚠️' : o.status)}
                             </span>
                         </div>
                         <p className={`text-sm truncate ${o.hasUnread && o.lastSenderId !== user.uid ? 'font-bold text-slate-800 dark:text-slate-200' : 'text-slate-500'}`}>
@@ -1662,6 +1667,5 @@ export default function App() {
   if (!user) return <AuthScreen />;
   if (user && !profile) return <CompleteProfileScreen uid={user.uid} serviceType={profile?.serviceType} />; 
   
-  // Redirection en fonction du ROLE et de l'UNIVERS (Enfant ou Animaux)
   return profile.role === "parent" ? <ParentDashboard profile={profile} user={user} /> : <SitterDashboard user={user} profile={profile} />;
 }
