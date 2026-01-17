@@ -1,5 +1,9 @@
 import React, { useEffect, useState, useMemo, useRef } from "react";
-// Importations Firebase
+
+// ==============================================================================================
+// 1. IMPORTATIONS & CONFIGURATION FIREBASE
+// ==============================================================================================
+
 import { initializeApp, getApps, getApp } from "firebase/app";
 import {
   getAuth,
@@ -29,17 +33,21 @@ import {
   where,
   serverTimestamp
 } from "firebase/firestore";
-// Importations des icônes
+
+// Importations complètes des icônes pour l'UI
 import { 
   Baby, LogOut, Save, Search, Loader2, AlertCircle, ShieldCheck, 
   Euro, User, Mail, Lock, ChevronRight, Sparkles, Heart, Filter, Calendar,
   Clock, UserPlus, Cake, FileUp, FileText, CheckCircle2, MessageSquare, 
-  Send, X, Check, ArrowLeft, MessageCircle, PartyPopper, Star, MapPin, Camera, SlidersHorizontal, Settings, KeyRound, Phone, Trash2, Palette, Image as ImageIcon, Share2, Quote, TrendingUp, Zap, Trophy, Languages, EyeOff, Moon, Sun, Bell, Flag, Eye, Wallet, Car, CreditCard, LockKeyhole, Crown, Info, Dog, Cat, Bone, PawPrint, RefreshCw, HelpCircle, Power, Inbox, CheckCircle
+  Send, X, Check, ArrowLeft, MessageCircle, PartyPopper, Star, MapPin, 
+  Camera, SlidersHorizontal, Settings, KeyRound, Phone, Trash2, Palette, 
+  Image as ImageIcon, Share2, Quote, TrendingUp, Zap, Trophy, Languages, 
+  EyeOff, Moon, Sun, Bell, Flag, Eye, Wallet, Car, CreditCard, LockKeyhole, 
+  Crown, Info, Dog, Cat, Bone, PawPrint, RefreshCw, HelpCircle, Power, Inbox, 
+  CheckCircle, AlertTriangle
 } from "lucide-react";
 
-// ==========================================
-// 1. CONFIGURATION FIREBASE
-// ==========================================
+// Configuration Firebase (Identique à la tienne)
 const firebaseConfig = {
   apiKey: "AIzaSyCcg_EOypcJ79aqKEwgWCzZwGkSQ-cd_7s",
   authDomain: "sitfinder-df2e4.firebaseapp.com",
@@ -50,15 +58,17 @@ const firebaseConfig = {
   measurementId: "G-6LRHQJ50SH"
 };
 
+// Initialisation Singleton pour éviter les erreurs de reload
 const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApp();
 const auth = getAuth(app);
 const db = getFirestore(app, "default");
 const appId = "sitfinder-prod-v1";
 
-// ==========================================
-// 2. UTILITAIRES DE DESIGN
-// ==========================================
+// ==============================================================================================
+// 2. UTILITAIRES & COMPOSANTS VISUELS
+// ==============================================================================================
 
+// Logo animé BabyKeeper
 const SitFinderLogo = ({ className = "w-16 h-16", glow = true }) => (
   <div className={`relative flex items-center justify-center ${className}`}>
     {glow && (
@@ -73,6 +83,7 @@ const SitFinderLogo = ({ className = "w-16 h-16", glow = true }) => (
   </div>
 );
 
+// Composant Étoiles de notation
 const RatingStars = ({ rating = 5, size = 14, interactive = false, onRate = null }) => (
   <div className="flex gap-0.5 text-[#E0720F]">
     {[...Array(5)].map((_, i) => (
@@ -87,6 +98,7 @@ const RatingStars = ({ rating = 5, size = 14, interactive = false, onRate = null
   </div>
 );
 
+// Calcul de l'âge
 const calculateAge = (birth) => {
   if (!birth) return null;
   const today = new Date();
@@ -97,6 +109,7 @@ const calculateAge = (birth) => {
   return age;
 };
 
+// Compression d'image avant upload
 const compressImage = (file) => {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
@@ -123,6 +136,7 @@ const compressImage = (file) => {
   });
 };
 
+// Écran de chargement
 const SplashScreen = ({ message = "La recherche en toute confiance" }) => (
   <div className="flex flex-col items-center justify-center h-screen bg-white font-sans overflow-hidden">
     <div className="relative mb-10 animate-in zoom-in duration-1000">
@@ -138,6 +152,7 @@ const SplashScreen = ({ message = "La recherche en toute confiance" }) => (
   </div>
 );
 
+// Avatar utilisateur générique ou photo
 const UserAvatar = ({ photoURL, size = "w-full h-full", className = "" }) => {
     if (photoURL && photoURL.length > 50) {
         return <img src={photoURL} alt="User" className={`${size} object-cover ${className}`} />;
@@ -149,9 +164,9 @@ const UserAvatar = ({ photoURL, size = "w-full h-full", className = "" }) => {
     );
 };
 
-// ==========================================
-// 3. COMPOSANTS GLOBAUX
-// ==========================================
+// ==============================================================================================
+// 3. MODULES GLOBAUX (FAQ, INSTALL, SWITCH)
+// ==============================================================================================
 
 const FAQModal = ({ onClose }) => {
     const faqs = [
@@ -236,7 +251,6 @@ const InstallPrompt = () => {
                     <p className="text-[10px] text-slate-400">Pour un accès plus rapide</p>
                 </div>
             </div>
-            
             {isIOS ? (
                 <div className="flex items-center gap-2 text-[10px] font-bold text-[#E0720F]">
                     <span>Partager <Share2 size={10} className="inline"/> puis "Sur l'écran d'accueil"</span>
@@ -252,22 +266,16 @@ const InstallPrompt = () => {
     );
 };
 
-// ==========================================
-// 4. COMPOSANT MODE SWITCHER (PARENTS VS PETS)
-// ==========================================
-
 const ModeSwitcher = ({ currentRole, currentService, uid }) => {
     const [isOpen, setIsOpen] = useState(false);
 
     const switchMode = async (role, service) => {
         setIsOpen(false);
-        // On met à jour le profil pour changer de "mode" (Univers Enfant vs Animal)
         await updateDoc(doc(db, 'artifacts', appId, 'users', uid, 'settings', 'profile'), { 
             role: role, 
             serviceType: service 
         });
-        // Petit reload pour forcer le nettoyage des états
-        window.location.reload();
+        window.location.reload(); // Force reload pour éviter les états incohérents
     };
 
     return (
@@ -301,9 +309,9 @@ const ModeSwitcher = ({ currentRole, currentService, uid }) => {
     );
 };
 
-// ==========================================
-// 5. SETTINGS VIEW
-// ==========================================
+// ==============================================================================================
+// 4. VUE RÉGLAGES (SETTINGS)
+// ==============================================================================================
 
 const SettingsView = ({ user, profile, onBack, isDark, toggleDark }) => {
   const [newName, setNewName] = useState(profile?.name || "");
@@ -409,7 +417,7 @@ const SettingsView = ({ user, profile, onBack, isDark, toggleDark }) => {
 };
 
 // ==========================================
-// 6. PREMIUM VIEW
+// 5. VUE PREMIUM (3€)
 // ==========================================
 
 const PremiumView = ({ onBack, isDark }) => {
@@ -461,7 +469,7 @@ const PremiumView = ({ onBack, isDark }) => {
 };
 
 // ==========================================
-// 7. CHATROOM AVEC LOGIQUE METIER COMPLETE
+// 6. MESSAGERIE AVANCÉE (CHAT)
 // ==========================================
 
 const ChatRoom = ({ offer, currentUser, onBack, isDark }) => {
@@ -689,9 +697,9 @@ const ChatRoom = ({ offer, currentUser, onBack, isDark }) => {
   );
 };
 
-// ==========================================
-// 8. AUTH SCREEN
-// ==========================================
+// ==============================================================================================
+// 7. AUTHENTIFICATION & CRÉATION COMPTE (NIVEAUX 1,2,3)
+// ==============================================================================================
 
 const AuthScreen = () => {
   const [isRegister, setIsRegister] = useState(false);
@@ -746,7 +754,7 @@ const AuthScreen = () => {
       } else { await signInWithEmailAndPassword(auth, email, password); }
     } catch (err) { 
         if(err.code === 'auth/email-already-in-use') {
-            alert("Compte existant ! Connectez-vous, puis changez de mode (Enfant/Animal) dans l'appli.");
+            alert("Compte existant ! Connectez-vous.");
             setIsRegister(false);
         } else {
             alert("Email ou mot de passe invalide."); 
@@ -797,7 +805,6 @@ const AuthScreen = () => {
               <button type="button" onClick={() => setRole("sitter")} className={`py-3 rounded-xl font-black text-[10px] ${role === "sitter" ? "bg-white shadow text-[#E0720F]" : "text-slate-400"}`}>SITTER</button>
             </div>
             
-            {/* RESTAURATION DES NIVEAUX */}
             {role === "sitter" && serviceType === "baby" && (
               <div className="grid grid-cols-3 gap-1 mt-2">
                 <button type="button" onClick={() => setLevel("1")} className={`py-2 rounded-lg text-[10px] font-black uppercase transition-all ${level === "1" ? "bg-slate-900 text-white" : "bg-slate-200 text-slate-500"}`}>NIV 1 🍼<br/><span className="text-[8px] opacity-70 font-normal">Garde+Repas</span></button>
@@ -904,9 +911,9 @@ const CompleteProfileScreen = ({ uid, serviceType }) => {
   );
 };
 
-// ==========================================
-// 9. DASHBOARD PARENT (DESIGN PRO + FEATURES COMPLETES)
-// ==========================================
+// ==============================================================================================
+// 8. DASHBOARD PARENT (RECHERCHE + MESSAGERIE FILTRÉE)
+// ==============================================================================================
 
 const ParentDashboard = ({ profile, user }) => {
   const [sitters, setSitters] = useState([]);
@@ -941,6 +948,11 @@ const ParentDashboard = ({ profile, user }) => {
     }
   }, [user.uid]); 
 
+  const toggleServiceType = async () => {
+      const newType = isPet ? 'baby' : 'pet';
+      await updateDoc(doc(db, 'artifacts', appId, 'users', user.uid, 'settings', 'profile'), { serviceType: newType });
+  };
+
   useEffect(() => {
     localStorage.setItem('dark', isDark);
     const unsubSitters = onSnapshot(collection(db, 'artifacts', appId, 'public', 'data', 'sitters'), (snap) => {
@@ -948,16 +960,12 @@ const ParentDashboard = ({ profile, user }) => {
       setLoading(false);
     });
     
-    // FILTRE DES OFFRES PAR UNIVERS (BABY/PET) POUR NE PAS MELANGER
-    const qOffers = query(
-        collection(db, 'artifacts', appId, 'public', 'data', 'offers'), 
-        where("parentId", "==", user.uid)
-    );
-    
+    const qOffers = query(collection(db, 'artifacts', appId, 'public', 'data', 'offers'), where("parentId", "==", user.uid));
     const unsubOffers = onSnapshot(qOffers, (snap) => { 
+        // ICI : FILTRAGE STRICT PAR SERVICETYPE (BABY ou PET)
         const list = snap.docs
             .map(d => ({ id: d.id, ...d.data() }))
-            .filter(o => o.sitterId !== o.parentId && o.serviceType === (profile.serviceType || 'baby')); // FILTRE ICI
+            .filter(o => o.sitterId !== o.parentId && o.serviceType === (profile.serviceType || 'baby'));
         setOffers(list); 
     });
     return () => { unsubSitters(); unsubOffers(); };
@@ -1022,7 +1030,7 @@ const ParentDashboard = ({ profile, user }) => {
       
       const offerText = `Offre : ${h}h à ${p}€/h`;
       
-      // AJOUT DU CHAMP serviceType DANS L'OFFRE
+      // AJOUT DU CHAMP serviceType DANS L'OFFRE POUR FILTRER PLUS TARD
       const newOffer = await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'offers'), {
         parentId: user.uid, 
         parentName: profile.name, 
@@ -1290,7 +1298,7 @@ const ParentDashboard = ({ profile, user }) => {
 };
 
 // ==========================================
-// 10. DASHBOARD SITTER (VERSION PRO AVEC MESSAGERIE RESTAUREE)
+// 9. DASHBOARD SITTER (VERSION PRO)
 // ==========================================
 
 const SitterDashboard = ({ user, profile }) => {
@@ -1747,9 +1755,9 @@ const SitterDashboard = ({ user, profile }) => {
   );
 };
 
-// ==========================================
-// 10. RACINE
-// ==========================================
+// ==============================================================================================
+// 10. LOGIQUE RACINE SÉCURISÉE (APP)
+// ==============================================================================================
 
 export default function App() {
   const [init, setInit] = useState(false);
@@ -1758,14 +1766,26 @@ export default function App() {
 
   useEffect(() => {
     let unsubP = null;
-    const minSplashTimer = new Promise(resolve => setTimeout(resolve, 800));
+    
+    // Timer de sécurité pour ne pas rester bloqué sur le splash si Firebase est lent
+    const minSplashTimer = new Promise(resolve => setTimeout(resolve, 1500));
+    
     const unsubA = onAuthStateChanged(auth, async (u) => {
       setUser(u);
+      
       if (u) {
+        // On écoute le profil utilisateur
         unsubP = onSnapshot(doc(db, 'artifacts', appId, 'users', u.uid, 'settings', 'profile'), async (snap) => {
-          if (snap.exists()) setProfile(snap.data()); else setProfile(null);
           await minSplashTimer;
+          if (snap.exists()) {
+              setProfile(snap.data());
+          } else {
+              setProfile(null);
+          }
           setInit(true);
+        }, (error) => {
+            console.error("Erreur lecture profil:", error);
+            setInit(true); // On débloque l'UI même en cas d'erreur
         });
       } else {
         setProfile(null);
@@ -1774,13 +1794,42 @@ export default function App() {
         setInit(true);
       }
     });
+
     return () => { unsubA(); if (unsubP) unsubP(); };
   }, []);
 
+  // 1. Ecran de chargement
   if (!init) return <SplashScreen />;
+
+  // 2. Non connecté -> Auth
   if (!user) return <AuthScreen />;
+
+  // 3. Connecté mais pas de profil en base -> Création
+  // On passe 'serviceType' en props pour pré-remplir si dispo
   if (user && !profile) return <CompleteProfileScreen uid={user.uid} serviceType={profile?.serviceType} />; 
   
-  // LOGIQUE DE REDIRECTION FINALE
-  return profile.role === "parent" ? <ParentDashboard profile={profile} user={user} /> : <SitterDashboard user={user} profile={profile} />;
+  // 4. Vérification de sécurité des données
+  if (!profile.role) {
+      return (
+          <div className="flex flex-col items-center justify-center h-screen p-6 text-center space-y-4 bg-slate-50">
+              <AlertCircle size={48} className="text-red-500 mb-2"/>
+              <h2 className="text-xl font-bold text-slate-800">Profil incomplet</h2>
+              <p className="text-slate-500 text-sm">Une erreur est survenue lors du chargement de votre profil.</p>
+              <button onClick={() => signOut(auth)} className="bg-slate-900 text-white px-6 py-3 rounded-xl font-bold uppercase text-xs shadow-lg hover:bg-slate-800 transition-colors">Se déconnecter</button>
+          </div>
+      );
+  }
+
+  // 5. Tout est bon -> Dashboard
+  try {
+      return profile.role === "parent" ? <ParentDashboard profile={profile} user={user} /> : <SitterDashboard user={user} profile={profile} />;
+  } catch (error) {
+      console.error("Crash Dashboard:", error);
+      return (
+        <div className="p-10 text-center flex flex-col items-center justify-center h-screen space-y-4">
+            <p>Une erreur inattendue est survenue.</p>
+            <button onClick={() => signOut(auth)} className="text-red-500 font-bold underline">Recharger l'application</button>
+        </div>
+      );
+  }
 }
