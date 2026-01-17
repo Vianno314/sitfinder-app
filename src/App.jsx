@@ -698,7 +698,7 @@ const ChatRoom = ({ offer, currentUser, onBack, isDark }) => {
 };
 
 // ==========================================
-// 7. AUTH SCREEN (AVEC NIVEAUX SITTER 1,2,3)
+// 7. AUTH SCREEN
 // ==========================================
 
 const AuthScreen = () => {
@@ -913,7 +913,7 @@ const CompleteProfileScreen = ({ uid, serviceType }) => {
 };
 
 // ==========================================
-// 8. DASHBOARD PARENT (DESIGN PRO + FEATURES COMPLETES)
+// 8. DASHBOARD PARENT
 // ==========================================
 
 const ParentDashboard = ({ profile, user }) => {
@@ -935,8 +935,7 @@ const ParentDashboard = ({ profile, user }) => {
   const [isDark, setIsDark] = useState(localStorage.getItem('dark') === 'true');
   const [showFAQ, setShowFAQ] = useState(false);
 
-  // Protection contre le crash "serviceType is undefined"
-  const isPet = (profile?.serviceType || 'baby') === 'pet';
+  const isPet = profile.serviceType === 'pet';
   const days = ["Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi", "Samedi", "Dimanche"];
 
   useEffect(() => {
@@ -958,12 +957,11 @@ const ParentDashboard = ({ profile, user }) => {
   useEffect(() => {
     localStorage.setItem('dark', isDark);
     const unsubSitters = onSnapshot(collection(db, 'artifacts', appId, 'public', 'data', 'sitters'), (snap) => {
-      // Filtrage sécurisé
-      setSitters(snap.docs.map(d => ({ id: d.id, ...d.data() })).filter(s => s.serviceType === (profile?.serviceType || 'baby')));
+      setSitters(snap.docs.map(d => ({ id: d.id, ...d.data() })).filter(s => s.serviceType === profile.serviceType));
       setLoading(false);
     });
     
-    // FILTRE DES OFFRES PAR UNIVERS (BABY/PET) POUR NE PAS MELANGER
+    // FILTRE DES OFFRES PAR UNIVERS
     const qOffers = query(
         collection(db, 'artifacts', appId, 'public', 'data', 'offers'), 
         where("parentId", "==", user.uid)
@@ -972,11 +970,11 @@ const ParentDashboard = ({ profile, user }) => {
     const unsubOffers = onSnapshot(qOffers, (snap) => { 
         const list = snap.docs
             .map(d => ({ id: d.id, ...d.data() }))
-            .filter(o => o.sitterId !== o.parentId && o.serviceType === (profile?.serviceType || 'baby')); // FILTRE ICI
+            .filter(o => o.sitterId !== o.parentId && o.serviceType === (profile.serviceType || 'baby')); 
         setOffers(list); 
     });
     return () => { unsubSitters(); unsubOffers(); };
-  }, [user.uid, isDark, profile]); 
+  }, [user.uid, isDark, profile.serviceType]); 
 
   useEffect(() => {
       if (selectedSitter) {
@@ -990,7 +988,7 @@ const ParentDashboard = ({ profile, user }) => {
   const unreadCount = offers.filter(o => o.hasUnread && o.lastSenderId !== user.uid).length;
 
   const toggleFavorite = async (sitterId) => {
-      const isFav = (profile.favorites || []).includes(sitterId);
+      const isFav = profile.favorites?.includes(sitterId);
       await updateDoc(doc(db, 'artifacts', appId, 'users', user.uid, 'settings', 'profile'), {
           favorites: isFav ? arrayRemove(sitterId) : arrayUnion(sitterId)
       });
@@ -1002,7 +1000,7 @@ const ParentDashboard = ({ profile, user }) => {
       const matchLocation = !locationFilter || s.city?.toLowerCase().includes(locationFilter.toLowerCase());
       const matchPrice = (parseInt(s.price) || 0) <= maxPrice;
       const matchVerified = !onlyVerified || s.hasCV;
-      const matchFav = !onlyFavorites || (profile.favorites || []).includes(s.id);
+      const matchFav = !onlyFavorites || profile.favorites?.includes(s.id);
       const matchDay = !dayFilter || (s.availability && s.availability[dayFilter]?.active);
 
       return matchName && matchLocation && matchPrice && matchVerified && matchFav && matchDay;
@@ -1016,7 +1014,7 @@ const ParentDashboard = ({ profile, user }) => {
         return (b.views || 0) - (a.views || 0);
     });
 
-  }, [sitters, search, locationFilter, maxPrice, onlyVerified, onlyFavorites, profile, dayFilter]);
+  }, [sitters, search, locationFilter, maxPrice, onlyVerified, onlyFavorites, profile.favorites, dayFilter]);
 
   const handleBooking = async (s, p, h) => {
     if (s.id === user.uid) return alert("Vous ne pouvez pas réserver votre propre service !");
@@ -1051,7 +1049,7 @@ const ParentDashboard = ({ profile, user }) => {
         lastMsgAt: Timestamp.now(), 
         hasUnread: true, 
         lastSenderId: user.uid,
-        serviceType: profile.serviceType || 'baby' // CLEF POUR LE FILTRAGE
+        serviceType: profile.serviceType || 'baby' 
       });
       
       await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'offers', newOffer.id, 'messages'), { text: `Bonjour ${s.name}, je souhaiterais réserver une garde de ${h}H au prix de ${p}€/H.`, senderId: user.uid, parentId: user.uid, sitterId: s.id, createdAt: Timestamp.now() });
@@ -1091,7 +1089,6 @@ const ParentDashboard = ({ profile, user }) => {
         {/* --- VUE RECHERCHE --- */}
         {activeTab === "search" && (
             <>
-            {/* HERO CARD PRO */}
             <div className={`p-8 md:p-10 rounded-3xl shadow-lg relative overflow-hidden group transition-all duration-700 ${isDark ? 'bg-gradient-to-br from-[#E64545] to-slate-900' : 'bg-gradient-to-br from-[#E64545] to-[#E0720F]'}`}>
               <div className="relative z-10 text-white">
                   <h2 className="text-3xl font-black italic tracking-tighter font-sans leading-tight animate-in slide-in-from-left duration-700">Bonjour {profile.name} ! 👋</h2>
@@ -1343,18 +1340,33 @@ const SitterDashboard = ({ user, profile }) => {
 
   useEffect(() => {
     localStorage.setItem('dark', isDark);
+    
+    // CHARGEMENT PROFIL PUBLIC AVEC PROTECTION ANTI-CRASH
     const unsubPublic = onSnapshot(doc(db, 'artifacts', appId, 'public', 'data', 'sitters', user.uid), (snap) => {
       if (snap.exists()) {
-        const d = snap.data(); setBio(d.bio || ""); setPrice(d.price || ""); setBirthDate(d.birthDate || ""); setCity(d.city || ""); setCvName(d.cvName || ""); setViews(d.views || 0); setHasCar(d.hasCar || false);
+        const d = snap.data(); 
+        setBio(d.bio || ""); 
+        setPrice(d.price || ""); 
+        setBirthDate(d.birthDate || ""); 
+        setCity(d.city || ""); 
+        setCvName(d.cvName || ""); 
+        setViews(d.views || 0); 
+        setHasCar(d.hasCar || false);
         if (d.level) setLevel(d.level);
-        if (d.skills) setSkills(d.skills); 
-        if (d.availability) setAvailability(d.availability);
+        
+        // PROTECTION: Si skills est null ou pas un tableau, on met un tableau vide
+        if (Array.isArray(d.skills)) setSkills(d.skills); 
+        else setSkills([]);
+
+        // PROTECTION: Si availability est null ou pas un objet, on laisse l'état par défaut
+        if (d.availability && typeof d.availability === 'object') setAvailability(d.availability);
+        
         if (d.instantAvailableUntil && new Date(d.instantAvailableUntil) > new Date()) setIsInstant(true);
         else setIsInstant(false);
       }
     });
     
-    // FILTRE DES OFFRES PAR UNIVERS (BABY/PET)
+    // CHARGEMENT DES OFFRES
     const qOffers = query(
       collection(db, 'artifacts', appId, 'public', 'data', 'offers'), 
       where("sitterId", "==", user.uid)
@@ -1362,13 +1374,11 @@ const SitterDashboard = ({ user, profile }) => {
     const unsubOffers = onSnapshot(qOffers, (snap) => {
       const list = snap.docs
             .map(d => ({ id: d.id, ...d.data() }))
-            .filter(o => o.serviceType === (profile.serviceType || 'baby')); // FILTRE ICI AUSSI
+            .filter(o => o.serviceType === (profile.serviceType || 'baby')); 
       setOffers(list);
     });
-    const unsubReviews = onSnapshot(collection(db, 'artifacts', appId, 'public', 'data', 'sitters', user.uid, 'reviews'), (snap) => {
-        setReviews(snap.docs.map(d => d.data()));
-    });
-    return () => { unsubPublic(); unsubOffers(); unsubReviews(); };
+
+    return () => { unsubPublic(); unsubOffers(); };
   }, [user.uid, isDark, profile.serviceType]);
 
   const totalEarnings = useMemo(() => {
@@ -1761,10 +1771,6 @@ const SitterDashboard = ({ user, profile }) => {
     </div>
   );
 };
-
-// ==========================================
-// 10. RACINE SÉCURISÉE (ANTI-CRASH)
-// ==========================================
 
 // ==========================================
 // 10. RACINE SÉCURISÉE (ANTI-PAGE BLANCHE)
