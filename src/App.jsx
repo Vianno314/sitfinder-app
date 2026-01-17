@@ -347,7 +347,7 @@ const SettingsView = ({ user, profile, onBack, isDark, toggleDark }) => {
       if (publicDoc.exists()) {
           await updateDoc(publicSitterRef, { 
               name: newName, 
-              photoURL: customPhoto, // ICI : On écrase bien la photo de l'annonce
+              photoURL: customPhoto, 
               phone,
               serviceType: profile.serviceType
           });
@@ -1667,5 +1667,6 @@ export default function App() {
   if (!user) return <AuthScreen />;
   if (user && !profile) return <CompleteProfileScreen uid={user.uid} serviceType={profile?.serviceType} />; 
   
+  // Redirection en fonction du ROLE et de l'UNIVERS (Enfant ou Animaux)
   return profile.role === "parent" ? <ParentDashboard profile={profile} user={user} /> : <SitterDashboard user={user} profile={profile} />;
 }
