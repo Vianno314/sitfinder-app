@@ -166,7 +166,7 @@ const UserAvatar = ({ photoURL, size = "w-full h-full", className = "" }) => {
 };
 
 // ==============================================================================================
-// 3. MODULES GLOBAUX (FAQ, INSTALL, SWITCH)
+// 3. MODULES GLOBAUX
 // ==============================================================================================
 
 const FAQModal = ({ onClose }) => {
@@ -272,7 +272,6 @@ const ModeSwitcher = ({ currentRole, currentService, uid }) => {
 
     const switchMode = async (role, service) => {
         setIsOpen(false);
-        // Force l'update des deux champs pour éviter les sync issues
         await updateDoc(doc(db, 'artifacts', appId, 'users', uid, 'settings', 'profile'), { 
             role: role, 
             serviceType: service 
@@ -958,56 +957,26 @@ const ParentDashboard = ({ profile, user }) => {
 
   useEffect(() => {
     localStorage.setItem('dark', isDark);
+    const unsubSitters = onSnapshot(collection(db, 'artifacts', appId, 'public', 'data', 'sitters'), (snap) => {
+      // Filtrage sécurisé (serviceType fallback to 'baby')
+      setSitters(snap.docs.map(d => ({ id: d.id, ...d.data() })).filter(s => (s.serviceType || 'baby') === (profile?.serviceType || 'baby')));
+      setLoading(false);
+    });
     
-    // Récupération et filtrage des offres
-    const qOffers = query(collection(db, 'artifacts', appId, 'public', 'data', 'offers'), where("parentId", "==", user.uid));
+    // FILTRE DES OFFRES PAR UNIVERS (BABY/PET) POUR NE PAS MELANGER
+    const qOffers = query(
+        collection(db, 'artifacts', appId, 'public', 'data', 'offers'), 
+        where("parentId", "==", user.uid)
+    );
+    
     const unsubOffers = onSnapshot(qOffers, (snap) => { 
         const list = snap.docs
             .map(d => ({ id: d.id, ...d.data() }))
-            .filter(o => o.sitterId !== o.parentId && o.serviceType === (profile?.serviceType || 'baby'));
+            .filter(o => o.sitterId !== o.parentId && (o.serviceType || 'baby') === (profile?.serviceType || 'baby')); // FILTRE ICI
         setOffers(list); 
     });
-
-    return () => { unsubOffers(); };
+    return () => { unsubSitters(); unsubOffers(); };
   }, [user.uid, isDark, profile]); 
-
-  // UseMemo pour filtrer les sitters ET exclure ceux déjà bookés (Status accepté)
-  const filteredSitters = useMemo(() => {
-    // 1. Récupérer les IDs des sitters déjà "bookés" (acceptés/payés/terminés)
-    const bookedSitterIds = offers
-        .filter(o => ['accepted', 'paid_held', 'completed'].includes(o.status))
-        .map(o => o.sitterId);
-
-    return sitters.filter(s => {
-      // 2. EXCLUSION SI BOOKÉ
-      if (bookedSitterIds.includes(s.id)) return false;
-
-      const matchName = s.name?.toLowerCase().includes(search.toLowerCase());
-      const matchLocation = !locationFilter || s.city?.toLowerCase().includes(locationFilter.toLowerCase());
-      const matchPrice = (parseInt(s.price) || 0) <= maxPrice;
-      const matchVerified = !onlyVerified || s.hasCV;
-      const matchFav = !onlyFavorites || (profile.favorites || []).includes(s.id);
-      const matchDay = !dayFilter || (s.availability && s.availability[dayFilter]?.active);
-
-      return matchName && matchLocation && matchPrice && matchVerified && matchFav && matchDay;
-    }).sort((a, b) => {
-        const isInstantA = a.instantAvailableUntil && new Date(a.instantAvailableUntil) > new Date();
-        const isInstantB = b.instantAvailableUntil && new Date(b.instantAvailableUntil) > new Date();
-        if (isInstantA && !isInstantB) return -1; 
-        if (!isInstantA && isInstantB) return 1;  
-        return (b.views || 0) - (a.views || 0);
-    });
-
-  }, [sitters, search, locationFilter, maxPrice, onlyVerified, onlyFavorites, profile, dayFilter, offers]); // Ajout de offers dans les dépendances
-
-  // Chargement des sitters séparé pour éviter les boucles infinies
-  useEffect(() => {
-     const unsubSitters = onSnapshot(collection(db, 'artifacts', appId, 'public', 'data', 'sitters'), (snap) => {
-      setSitters(snap.docs.map(d => ({ id: d.id, ...d.data() })).filter(s => s.serviceType === (profile?.serviceType || 'baby')));
-      setLoading(false);
-    });
-    return () => unsubSitters();
-  }, [profile?.serviceType]);
 
   useEffect(() => {
       if (selectedSitter) {
@@ -1026,6 +995,37 @@ const ParentDashboard = ({ profile, user }) => {
           favorites: isFav ? arrayRemove(sitterId) : arrayUnion(sitterId)
       });
   };
+
+  const filteredSitters = useMemo(() => {
+    // 1. Récupérer les IDs des sitters déjà "bookés" (acceptés/payés/terminés)
+    // C'est ici que j'ai ajouté la logique que tu as demandée
+    const bookedSitterIds = offers
+        .filter(o => ['accepted', 'paid_held', 'completed'].includes(o.status))
+        .map(o => o.sitterId);
+
+    const filtered = sitters.filter(s => {
+      // 2. EXCLUSION IMMEDIATE SI BOOKÉ
+      if (bookedSitterIds.includes(s.id)) return false;
+
+      const matchName = s.name?.toLowerCase().includes(search.toLowerCase());
+      const matchLocation = !locationFilter || s.city?.toLowerCase().includes(locationFilter.toLowerCase());
+      const matchPrice = (parseInt(s.price) || 0) <= maxPrice;
+      const matchVerified = !onlyVerified || s.hasCV;
+      const matchFav = !onlyFavorites || (profile.favorites || []).includes(s.id);
+      const matchDay = !dayFilter || (s.availability && s.availability[dayFilter]?.active);
+
+      return matchName && matchLocation && matchPrice && matchVerified && matchFav && matchDay;
+    });
+
+    return filtered.sort((a, b) => {
+        const isInstantA = a.instantAvailableUntil && new Date(a.instantAvailableUntil) > new Date();
+        const isInstantB = b.instantAvailableUntil && new Date(b.instantAvailableUntil) > new Date();
+        if (isInstantA && !isInstantB) return -1; 
+        if (!isInstantA && isInstantB) return 1;  
+        return (b.views || 0) - (a.views || 0);
+    });
+
+  }, [sitters, search, locationFilter, maxPrice, onlyVerified, onlyFavorites, profile, dayFilter, offers]);
 
   const handleBooking = async (s, p, h) => {
     if (s.id === user.uid) return alert("Vous ne pouvez pas réserver votre propre service !");
@@ -1138,7 +1138,8 @@ const ParentDashboard = ({ profile, user }) => {
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {loading ? <div className="col-span-full py-20 flex justify-center animate-pulse"><Loader2 className="animate-spin text-[#E64545]" size={64} /></div> 
-              : filteredSitters.map((s) => {
+              : filteredSitters.length === 0 ? <div className="col-span-full text-center py-10 text-slate-400 italic">Aucun profil trouvé ou tous vos favoris sont déjà réservés.</div> :
+              filteredSitters.map((s) => {
                   const isInstant = s.instantAvailableUntil && new Date(s.instantAvailableUntil) > new Date();
 
                   return (
