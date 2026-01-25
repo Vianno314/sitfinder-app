@@ -1,9 +1,0 @@
-User-agent: *
-Allow: /
-Disallow: /dashboard
-Disallow: /profile
-Disallow: /chat
-Disallow: /settings
-Disallow: /messages
-
-Sitemap: https://babykeeper-app.fr/sitemap.xml
